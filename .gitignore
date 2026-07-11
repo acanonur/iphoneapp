@@ -1,0 +1,19 @@
+# Node
+node_modules/
+*.log
+
+# Env & data
+.env
+backend/data/
+
+# Build output
+dist/
+
+# Xcode
+ios/AISecretary.xcodeproj/xcuserdata/
+ios/AISecretary.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# macOS
+.DS_Store
