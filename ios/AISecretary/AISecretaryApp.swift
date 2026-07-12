@@ -6,8 +6,17 @@ struct AISecretaryApp: App {
 
     var body: some Scene {
         WindowGroup {
-            CallListView()
-                .environment(model)
+            TabView {
+                CallListView()
+                    .tabItem {
+                        Label("Secretary", systemImage: "phone.badge.checkmark")
+                    }
+                TranslatorView()
+                    .tabItem {
+                        Label("Translator", systemImage: "globe.europe.africa.fill")
+                    }
+            }
+            .environment(model)
         }
     }
 }

@@ -13,6 +13,28 @@ enum Language: String, Codable, CaseIterable, Identifiable {
         case .tr: return "Türkçe 🇹🇷"
         }
     }
+
+    var shortFlag: String {
+        switch self {
+        case .de: return "🇩🇪"
+        case .en: return "🇬🇧"
+        case .tr: return "🇹🇷"
+        }
+    }
+
+    /// Locale for speech recognition and the spoken voice.
+    var speechLocaleIdentifier: String {
+        switch self {
+        case .de: return "de-DE"
+        case .en: return "en-US"
+        case .tr: return "tr-TR"
+        }
+    }
+
+    var voiceLanguageCode: String { speechLocaleIdentifier }
+
+    /// Language value for Apple's Translation framework.
+    var localeLanguage: Locale.Language { Locale.Language(identifier: rawValue) }
 }
 
 enum CallStatus: String, Codable {
