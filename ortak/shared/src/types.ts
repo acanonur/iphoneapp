@@ -256,9 +256,15 @@ export interface Member {
   createdAt: number;
 }
 
-/** "Tugce is in the shop right now" — drives the live shopping indicator. */
-export interface Presence {
+/**
+ * "Tugce is in the shop right now" — drives the live shopping indicator.
+ *
+ * Held in memory on the server and pushed over the socket, never stored: it is
+ * only meaningful for as long as someone is actually there.
+ */
+export interface PresenceEntry {
   userId: string;
+  name: string;
   context: string;
   at: number;
 }

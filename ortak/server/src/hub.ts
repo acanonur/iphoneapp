@@ -11,17 +11,14 @@
  * ticks off the milk, Onur sees it happen while he is standing in the next aisle.
  */
 
+import type { PresenceEntry } from '../../shared/src/types.js';
+
+export type { PresenceEntry };
+
 export interface Socket {
   send(data: string): void;
   readyState: number;
   close(): void;
-}
-
-export interface PresenceEntry {
-  userId: string;
-  name: string;
-  context: string;
-  at: number;
 }
 
 interface Client {

@@ -67,7 +67,31 @@ answer a normal incoming call (no app audio plumbing needed) — see Roadmap.
 backend/   Node 22 + TypeScript + Fastify API, SQLite (node:sqlite), tests (vitest)
 ios/       SwiftUI app (XcodeGen project definition + sources)
 docs/      Retell agent prompt & setup guide
+ortak/     A second, separate app — see below
 ```
+
+---
+
+## Also in this repo: Ortak 🏠
+
+[`ortak/`](ortak/README.md) is an independent app that shares nothing with the
+secretary above except the repository: **a shared daily-life app for two people
+on two different phones**, running on iOS *and* Android from one Expo codebase,
+against your own server.
+
+Shared calendar that writes into each person's **own** calendar (Apple Calendar
+on one phone, Google Calendar on the other), shared notes with Apple Notes
+export, collaborative to-do and shopping lists that update live while you are
+both in the shop, a searchable archive of imported WhatsApp conversations, saved
+links, and Splitwise-style expense splitting for holidays.
+
+```bash
+cd ortak/server && npm install && npm run dev
+cd ortak/mobile && npm install && npx expo run:ios   # or run:android
+```
+
+Full setup, and an honest account of what the phone platforms do and don't
+allow, is in [`ortak/README.md`](ortak/README.md).
 
 ## Quickstart — backend (no keys needed)
 
