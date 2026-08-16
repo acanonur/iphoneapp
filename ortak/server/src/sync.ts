@@ -42,9 +42,15 @@ const MAX_PUSH_ROWS = 2000;
 
 export class SyncEngine {
   private readonly search: SearchIndex;
+  private readonly maxPullRows: number;
 
-  constructor(private readonly db: DatabaseSync) {
+  /** `maxPullRows` is injectable so tests can exercise the paging path cheaply. */
+  constructor(
+    private readonly db: DatabaseSync,
+    options: { maxPullRows?: number } = {},
+  ) {
     this.search = new SearchIndex(db);
+    this.maxPullRows = options.maxPullRows ?? MAX_PULL_ROWS;
   }
 
   /**
@@ -89,36 +95,61 @@ export class SyncEngine {
     return this.currentRev(spaceId);
   }
 
+  /**
+   * Everything that changed after `since`, up to a row budget.
+   *
+   * The returned `rev` is the cursor the client should send next time, and it
+   * always lands on a revision boundary: a client must never be told "you are
+   * up to date through rev N" when only half of rev N was delivered.
+   */
   pull(spaceId: string, since: number, kinds: readonly EntityKind[] = ENTITY_KINDS): PullResult {
     const rev = this.currentRev(spaceId);
     const changes: PullResult['changes'] = {};
-    let budget = MAX_PULL_ROWS;
-    /** The highest rev fully covered by this response. */
+    let budget = this.maxPullRows;
+    /** The highest revision this response fully covers. */
     let deliveredThrough = rev;
+    let truncated = false;
 
     for (const kind of kinds) {
-      if (budget <= 0) break;
+      if (truncated) break;
       const spec = ENTITY_SPECS[kind];
+
       const rows = this.db
         .prepare(
-          `SELECT * FROM ${spec.table} WHERE space_id = ? AND rev > ? ORDER BY rev ASC LIMIT ?`,
+          `SELECT * FROM ${spec.table}
+           WHERE space_id = ? AND rev > ? AND rev <= ?
+           ORDER BY rev ASC LIMIT ?`,
         )
-        .all(spaceId, since, budget + 1) as Record<string, unknown>[];
+        .all(spaceId, since, deliveredThrough, budget + 1) as Record<string, unknown>[];
 
-      if (rows.length > budget) {
-        // More rows than we are willing to send. Stop at the last complete rev so
-        // the client's cursor never skips a partially delivered revision.
-        const truncated = rows.slice(0, budget);
-        const lastRev = Number(truncated[truncated.length - 1]?.rev ?? since);
-        const safe = truncated.filter((r) => Number(r.rev) < lastRev);
-        changes[kind] = safe.map((r) => fromRow(spec, r));
-        deliveredThrough = Math.min(deliveredThrough, Math.max(since, lastRev - 1));
-        budget = 0;
-        break;
+      if (rows.length <= budget) {
+        if (rows.length > 0) changes[kind] = rows.map((r) => fromRow(spec, r));
+        budget -= rows.length;
+        continue;
       }
 
-      if (rows.length > 0) changes[kind] = rows.map((r) => fromRow(spec, r));
-      budget -= rows.length;
+      // Over budget. Cut at the revision boundary before the first row that
+      // doesn't fit, so the cursor stays on a complete revision.
+      const cut = Number(rows[budget]!.rev);
+      const keep = rows.slice(0, budget).filter((r) => Number(r.rev) < cut);
+      truncated = true;
+
+      if (keep.length > 0) {
+        changes[kind] = keep.map((r) => fromRow(spec, r));
+        deliveredThrough = cut - 1;
+        continue;
+      }
+
+      // A single revision is larger than the entire budget — which is exactly
+      // what a big WhatsApp import produces, since it writes every message at
+      // one revision. Send that revision whole rather than truncate it: an
+      // under-budget response here would leave the cursor where it was and the
+      // client would ask for the same thing forever.
+      const whole = this.db
+        .prepare(`SELECT * FROM ${spec.table} WHERE space_id = ? AND rev = ? ORDER BY id`)
+        .all(spaceId, cut) as Record<string, unknown>[];
+      changes[kind] = whole.map((r) => fromRow(spec, r));
+      deliveredThrough = cut;
     }
 
     return { rev: deliveredThrough, serverTime: Date.now(), changes };
