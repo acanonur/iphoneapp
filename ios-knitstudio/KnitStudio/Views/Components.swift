@@ -71,7 +71,7 @@ struct FactGrid: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 12))
             }
         }
     }
@@ -127,7 +127,7 @@ struct LengthField: View {
                         centimetres = min(max(cm, range.lowerBound), range.upperBound)
                     }),
                 format: .number.precision(.fractionLength(0 ... 1)))
-                .keyboardType(.decimalPad)
+                .knitDecimalKeyboard()
                 .multilineTextAlignment(.trailing)
                 .frame(width: 70)
             Text(units.lengthLabel)
@@ -153,7 +153,7 @@ struct PercentField: View {
                     get: { (fraction * 100).rounded() },
                     set: { fraction = min(max($0 / 100, range.lowerBound), range.upperBound) }),
                 format: .number.precision(.fractionLength(0)))
-                .keyboardType(.numbersAndPunctuation)
+                .knitSignedKeyboard()
                 .multilineTextAlignment(.trailing)
                 .frame(width: 60)
             Text("%")

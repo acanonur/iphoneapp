@@ -119,7 +119,7 @@ struct ChartWorkspace: View {
     var body: some View {
         ChartEditorView(chart: $chart, gauge: store.lastGauge)
             .navigationTitle(chart.name)
-            .navigationBarTitleDisplayMode(.inline)
+            .knitInlineTitle()
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -164,7 +164,7 @@ struct ChartWorkspace: View {
                         }
                     }
                     .navigationTitle("Chart check")
-                    .navigationBarTitleDisplayMode(.inline)
+                    .knitInlineTitle()
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showingReview = false }
@@ -205,7 +205,7 @@ struct NewChartSheet: View {
             }
         }
         .navigationTitle("New chart")
-        .navigationBarTitleDisplayMode(.inline)
+        .knitInlineTitle()
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }

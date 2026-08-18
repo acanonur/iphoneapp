@@ -1,6 +1,5 @@
 import Foundation
 import PDFKit
-import UIKit
 import UniformTypeIdentifiers
 
 /// Reads pattern files the knitter picks from Files, iCloud or Photos.
@@ -75,12 +74,12 @@ enum PatternImporter {
 
     // MARK: - Images
 
-    static func image(from url: URL) throws -> UIImage {
+    static func image(from url: URL) throws -> PlatformImage {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
 
         guard let data = try? Data(contentsOf: url) else { throw ImportError.noAccess }
-        guard let image = UIImage(data: data) else { throw ImportError.unreadable }
+        guard let image = PlatformImage.knitImage(from: data) else { throw ImportError.unreadable }
         return image
     }
 

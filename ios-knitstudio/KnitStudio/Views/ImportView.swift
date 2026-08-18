@@ -28,7 +28,7 @@ struct ImportView: View {
                 }
             }
             .navigationTitle("Import")
-            .navigationBarTitleDisplayMode(.inline)
+            .knitInlineTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
@@ -55,7 +55,7 @@ struct ImageImportPane: View {
     @Binding var errorMessage: String?
 
     @State private var photoItem: PhotosPickerItem?
-    @State private var sourceImage: UIImage?
+    @State private var sourceImage: PlatformImage?
     @State private var chart: ColourChart?
     @State private var showingFileImporter = false
 
@@ -86,7 +86,7 @@ struct ImageImportPane: View {
 
                 if let sourceImage {
                     HStack(alignment: .top, spacing: 14) {
-                        Image(uiImage: sourceImage)
+                        Image(platformImage: sourceImage)
                             .resizable()
                             .scaledToFit()
                             .frame(width: 110, height: 110)
@@ -147,7 +147,7 @@ struct ImageImportPane: View {
             guard let item else { return }
             Task {
                 guard let data = try? await item.loadTransferable(type: Data.self),
-                      let image = UIImage(data: data) else {
+                      let image = PlatformImage.knitImage(from: data) else {
                     errorMessage = "That image could not be read."
                     return
                 }
@@ -221,7 +221,7 @@ struct TextImportPane: View {
                     .frame(height: 140)
                     .font(.system(.caption, design: .monospaced))
                     .padding(6)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 10))
 
                 Button("Check it") {
                     parsed = WrittenPatternParser.parse(rawText)
@@ -318,7 +318,7 @@ struct TextImportPane: View {
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        Color(.secondarySystemBackground),
+                        Color.knitSecondaryBackground,
                         in: RoundedRectangle(cornerRadius: 10))
                 }
             }

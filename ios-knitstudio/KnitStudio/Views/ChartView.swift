@@ -105,7 +105,7 @@ struct ChartPreview: View {
                     .padding(4)
             }
             .frame(maxHeight: 320)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+            .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 12))
 
             HStack(spacing: 14) {
                 ForEach(Array(chart.palette.indices), id: \.self) { index in
@@ -150,7 +150,7 @@ struct ChartEditorView: View {
                     onPaint: paint)
                     .padding(12)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.knitGroupedBackground)
 
             Divider()
 
@@ -227,7 +227,7 @@ struct ChartEditorView: View {
                         .font(.system(.subheadline, design: .monospaced))
                 }
                 .navigationTitle("Row by row")
-                .navigationBarTitleDisplayMode(.inline)
+                .knitInlineTitle()
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Done") { showingInstructions = false }

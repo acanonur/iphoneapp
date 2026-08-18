@@ -57,7 +57,7 @@ struct ProjectEditorView: View {
             }
         }
         .navigationTitle(existingID == nil ? "New project" : "Edit")
-        .navigationBarTitleDisplayMode(.inline)
+        .knitInlineTitle()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { save() }
@@ -78,7 +78,7 @@ struct ProjectEditorView: View {
                 Text("Stitches per \(units.gaugeWindowLabel)")
                 Spacer()
                 TextField("sts", value: gaugeStitchesBinding, format: .number.precision(.fractionLength(0 ... 1)))
-                    .keyboardType(.decimalPad)
+                    .knitDecimalKeyboard()
                     .multilineTextAlignment(.trailing)
                     .frame(width: 70)
             }
@@ -86,7 +86,7 @@ struct ProjectEditorView: View {
                 Text("Rows per \(units.gaugeWindowLabel)")
                 Spacer()
                 TextField("rows", value: gaugeRowsBinding, format: .number.precision(.fractionLength(0 ... 1)))
-                    .keyboardType(.decimalPad)
+                    .knitDecimalKeyboard()
                     .multilineTextAlignment(.trailing)
                     .frame(width: 70)
             }
@@ -96,7 +96,7 @@ struct ProjectEditorView: View {
                     Text("\(weight.name) — \(weight.commonNames)").tag(weight)
                 }
             }
-            .pickerStyle(.navigationLink)
+            .knitLongListPicker()
 
             if !project.gauge.looksPlausible {
                 NoteBox(
@@ -353,7 +353,7 @@ struct ChartPickerSheet: View {
                 }
             }
             .navigationTitle("Choose a chart")
-            .navigationBarTitleDisplayMode(.inline)
+            .knitInlineTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

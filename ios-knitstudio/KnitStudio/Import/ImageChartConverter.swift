@@ -1,6 +1,5 @@
 import CoreGraphics
 import Foundation
-import UIKit
 
 /// Turns a photo or drawing into a knittable colourwork chart.
 enum ImageChartConverter {
@@ -50,9 +49,9 @@ enum ImageChartConverter {
         return max(1, Int((finishedHeight / gauge.rowHeight).rounded()))
     }
 
-    static func convert(image: UIImage, options: Options) -> ColourChart? {
+    static func convert(image: PlatformImage, options: Options) -> ColourChart? {
         let width = options.stitches
-        let height = rowCount(forStitches: width, imageSize: image.size, gauge: options.gauge)
+        let height = rowCount(forStitches: width, imageSize: image.knitPixelSize, gauge: options.gauge)
         guard width > 0, height > 0 else { return nil }
 
         guard var samples = pixels(from: image, width: width, height: height) else { return nil }
@@ -122,36 +121,40 @@ enum ImageChartConverter {
     }
 
     /// Draws the image down to the grid size and reads the averaged pixels.
-    /// Drawing the `UIImage` (rather than its `cgImage`) applies the image's
-    /// orientation, so photos taken sideways do not come out rotated.
-    static func pixels(from image: UIImage, width: Int, height: Int) -> [RGB]? {
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = 1
-        format.opaque = true
-        let size = CGSize(width: width, height: height)
-        let renderer = UIGraphicsImageRenderer(size: size, format: format)
-        let small = renderer.image { context in
-            context.cgContext.interpolationQuality = .high
-            UIColor.white.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            image.draw(in: CGRect(origin: .zero, size: size))
-        }
+    /// Core Graphics does the box-averaging for us at high interpolation
+    /// quality, which is exactly the sampling a chart wants.
+    static func pixels(from image: PlatformImage, width: Int, height: Int) -> [RGB]? {
+        guard let cgImage = image.knitCGImage else { return nil }
+        return pixels(from: cgImage, width: width, height: height)
+    }
 
-        guard let cgImage = small.cgImage else { return nil }
+    static func pixels(from cgImage: CGImage, width: Int, height: Int) -> [RGB]? {
+        guard width > 0, height > 0 else { return nil }
         let bytesPerPixel = 4
         let bytesPerRow = bytesPerPixel * width
         var data = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
-        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
-        guard let context = CGContext(
-            data: &data,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: bytesPerRow,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: bitmapInfo
-        ) else { return nil }
-        context.draw(cgImage, in: CGRect(origin: .zero, size: size))
+
+        let drew = data.withUnsafeMutableBytes { raw -> Bool in
+            guard let base = raw.baseAddress,
+                  let context = CGContext(
+                    data: base,
+                    width: width,
+                    height: height,
+                    bitsPerComponent: 8,
+                    bytesPerRow: bytesPerRow,
+                    space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+
+            context.interpolationQuality = .high
+            // Transparent images would otherwise sample as black.
+            context.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+            let rect = CGRect(x: 0, y: 0, width: width, height: height)
+            context.fill(rect)
+            context.draw(cgImage, in: rect)
+            return true
+        }
+        guard drew else { return nil }
 
         var result: [RGB] = []
         result.reserveCapacity(width * height)

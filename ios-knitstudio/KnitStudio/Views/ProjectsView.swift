@@ -120,7 +120,7 @@ struct ProjectDetailView: View {
             }
         }
         .navigationTitle(project.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .knitInlineTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Edit") { editing = true }
@@ -193,7 +193,7 @@ struct ProjectPlanView: View {
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
                 }
 
                 ForEach(plan.notes, id: \.self) { note in
@@ -223,7 +223,7 @@ struct ProjectPlanView: View {
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
                 }
 
                 ShareLink(item: plan.plainText(units: store.units)) {
@@ -249,7 +249,7 @@ struct ProjectPlanView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
     }
 }
 
@@ -367,7 +367,7 @@ struct RowCounterView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
             }
 
             ProgressView(

@@ -94,7 +94,7 @@ struct YarnEditorView: View {
                         Text("\(weight.name) — \(weight.commonNames)").tag(weight)
                     }
                 }
-                .pickerStyle(.navigationLink)
+                .knitLongListPicker()
             }
 
             Section {
@@ -102,7 +102,7 @@ struct YarnEditorView: View {
                     Text("Grams per ball")
                     Spacer()
                     TextField("g", value: $yarn.ballGrams, format: .number.precision(.fractionLength(0)))
-                        .keyboardType(.decimalPad)
+                        .knitDecimalKeyboard()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
                 }
@@ -110,7 +110,7 @@ struct YarnEditorView: View {
                     Text("Metres per ball")
                     Spacer()
                     TextField("m", value: $yarn.ballMetres, format: .number.precision(.fractionLength(0)))
-                        .keyboardType(.decimalPad)
+                        .knitDecimalKeyboard()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
                 }
@@ -118,7 +118,7 @@ struct YarnEditorView: View {
                     Text("Price per ball")
                     Spacer()
                     TextField("optional", text: $priceText)
-                        .keyboardType(.decimalPad)
+                        .knitDecimalKeyboard()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
                 }
@@ -133,7 +133,7 @@ struct YarnEditorView: View {
             }
         }
         .navigationTitle(yarn.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .knitInlineTitle()
         .onAppear {
             colour = yarn.colour
             priceText = yarn.pricePerBall.map { String(format: "%.2f", $0) } ?? ""
@@ -156,16 +156,10 @@ struct YarnEditorView: View {
 }
 
 extension StashView {
-    /// SwiftUI has no hex accessor, so go through UIColor.
+    /// SwiftUI has no hex accessor, so this goes through the platform colour
+    /// type — UIColor on iOS, NSColor on the Mac.
     static func hex(from colour: Color) -> String {
-        let ui = UIColor(colour)
-        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-        guard ui.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return "9E9E9E" }
-        return String(
-            format: "%02X%02X%02X",
-            Int((red * 255).rounded()),
-            Int((green * 255).rounded()),
-            Int((blue * 255).rounded()))
+        colour.knitHex
     }
 }
 
@@ -192,7 +186,7 @@ struct GaugeToolView: View {
                     Text("Stitches counted")
                     Spacer()
                     TextField("sts", value: $stitches, format: .number.precision(.fractionLength(0 ... 1)))
-                        .keyboardType(.decimalPad)
+                        .knitDecimalKeyboard()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 70)
                 }
@@ -200,7 +194,7 @@ struct GaugeToolView: View {
                     Text("Rows counted")
                     Spacer()
                     TextField("rows", value: $rows, format: .number.precision(.fractionLength(0 ... 1)))
-                        .keyboardType(.decimalPad)
+                        .knitDecimalKeyboard()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 70)
                 }
@@ -208,7 +202,7 @@ struct GaugeToolView: View {
                     Text("Measured over")
                     Spacer()
                     TextField("width", value: $window, format: .number.precision(.fractionLength(0 ... 1)))
-                        .keyboardType(.decimalPad)
+                        .knitDecimalKeyboard()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 70)
                     Text(store.units.lengthLabel)
@@ -243,6 +237,6 @@ struct GaugeToolView: View {
             }
         }
         .navigationTitle("Gauge")
-        .navigationBarTitleDisplayMode(.inline)
+        .knitInlineTitle()
     }
 }

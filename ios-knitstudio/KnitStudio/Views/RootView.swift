@@ -2,21 +2,32 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var store: AppStore
+    @State private var selection: AppSection? = .projects
 
     var body: some View {
-        TabView {
-            ProjectsView()
-                .tabItem { Label("Projects", systemImage: "square.stack.3d.up") }
-
-            PatternsView()
-                .tabItem { Label("Patterns", systemImage: "square.grid.3x3") }
-
-            LearnView()
-                .tabItem { Label("Learn", systemImage: "book") }
-
-            StashView()
-                .tabItem { Label("Stash", systemImage: "basket") }
+        #if os(macOS)
+        // A sidebar is the native shape for a Mac window; tabs across the top
+        // of a desktop app read as a stretched phone.
+        NavigationSplitView {
+            List(AppSection.allCases, selection: $selection) { section in
+                NavigationLink(value: section) {
+                    Label(section.title, systemImage: section.symbol)
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 170, ideal: 200, max: 260)
+            .navigationTitle("KnitStudio")
+        } detail: {
+            (selection ?? .projects).destination
         }
+        .knitMinimumWindowSize()
+        #else
+        TabView {
+            ForEach(AppSection.allCases) { section in
+                section.destination
+                    .tabItem { Label(section.title, systemImage: section.symbol) }
+            }
+        }
+        #endif
     }
 }
 
@@ -175,7 +186,7 @@ struct TechniqueDetailView: View {
             .padding()
         }
         .navigationTitle(technique.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .knitInlineTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -206,6 +217,6 @@ struct AbbreviationsView: View {
         }
         .searchable(text: $query, prompt: "Search abbreviations")
         .navigationTitle("Abbreviations")
-        .navigationBarTitleDisplayMode(.inline)
+        .knitInlineTitle()
     }
 }
