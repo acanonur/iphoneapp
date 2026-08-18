@@ -17,3 +17,10 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Gradle / Android
+android/.gradle/
+android/build/
+android/*/build/
+android/local.properties
+android/.idea/
