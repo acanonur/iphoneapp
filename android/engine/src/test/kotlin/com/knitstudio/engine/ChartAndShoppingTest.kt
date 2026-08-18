@@ -219,3 +219,108 @@ class ChartAndShoppingTest {
         assertTrue(text.contains("Notions"))
     }
 }
+
+class PresetTest {
+    @Test fun everyBuiltInMotifParses() {
+        for (motif in BuiltInPatterns.motifs) {
+            val chart = BuiltInPatterns.chart(motif.id)
+            assertNotNull(chart, motif.id)
+            assertEquals(chart.width * chart.height, chart.cells.size, motif.id)
+            assertEquals(motif.colours, chart.palette.size, motif.id)
+            chart.cells.forEach { assertTrue(it in chart.palette.indices, motif.id) }
+        }
+    }
+
+    @Test fun presetsAllBuildWorkingProjects() {
+        for (preset in BuiltInPatterns.all) {
+            val project = SavedProject.fromPreset(preset)
+            assertTrue(project.plan().totalStitches > 0, preset.displayName)
+            val list = project.shoppingList()
+            assertTrue(list.lines.isNotEmpty(), preset.displayName)
+            assertTrue(list.totalBalls >= 1, preset.displayName)
+            if (preset.chartId != null) assertNotNull(project.chart, preset.displayName)
+        }
+    }
+}
+
+class PersistenceTest {
+    @Test fun projectSurvivesARoundTripThroughJson() {
+        val original = SavedProject(
+            name = "Test hat",
+            kind = PatternKind.HAT,
+            gauge = Gauge(22.0, 30.0),
+            allocations = ColourAllocation.single(
+                Yarn(name = "Cream", hex = "F0E9DA", weight = YarnWeight.LIGHT),
+            ),
+            chart = BuiltInPatterns.chart("fair-isle-band"),
+            rowsCompleted = 42,
+            notes = "Second attempt",
+        )
+        val json = kotlinx.serialization.json.Json.encodeToString(
+            SavedProject.serializer(), original,
+        )
+        val restored = kotlinx.serialization.json.Json.decodeFromString(
+            SavedProject.serializer(), json,
+        )
+        assertEquals(original.name, restored.name)
+        assertEquals(original.kind, restored.kind)
+        assertEquals(original.gauge, restored.gauge)
+        assertEquals(42, restored.rowsCompleted)
+        assertEquals(original.chart?.cells, restored.chart?.cells)
+        assertEquals(original.plan().totalStitches, restored.plan().totalStitches, 1e-6)
+    }
+
+    @Test fun everyPresetSurvivesARoundTrip() {
+        for (preset in BuiltInPatterns.all) {
+            val project = SavedProject.fromPreset(preset)
+            val json = kotlinx.serialization.json.Json.encodeToString(SavedProject.serializer(), project)
+            val restored = kotlinx.serialization.json.Json.decodeFromString(SavedProject.serializer(), json)
+            assertEquals(
+                project.plan().totalStitches, restored.plan().totalStitches, 1e-6,
+                preset.displayName,
+            )
+        }
+    }
+}
+
+class TechniqueTest {
+    @Test fun everyTechniqueIdIsUniqueAndWellFormed() {
+        val ids = TechniqueLibrary.all.map { it.id }
+        assertEquals(ids.size, ids.toSet().size, "duplicate technique ids")
+        TechniqueLibrary.all.forEach { technique ->
+            assertTrue(technique.steps.isNotEmpty(), "${technique.id} has no steps")
+            assertTrue(technique.summary.isNotBlank(), "${technique.id} has no summary")
+            assertTrue(technique.whenToUse.isNotBlank(), "${technique.id} has no whenToUse")
+        }
+        assertTrue(TechniqueLibrary.all.size >= 40, "only ${TechniqueLibrary.all.size} techniques")
+    }
+
+    @Test fun everyCategoryHasContent() {
+        assertEquals(TechniqueCategory.entries.size, TechniqueLibrary.categoriesInOrder.size)
+    }
+
+    /** Recommendations must resolve — a typo in an id would silently drop one. */
+    @Test fun recommendationsResolveForEveryProject() {
+        for (kind in PatternKind.entries) {
+            for (structure in FabricStructure.entries) {
+                val recommended = TechniqueLibrary.recommended(kind, structure)
+                assertTrue(recommended.size >= 6, "${kind.displayName}/${structure.displayName}")
+                assertEquals(recommended.size, recommended.map { it.id }.toSet().size)
+            }
+        }
+    }
+
+    @Test fun abbreviationsPointAtRealTechniques() {
+        AbbreviationGlossary.all.forEach { entry ->
+            entry.techniqueId?.let {
+                assertNotNull(TechniqueLibrary.technique(it), "${entry.short} -> $it")
+            }
+        }
+    }
+
+    @Test fun searchFindsThingsByNameAndAlias() {
+        assertTrue(TechniqueLibrary.search("kitchener").any { it.id == "kitchener-stitch" })
+        assertTrue(TechniqueLibrary.search("fair isle").any { it.id == "stranded-colourwork" })
+        assertTrue(TechniqueLibrary.search("").size == TechniqueLibrary.all.size)
+    }
+}

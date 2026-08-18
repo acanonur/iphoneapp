@@ -1,5 +1,7 @@
 package com.knitstudio.engine
 
+import kotlinx.serialization.Serializable
+
 enum class HatStyle(val displayName: String, val height: Double) {
     CLASSIC("Classic beanie", 22.0),
     SLOUCHY("Slouchy", 28.0),
@@ -10,6 +12,7 @@ enum class HatStyle(val displayName: String, val height: Double) {
  * Every knob a calculator might read. Each calculator uses the subset that
  * applies to it, so one options object can back the whole UI.
  */
+@Serializable
 data class ProjectOptions(
     /** Fractional ease. Positive is roomier than the body, negative is snug. */
     val ease: Double = 0.08,

@@ -1,5 +1,7 @@
 package com.knitstudio.engine
 
+import kotlinx.serialization.Serializable
+
 /** How a chart is worked, which decides how each row is read. */
 enum class ChartWorking(val displayName: String) {
     /** Back and forth: RS rows read right to left, WS rows left to right. */
@@ -9,6 +11,7 @@ enum class ChartWorking(val displayName: String) {
 }
 
 /** A colourwork chart: a grid where every cell names a colour in the palette. */
+@Serializable
 data class ColourChart(
     val name: String,
     val width: Int,

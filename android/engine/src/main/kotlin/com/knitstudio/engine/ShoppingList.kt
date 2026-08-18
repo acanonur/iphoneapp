@@ -1,8 +1,11 @@
 package com.knitstudio.engine
 
+import kotlinx.serialization.Serializable
+
 import java.util.Locale
 
 /** How much of the project is worked in one particular colour. */
+@Serializable
 data class ColourAllocation(
     val yarn: Yarn,
     /** Fraction of the total yarn, 0...1. */

@@ -1,5 +1,7 @@
 package com.knitstudio.engine
 
+import kotlinx.serialization.Serializable
+
 import kotlin.math.ceil
 
 /** Craft Yarn Council standard yarn weight categories (0–7). */
@@ -46,6 +48,7 @@ enum class YarnWeight(
 }
 
 /** A colour of yarn the knitter owns or intends to buy. */
+@Serializable
 data class Yarn(
     val id: String = java.util.UUID.randomUUID().toString(),
     val name: String,

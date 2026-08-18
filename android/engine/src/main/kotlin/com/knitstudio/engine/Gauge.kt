@@ -1,5 +1,7 @@
 package com.knitstudio.engine
 
+import kotlinx.serialization.Serializable
+
 import java.util.Locale
 
 /**
@@ -24,6 +26,7 @@ enum class UnitSystem {
 }
 
 /** A knitted gauge (tension), always normalised to stitches and rows per 10 cm. */
+@Serializable
 data class Gauge(
     val stitchesPer10cm: Double,
     val rowsPer10cm: Double,

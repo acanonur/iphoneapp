@@ -3,13 +3,26 @@
 // the Swift engine has no UI imports.
 plugins {
     kotlin("jvm") version "2.1.0"
+    // Pure-Kotlin, multiplatform serialisation: keeps the engine free of any
+    // platform dependency while still giving the app a persistence format.
+    kotlin("plugin.serialization") version "2.1.0"
+}
+
+// Android cannot load class files newer than Java 17, and :app depends on this
+// module — so compile with whatever JDK is present but emit 17 bytecode.
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 kotlin {
-    jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 dependencies {
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     testImplementation(kotlin("test"))
 }
 

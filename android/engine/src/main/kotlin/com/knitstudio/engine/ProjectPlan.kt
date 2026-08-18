@@ -1,5 +1,7 @@
 package com.knitstudio.engine
 
+import kotlinx.serialization.Serializable
+
 /** A single headline number shown at the top of a plan. */
 data class PlanFact(
     val label: String,
@@ -83,6 +85,7 @@ data class ProjectPlan(
 }
 
 /** Common body measurements a project is calculated from. Stored in cm. */
+@Serializable
 data class BodyMeasurements(
     val chest: Double = 100.0,
     val headCircumference: Double = 56.0,
