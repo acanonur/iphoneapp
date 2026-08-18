@@ -64,12 +64,13 @@ server running. KnitStudio needs nothing but the device.
 | **iPhone / iPad** | ✅ Works | Native SwiftUI |
 | **Mac** | ✅ Works | Native SwiftUI (not Mac Catalyst) — sidebar layout, resizable window |
 | **Apple Vision Pro** | ⚠️ Would probably run | Add `visionOS` to `supportedDestinations` and test |
-| **Android** | ❌ **Cannot run** | Swift and SwiftUI do not exist on Android. See section 5 |
+| **Android** | ✅ Works | A separate Kotlin + Jetpack Compose app in [`android/`](../android/). See section 5 |
 
-This is worth being blunt about: **there is no setting, flag, or build option
-that makes this codebase produce an Android app.** SwiftUI is Apple-only.
-Android needs either a transpiler or a rewrite. Section 5 lays out the options
-honestly, with effort estimates.
+Note what that last row does **not** say. The Swift code does not run on
+Android — SwiftUI is Apple-only and no build setting changes that. Android is a
+second implementation: the UI was rewritten in Compose, and the knitting engine
+was ported to Kotlin and checked against the same verified numbers. Section 5
+explains how, and what it cost.
 
 ---
 
@@ -202,76 +203,68 @@ the Mac app.
 
 ---
 
-## 5. Android: what it would actually take
+## 5. Android: how it was done
 
-### Why the current code cannot be reused directly
+Android runs Kotlin on the ART runtime with Jetpack Compose for UI. Swift has no
+official Android toolchain and SwiftUI is closed Apple technology, so the app
+could not be recompiled — it had to be ported. It now lives in
+[`android/`](../android/).
 
-Android runs Kotlin and Java on the ART runtime, with Jetpack Compose or XML
-layouts for UI. Swift has no official Android toolchain, and SwiftUI is closed
-Apple technology that will never run there. The parts of KnitStudio that touch
-Apple frameworks — SwiftUI views, Core Graphics image sampling, PDFKit,
-PhotosUI — have no Android equivalent that Swift could call.
+### What actually had to be rewritten
 
-### What *is* portable
+Only the UI. The split looks like this:
 
-This is the good news, and it is a large fraction of the value:
+| Layer | What happened |
+|---|---|
+| Knitting engine | **Ported to Kotlin.** Pure logic — arithmetic, data classes, enums — so it moved across almost mechanically |
+| Technique guide, presets, charts | **Ported.** Pure data |
+| Written-pattern parser | **Ported.** Only regex and string handling |
+| SwiftUI screens | **Rewritten** in Jetpack Compose |
+| Image → colourwork chart | **Not yet ported.** The algorithm is platform-independent; only the bitmap sampling needs an Android implementation |
 
-| Layer | Lines | Portability |
-|---|---|---|
-| `Engine/` | ~2,000 | **Pure logic.** Arithmetic, structs, enums. Ports almost mechanically |
-| `Content/` | ~1,300 | **Pure data.** Technique text, presets, charts. Ports as data |
-| `Import/` parser | ~400 | **Pure logic**, only regex. Ports directly |
-| `Import/` image | ~250 | Needs an Android bitmap API, but the algorithm is unchanged |
-| `Views/` | ~2,500 | Rewrite in Compose |
-| `KnitStudioTests/` | ~900 | **These are a specification.** Port them and you know the port is right |
+### The test suite is what made it safe
 
-The test suite is the thing that makes this tractable: every calculator has
-verified expected values, so a Kotlin port is correct exactly when the same
-tests pass.
+The Swift XCTest suite is a specification, so the port is correct exactly when
+the same assertions pass in Kotlin. They do — 73 tests, asserting the same
+verified constants:
 
-### The four realistic options
+```
+hat      96 sts cast on, 22 crown rounds, 4120 stitches
+raglan   84 neck, 40 increase rounds, 236 body / 74 sleeve, 58668 stitches
+sock     64 sts, 32-row heel flap, 17 gusset pick-up, 23504 stitches (a pair)
+shawl    504 sts, 252 rows, 63882 stitches
+loop length  1.696970 (DK), 2.097222 (worsted), 1.228571 (sock)
+```
 
-**A. Skip ([skip.tools](https://skip.tools)) — transpile SwiftUI to Compose.**
-A commercial tool that compiles Swift to Kotlin and SwiftUI to Jetpack Compose.
-You keep one Swift codebase. Needs a Mac and Android Studio, has a paid licence
-for closed-source apps, and constrains you to the SwiftUI subset it supports.
-*Effort: days to weeks. Risk: you inherit someone else's compatibility matrix.*
+Without that suite, a port of this much arithmetic would have been guesswork.
 
-**B. Port the engine to Kotlin, write a Compose UI. ← my recommendation**
-Keep the Apple apps exactly as they are. Translate `Engine/`, `Content/` and the
-parser to Kotlin (they are plain logic — no framework calls), port the XCTest
-suite to JUnit to prove the translation, then build an Android UI in Compose.
-*Effort: roughly 2–4 weeks for one developer. Risk: low — the maths is already
-specified and verified. Cost: two UI codebases to maintain.*
+### The trap that would have silently broken everything
 
-**C. Kotlin Multiplatform / Compose Multiplatform.**
-Write the engine once in Kotlin, share it across Android, iOS and desktop, and
-write the UI once in Compose Multiplatform. The cleanest long-term three-platform
-story — but it means discarding the SwiftUI work and accepting a non-native feel
-on iOS.
-*Effort: 4–8 weeks. Best if Android is a first-class platform, not an afterthought.*
+Swift's `Double.rounded()` rounds halves **away from zero**. Kotlin's `round()`
+does not. Every stitch count in the engine would have drifted at `.5`
+boundaries — not everywhere, just often enough to be baffling. `Shaping.kt`
+defines `swiftRounded()`, the port uses it everywhere the Swift used
+`.rounded()`, and a test pins the semantics so it cannot regress.
 
-**D. Rewrite in Flutter or React Native.**
-One Dart or TypeScript codebase for iOS, Android and (with Flutter) macOS.
-Throws away everything here.
-*Effort: 6–10 weeks. Only worth it if you were going to start over anyway.*
+This is the general shape of the risk in a numeric port: not the algorithms,
+which are easy to read across, but the standard library's quiet disagreements.
 
-### If Android matters most, decide now
+### What it costs from here
 
-The honest trade-off: **B** preserves the polished native Apple apps you already
-have and gets Android with low risk, at the cost of maintaining two UIs.
-**C** gives you one UI everywhere but means the iOS app stops being native
-SwiftUI. There is no option that gets all three platforms from this exact code.
+Two UI codebases, one shared specification. A change to the knitting maths means
+editing two engines — but both are covered by the same assertions, so a
+divergence fails a test rather than shipping. A change to a screen means editing
+whichever platform it belongs to.
 
-Tell me which direction you want and I can start it — porting the engine to
-Kotlin with the tests is a well-defined first step that is useful under both
-**B** and **C**.
+If that ever becomes the wrong trade, the alternative is Compose Multiplatform:
+one Kotlin UI for Android, iOS and desktop. It would mean discarding the SwiftUI
+app and accepting a non-native feel on Apple platforms, which is why it was not
+the first choice.
 
----
+## 6. Releasing on Google Play
 
-## 6. Releasing on Google Play (for when there is an Android build)
-
-Worth knowing in advance, because one requirement catches people out.
+The Android app is in [`android/`](../android/); `./gradlew :app:assembleRelease`
+produces the build. One requirement catches people out — see step 4.
 
 1. **Google Play Developer account — $25, one time** (versus Apple's $99/year).
 2. **Build an Android App Bundle (`.aab`)**, not an APK. Play requires AAB for
