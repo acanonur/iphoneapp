@@ -1,10 +1,16 @@
 # KnitStudio 🧶
 
-An iPhone app for knitting: a technique guide, a pattern calculator that works out every
-row from your own gauge, chart tools that turn a picture into colourwork, and a shopping
+An app for knitting: a technique guide, a pattern calculator that works out every row
+from your own gauge, chart tools that turn a picture into colourwork, and a shopping
 list that tells you how many balls to buy.
 
-Everything runs on-device. No backend, no account, no network access.
+Runs on **iPhone, iPad and Mac** from one codebase — the Mac build is native SwiftUI
+with a sidebar, not a stretched-up phone app. Everything runs on-device: no backend, no
+account, no network access.
+
+> **Android:** this is Swift and SwiftUI, which are Apple-only. Android needs a port, not
+> a build setting. [`docs/platforms-and-release.md`](../docs/platforms-and-release.md)
+> §5 sets out the four realistic options with effort estimates.
 
 ## What it does
 
@@ -51,13 +57,17 @@ than guessed. Plus the needles and notions the project actually needs.
 ## Building
 
 ```bash
-brew install xcodegen
+brew install xcodegen          # 2.35 or newer
 cd ios-knitstudio
 xcodegen generate
 open KnitStudio.xcodeproj
 ```
 
-iOS 17+. Run the tests with **⌘U**.
+iOS 17+ and macOS 14+. Pick the destination in Xcode's toolbar — *My Mac* builds the
+desktop app. Run the tests with **⌘U**.
+
+For shipping it, see [how to release](../docs/platforms-and-release.md): what kind of
+project this is, App Store and Mac App Store steps, and what Android would take.
 
 ## Layout
 
@@ -66,9 +76,11 @@ KnitStudio/
   Engine/         gauge, shaping, yarn model, one file per calculator
   Content/        technique guide, abbreviations, built-in patterns and charts
   Import/         image → chart, written pattern parser, file loading
+  Platform/       the only file that knows iOS from macOS
   Views/          SwiftUI screens
   App/            entry point, store, persistence
 KnitStudioTests/  engine, calculators, charts, parser, shopping list
 ```
 
-The engine is plain Foundation with no UI imports, so it can be tested on its own.
+The engine is plain Foundation with no UI imports, so it can be tested on its own — and
+that is what made the Mac build cheap and would make an Android port tractable.

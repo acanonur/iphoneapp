@@ -1,9 +1,9 @@
-> **This repository holds two independent iPhone apps.**
+> **This repository holds two independent Apple apps.**
 >
 > | App | Folder | What it is |
 > |---|---|---|
 > | **AI Secretary** 📞 | [`ios/`](ios/) + [`backend/`](backend/) | Described below: an AI that makes phone calls for you and reports back in your language. |
-> | **KnitStudio** 🧶 | [`ios-knitstudio/`](ios-knitstudio/) | A knitting technique guide, pattern calculator, chart tool and yarn shopping list. Fully on-device. See its [README](ios-knitstudio/README.md) and [how the numbers work](docs/knitstudio.md). |
+> | **KnitStudio** 🧶 | [`ios-knitstudio/`](ios-knitstudio/) | A knitting technique guide, pattern calculator, chart tool and yarn shopping list. Runs on iPhone, iPad **and Mac**; fully on-device. See its [README](ios-knitstudio/README.md), [how the numbers work](docs/knitstudio.md), and [how to release it](docs/platforms-and-release.md). |
 
 ---
 
