@@ -66,6 +66,10 @@ open KnitStudio.xcodeproj
 iOS 17+ and macOS 14+. Pick the destination in Xcode's toolbar — *My Mac* builds the
 desktop app. Run the tests with **⌘U**.
 
+New to Xcode? [**Running KnitStudio on your Mac**](../docs/running-on-your-mac.md) walks
+through the whole thing from an empty Mac, including what to do when the first build
+fails.
+
 For shipping it, see [how to release](../docs/platforms-and-release.md): what kind of
 project this is, App Store and Mac App Store steps, and what Android would take.
 
