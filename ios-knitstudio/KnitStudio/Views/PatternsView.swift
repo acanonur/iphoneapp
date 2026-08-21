@@ -95,16 +95,19 @@ struct PatternsView: View {
                     ProjectEditorView(project: project, existingID: nil)
                         .environmentObject(store)
                 }
+                .knitSheetFrame()
             }
             .sheet(item: $newChart) { chart in
                 NavigationStack {
                     NewChartSheet(chart: chart)
                         .environmentObject(store)
                 }
+                .knitSheetFrame(width: 480, height: 520)
             }
             .sheet(isPresented: $showingImport) {
                 ImportView()
                     .environmentObject(store)
+                    .knitSheetFrame(width: 640, height: 700)
             }
         }
     }
@@ -171,6 +174,7 @@ struct ChartWorkspace: View {
                         }
                     }
                 }
+                .knitSheetFrame(width: 520, height: 600)
             }
     }
 }
@@ -204,6 +208,7 @@ struct NewChartSheet: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .knitFormStyle()
         .navigationTitle("New chart")
         .knitInlineTitle()
         .toolbar {

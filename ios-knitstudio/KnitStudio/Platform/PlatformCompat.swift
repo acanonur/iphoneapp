@@ -154,6 +154,33 @@ extension View {
         #endif
     }
 
+    /// The Mac's default `Form` style right-aligns every label into one column
+    /// sized to the longest label, which is what pushed the controls off the
+    /// edge of the sheet. The grouped style lays a Mac form out the way System
+    /// Settings does, and honours section headers and footers. iOS is already
+    /// grouped.
+    @ViewBuilder
+    func knitFormStyle() -> some View {
+        #if os(macOS)
+        formStyle(.grouped)
+        #else
+        self
+        #endif
+    }
+
+    /// A sheet on the Mac gets its size from its content, and a `Form` inside
+    /// one has no width of its own — so it stretches to whatever its widest row
+    /// asks for and the rest is pushed out of view. Giving the sheet an explicit
+    /// size fixes that. On iOS a sheet is already the width of the screen.
+    @ViewBuilder
+    func knitSheetFrame(width: CGFloat = 560, height: CGFloat = 640) -> some View {
+        #if os(macOS)
+        frame(width: width, height: height)
+        #else
+        self
+        #endif
+    }
+
     /// Mac windows need a sensible opening size; iOS ignores this.
     @ViewBuilder
     func knitMinimumWindowSize() -> some View {

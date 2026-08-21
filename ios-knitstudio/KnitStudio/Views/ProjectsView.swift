@@ -39,6 +39,7 @@ struct ProjectsView: View {
                     ProjectEditorView(project: draft, existingID: nil)
                         .environmentObject(store)
                 }
+                .knitSheetFrame()
             }
         }
     }
@@ -131,6 +132,7 @@ struct ProjectDetailView: View {
                 ProjectEditorView(project: project, existingID: project.id)
                     .environmentObject(store)
             }
+            .knitSheetFrame()
         }
     }
 }

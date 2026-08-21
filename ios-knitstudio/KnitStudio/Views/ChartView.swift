@@ -234,6 +234,7 @@ struct ChartEditorView: View {
                     }
                 }
             }
+            .knitSheetFrame(width: 520, height: 600)
         }
     }
 

@@ -27,6 +27,7 @@ struct ProjectEditorView: View {
                 Text(project.kind.blurb)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Picker("Fabric", selection: $project.structure) {
                     ForEach(FabricStructure.allCases) { structure in
@@ -36,6 +37,7 @@ struct ProjectEditorView: View {
                 Text(project.structure.note)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             gaugeSection
@@ -56,9 +58,13 @@ struct ProjectEditorView: View {
                 }
             }
         }
+        .knitFormStyle()
         .navigationTitle(existingID == nil ? "New project" : "Edit")
         .knitInlineTitle()
         .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { dismiss() }
+            }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { save() }
                     .disabled(project.name.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -67,6 +73,7 @@ struct ProjectEditorView: View {
         .sheet(isPresented: $showingChartPicker) {
             ChartPickerSheet(selection: $project.chart)
                 .environmentObject(store)
+                .knitSheetFrame(width: 480, height: 560)
         }
     }
 
@@ -109,6 +116,7 @@ struct ProjectEditorView: View {
         } footer: {
             Text("Every number in the plan comes from this. Measure a blocked swatch — "
                  + "guessing here is what makes sweaters come out the wrong size.")
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -177,6 +185,7 @@ struct ProjectEditorView: View {
             Text("Measurements")
         } footer: {
             Text("Measure the body, not a garment. Ease is added separately below.")
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -252,6 +261,7 @@ struct ProjectEditorView: View {
                         .joined(separator: ", "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 Button("Remove chart", role: .destructive) { project.chart = nil }
             } else {
                 ForEach($project.allocations) { $allocation in
@@ -298,6 +308,7 @@ struct ProjectEditorView: View {
             Text(project.chart == nil
                  ? "Shares decide how the yarn estimate is split. They are normalised, so they need not add to 100."
                  : "Every stitch in the chart is counted, so the split is exact.")
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

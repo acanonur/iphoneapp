@@ -59,6 +59,7 @@ struct StashView: View {
                 } footer: {
                     Text("Ball weight and length are what turn the yarn estimate into a number of "
                          + "balls. Copy them from the band.")
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .navigationTitle("Stash")
@@ -70,6 +71,7 @@ struct StashView: View {
                         }
                     }
                 }
+                .knitSheetFrame(width: 480, height: 560)
             }
         }
     }
@@ -132,6 +134,7 @@ struct YarnEditorView: View {
                     yarn.weight.typicalBall.metres / yarn.weight.typicalBall.grams))
             }
         }
+        .knitFormStyle()
         .navigationTitle(yarn.name)
         .knitInlineTitle()
         .onAppear {
@@ -213,6 +216,7 @@ struct GaugeToolView: View {
             } footer: {
                 Text("Count across the middle of a blocked swatch, including partial stitches. "
                      + "Measuring over a wider window makes the result more accurate.")
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section("Result") {
@@ -236,6 +240,7 @@ struct GaugeToolView: View {
                 }
             }
         }
+        .knitFormStyle()
         .navigationTitle("Gauge")
         .knitInlineTitle()
     }
