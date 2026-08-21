@@ -1,14 +1,21 @@
 # XcodeGen project definition for KnitStudio.
 #
-# Requires XcodeGen 2.35+ (for `supportedDestinations`) and Xcode 15+.
-#   brew install xcodegen
+# KnitStudio.xcodeproj is GENERATED and is not in git, so it has to be rebuilt
+# after every pull that adds a source file — otherwise Xcode compiles the old
+# file list and reports the new types as "cannot find in scope":
+#
+#   brew install xcodegen          # 2.35 or newer
 #   cd ios-knitstudio && xcodegen generate && open KnitStudio.xcodeproj
 #
-# One target, three destinations: iPhone, iPad and Mac. Not Mac Catalyst —
-# this is a native macOS build of the same SwiftUI code.
+# MAC ONLY FOR NOW. The code is written for iOS as well and nothing in it is
+# Mac-specific outside KnitStudio/Platform/PlatformCompat.swift; iPhone and iPad
+# come back by putting iOS into BOTH supportedDestinations lists below. They are
+# left out while the Mac build is being finished because a shared target makes
+# Xcode resolve an iOS provisioning profile on every build, which fails on a
+# personal team with no registered device.
 name: KnitStudio
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: com.acanonur
   createIntermediateGroups: true
   deploymentTarget:
     iOS: "17.0"
@@ -17,7 +24,8 @@ options:
 targets:
   KnitStudio:
     type: application
-    supportedDestinations: [iOS, macOS]
+    # Add iOS back here (and in the test target) to build for iPhone and iPad.
+    supportedDestinations: [macOS]
     sources:
       - KnitStudio
     info:
@@ -25,12 +33,6 @@ targets:
       properties:
         CFBundleDisplayName: KnitStudio
         LSApplicationCategoryType: public.app-category.lifestyle
-        # iOS-only keys; macOS ignores them.
-        UILaunchScreen: {}
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
         # Needed on both platforms to import a picture as a colourwork chart.
         NSPhotoLibraryUsageDescription: >-
           Choose a picture to turn into a knitting chart. Images stay on your
@@ -44,13 +46,12 @@ targets:
         com.apple.security.files.user-selected.read-only: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.knitstudio
+        PRODUCT_BUNDLE_IDENTIFIER: com.acanonur.knitstudio
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.9"
-        # iPhone and iPad. Ignored by the macOS destination.
-        TARGETED_DEVICE_FAMILY: "1,2"
-        # Native macOS, not Mac Catalyst.
+        # Native macOS, not Mac Catalyst. Put TARGETED_DEVICE_FAMILY: "1,2"
+        # back alongside this when iOS returns to supportedDestinations.
         SUPPORTS_MACCATALYST: NO
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         ENABLE_HARDENED_RUNTIME: YES
@@ -59,14 +60,14 @@ targets:
 
   KnitStudioTests:
     type: bundle.unit-test
-    supportedDestinations: [iOS, macOS]
+    supportedDestinations: [macOS]
     sources:
       - KnitStudioTests
     dependencies:
       - target: KnitStudio
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.knitstudio.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.acanonur.knitstudio.tests
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: YES
 
