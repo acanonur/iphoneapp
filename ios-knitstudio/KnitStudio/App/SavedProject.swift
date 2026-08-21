@@ -13,6 +13,9 @@ struct SavedProject: Identifiable, Codable, Equatable {
     var allocations: [ColourAllocation]
     /// Attached colourwork chart, when the project uses one.
     var chart: ColourChart?
+    /// The texture the fabric is worked in. Optional so projects saved before
+    /// stitch patterns existed still decode.
+    var stitchPattern: StitchPattern?
     var createdAt: Date = Date()
     /// Progress for the row counter.
     var rowsCompleted: Int = 0
@@ -28,6 +31,7 @@ struct SavedProject: Identifiable, Codable, Equatable {
         options: ProjectOptions = ProjectOptions(),
         allocations: [ColourAllocation] = [],
         chart: ColourChart? = nil,
+        stitchPattern: StitchPattern? = nil,
         createdAt: Date = Date(),
         rowsCompleted: Int = 0,
         notes: String = ""
@@ -41,6 +45,7 @@ struct SavedProject: Identifiable, Codable, Equatable {
         self.options = options
         self.allocations = allocations
         self.chart = chart
+        self.stitchPattern = stitchPattern
         self.createdAt = createdAt
         self.rowsCompleted = rowsCompleted
         self.notes = notes
@@ -53,6 +58,22 @@ struct SavedProject: Identifiable, Codable, Equatable {
             options: options,
             structure: structure,
             units: units)
+    }
+
+    /// The pattern the fabric is actually worked in, falling back to a plain
+    /// stockinette so the preview always has something to draw.
+    var effectiveStitchPattern: StitchPattern {
+        if let stitchPattern { return stitchPattern }
+        let matching = StitchPatternLibrary.all.first { (pattern: StitchPattern) in
+            pattern.structure == structure
+        }
+        if let matching { return matching }
+        let stockinette = StitchPatternLibrary.pattern(named: "Stockinette")
+        return stockinette ?? StitchPattern.blank(name: "Stockinette", width: 4, height: 2)
+    }
+
+    func schematic(units: UnitSystem) -> GarmentSchematic {
+        GarmentSchematic.make(kind: kind, metrics: plan(units: units).metrics, options: options)
     }
 
     /// Colour shares come from the chart when there is one, since that is the

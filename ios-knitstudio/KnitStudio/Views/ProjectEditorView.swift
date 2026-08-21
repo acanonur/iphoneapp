@@ -48,9 +48,16 @@ struct ProjectEditorView: View {
 
             optionsSection
 
+            stitchPatternSection
+
             coloursSection
 
             Section {
+                NavigationLink {
+                    ProjectPreviewView(project: project)
+                } label: {
+                    Label("See what it will look like", systemImage: "eye")
+                }
                 NavigationLink {
                     ProjectPlanView(project: project)
                 } label: {
@@ -243,6 +250,55 @@ struct ProjectEditorView: View {
                     value: $project.options.stitchMultiple, in: 1 ... 24)
             PercentField(label: "Spare yarn margin", fraction: $project.options.safetyMargin, range: 0 ... 0.5)
         }
+    }
+
+    // MARK: - Stitch pattern
+
+    private static let plainPatternName = "Plain — no pattern"
+
+    @ViewBuilder
+    private var stitchPatternSection: some View {
+        Section {
+            Picker("Pattern", selection: stitchPatternNameBinding) {
+                Text(ProjectEditorView.plainPatternName)
+                    .tag(ProjectEditorView.plainPatternName)
+                ForEach(StitchPatternLibrary.all) { (pattern: StitchPattern) in
+                    Text(pattern.name).tag(pattern.name)
+                }
+            }
+            .knitLongListPicker()
+
+            if let pattern = project.stitchPattern {
+                StitchPatternRow(pattern: pattern)
+                ScrollView(.horizontal) {
+                    StitchChartGridView(pattern: pattern, cellWidth: 12)
+                        .padding(.vertical, 6)
+                }
+            }
+        } header: {
+            Text("Stitch pattern")
+        } footer: {
+            Text("Choosing a pattern sets the multiple the cast-on has to respect, so every "
+                 + "count in the plan comes back to a whole repeat. Leave it plain and the "
+                 + "fabric is worked in whatever the Fabric setting says.")
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Binding the optional pattern itself into a `Picker` means tagging with
+    /// an optional; the name is a plain value the picker can compare.
+    private var stitchPatternNameBinding: Binding<String> {
+        Binding(
+            get: { project.stitchPattern?.name ?? ProjectEditorView.plainPatternName },
+            set: { newValue in
+                guard let pattern = StitchPatternLibrary.pattern(named: newValue) else {
+                    project.stitchPattern = nil
+                    return
+                }
+                project.stitchPattern = pattern
+                project.options.stitchMultiple = pattern.multipleOf
+                project.options.stitchOffset = pattern.plusStitches
+            })
     }
 
     // MARK: - Colours

@@ -98,18 +98,20 @@ struct ProjectDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("View", selection: $tab) {
-                Text("Plan").tag(0)
-                Text("Shopping").tag(1)
-                Text("Counter").tag(2)
-                if project.chart != nil { Text("Chart").tag(3) }
+                Text("Preview").tag(0)
+                Text("Plan").tag(1)
+                Text("Shopping").tag(2)
+                Text("Counter").tag(3)
+                if project.chart != nil { Text("Chart").tag(4) }
             }
             .pickerStyle(.segmented)
             .padding()
 
             switch tab {
-            case 0: ProjectPlanView(project: project)
-            case 1: ShoppingListDetailView(project: project)
-            case 2: RowCounterView(project: $project)
+            case 0: ProjectPreviewView(project: project)
+            case 1: ProjectPlanView(project: project)
+            case 2: ShoppingListDetailView(project: project)
+            case 3: RowCounterView(project: $project)
             default:
                 if project.chart != nil {
                     ChartEditorView(

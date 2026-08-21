@@ -88,6 +88,21 @@ struct PatternsView: View {
                     }
                     .onDelete { store.charts.remove(atOffsets: $0) }
                 }
+
+                Section {
+                    ForEach(StitchPatternLibrary.all) { (pattern: StitchPattern) in
+                        NavigationLink {
+                            StitchPatternDetailView(pattern: pattern)
+                        } label: {
+                            StitchPatternRow(pattern: pattern)
+                        }
+                    }
+                } header: {
+                    Text("Stitch patterns")
+                } footer: {
+                    Text("The stitch dictionary: what each fabric looks like knitted up at your "
+                         + "gauge, and the multiple its cast-on needs.")
+                }
             }
             .navigationTitle("Patterns")
             .sheet(item: $draft) { project in
@@ -110,6 +125,48 @@ struct PatternsView: View {
                     .knitSheetFrame(width: 640, height: 700)
             }
         }
+    }
+}
+
+/// One stitch pattern on its own: the chart it is read from, and the fabric it
+/// makes at the gauge the knitter last measured.
+struct StitchPatternDetailView: View {
+    @EnvironmentObject private var store: AppStore
+    let pattern: StitchPattern
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if !pattern.summary.isEmpty {
+                    Text(pattern.summary)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                StitchPatternPreview(
+                    pattern: pattern,
+                    palette: store.stash,
+                    gauge: store.lastGauge)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Knitted up")
+                        .font(.headline)
+                    FabricSimulationPane(
+                        pattern: pattern,
+                        palette: store.stash,
+                        gauge: store.lastGauge,
+                        units: store.units)
+                }
+
+                if !pattern.notes.isEmpty {
+                    NoteBox(kind: .note, text: pattern.notes)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+        }
+        .navigationTitle(pattern.name)
+        .knitInlineTitle()
     }
 }
 

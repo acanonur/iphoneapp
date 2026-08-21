@@ -129,6 +129,18 @@ enum SockCalculator {
                 + "for this gauge. Check the foot length measurement.")
         }
 
+        // MARK: Finished measurements
+
+        // The leg is measured over every round worked below the top edge, so the
+        // cuff rib is part of it rather than extra length above it.
+        var metrics = PlanMetrics()
+        metrics.castOnStitches = castOn
+        metrics.footCircumference = sockCirc
+        metrics.legLength = gauge.length(forRows: Double(cuffRounds + legRounds))
+        metrics.footLength = footLength
+        metrics.heelDepth = gauge.length(forRows: Double(heelFlapRows))
+        metrics.ribDepth = gauge.length(forRows: Double(cuffRounds))
+
         return ProjectPlan(
             title: "Socks",
             gauge: gauge,
@@ -156,7 +168,8 @@ enum SockCalculator {
                 "Measure the foot length against the sock as you go; it is the one number that "
                 + "cannot be fixed afterwards.",
             ],
-            warnings: warnings
+            warnings: warnings,
+            metrics: metrics
         )
     }
 }

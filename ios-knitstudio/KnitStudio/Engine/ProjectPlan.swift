@@ -61,6 +61,8 @@ struct ProjectPlan: Identifiable, Equatable {
     var notes: [String] = []
     /// Things that are off: gauge implausible, measurements inconsistent.
     var warnings: [String] = []
+    /// Finished measurements the schematic is drawn from.
+    var metrics: PlanMetrics = PlanMetrics()
 
     var totalStitches: Double { blocks.reduce(0) { $0 + $1.stitches } }
     var totalRows: Int { sections.reduce(0) { $0 + $1.totalRows } }

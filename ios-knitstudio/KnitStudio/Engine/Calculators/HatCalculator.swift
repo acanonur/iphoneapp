@@ -109,6 +109,17 @@ enum HatCalculator {
                 + "abruptly. Try \(max(4, sections - 2)) sections instead.")
         }
 
+        // MARK: Finished measurements
+
+        // The schematic measures the body from the cast-on edge upwards, so the
+        // rib sits inside that depth rather than stacked below it.
+        var metrics = PlanMetrics()
+        metrics.castOnStitches = castOn
+        metrics.circumference = brimCirc
+        metrics.ribDepth = ribDepth
+        metrics.bodyDepth = ribDepth + bodyDepth
+        metrics.crownDepth = crownDepth
+
         return ProjectPlan(
             title: "\(options.hatStyle.name)",
             gauge: gauge,
@@ -134,7 +145,8 @@ enum HatCalculator {
                 "Switch to double-pointed needles or magic loop once the crown gets too small "
                 + "for your circular needle, usually around \(sections * 4) sts.",
             ],
-            warnings: warnings
+            warnings: warnings,
+            metrics: metrics
         )
     }
 }

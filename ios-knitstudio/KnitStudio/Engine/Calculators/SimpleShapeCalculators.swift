@@ -81,6 +81,11 @@ enum FlatPieceCalculator {
                 + "cable and count your stitches every twenty rows or so.")
         }
 
+        var metrics = PlanMetrics()
+        metrics.castOnStitches = castOn
+        metrics.flatWidth = actualWidth
+        metrics.flatLength = actualLength
+
         return ProjectPlan(
             title: kind.name,
             gauge: gauge,
@@ -88,7 +93,8 @@ enum FlatPieceCalculator {
             sections: [PlanSection(kind.name, steps: steps)],
             blocks: [StitchBlock("Body", stitches: Double(castOn * rows), structure: structure)],
             notes: notes,
-            warnings: CalculatorSupport.gaugeWarnings(gauge)
+            warnings: CalculatorSupport.gaugeWarnings(gauge),
+            metrics: metrics
         )
     }
 }
@@ -144,6 +150,12 @@ enum CowlCalculator {
                 + "use a very stretchy bind-off.")
         }
 
+        var metrics = PlanMetrics()
+        metrics.castOnStitches = castOn
+        metrics.circumference = actualCircumference
+        metrics.depth = gauge.length(forRows: Double(rounds))
+        metrics.ribDepth = gauge.length(forRows: Double(ribRounds))
+
         return ProjectPlan(
             title: "Cowl",
             gauge: gauge,
@@ -159,7 +171,8 @@ enum CowlCalculator {
                 "Worked in the round there is no wrong side, so stockinette will not curl at "
                 + "the edges the way a flat scarf does — but a few rounds of rib still sit flatter."
             ],
-            warnings: warnings
+            warnings: warnings,
+            metrics: metrics
         )
     }
 }

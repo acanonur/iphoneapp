@@ -96,6 +96,15 @@ enum MittenCalculator {
             StitchBlock($0.name, stitches: $0.stitches * 2, structure: $0.structure)
         }
 
+        // The thumb measurement the schematic wants is how far the gusset runs up
+        // the hand, not the length of the finished thumb tube.
+        var metrics = PlanMetrics()
+        metrics.castOnStitches = castOn
+        metrics.circumference = mittenCirc
+        metrics.handLength = handLength
+        metrics.thumbLength = gussetActual
+        metrics.ribDepth = cuffLength
+
         return ProjectPlan(
             title: "Mittens",
             gauge: gauge,
@@ -121,7 +130,8 @@ enum MittenCalculator {
                 "Mittens are the classic stranded colourwork project: the fabric is doubled by "
                 + "the floats, which is exactly what you want in the cold.",
             ],
-            warnings: CalculatorSupport.gaugeWarnings(gauge)
+            warnings: CalculatorSupport.gaugeWarnings(gauge),
+            metrics: metrics
         )
     }
 }
@@ -171,6 +181,11 @@ enum ShawlCalculator {
                 + "are wide at this gauge — check the row gauge if that is unexpected.")
         }
 
+        var metrics = PlanMetrics()
+        metrics.castOnStitches = castOn
+        metrics.wingspan = wingspan
+        metrics.depth = depth
+
         return ProjectPlan(
             title: "Triangle shawl",
             gauge: gauge,
@@ -194,7 +209,8 @@ enum ShawlCalculator {
                 "Blocking a shawl is not optional — it is what opens the fabric out to the "
                 + "measurements above.",
             ],
-            warnings: warnings
+            warnings: warnings,
+            metrics: metrics
         )
     }
 }

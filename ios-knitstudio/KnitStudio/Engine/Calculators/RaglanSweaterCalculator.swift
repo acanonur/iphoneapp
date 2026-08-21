@@ -240,6 +240,21 @@ enum RaglanSweaterCalculator {
                 + "\(CalculatorSupport.cm(plainYoke - yokeDepth, units)) deeper than the armhole needs.")
         }
 
+        // MARK: Finished measurements
+
+        // Taken from the stitch and round counts, so the schematic shows the
+        // sweater that gets knitted. The body length runs hem to neck, yoke included.
+        var metrics = PlanMetrics()
+        metrics.castOnStitches = neckCastOn
+        metrics.neckCircumference = gauge.width(forStitches: Double(neckCastOn))
+        metrics.chestCircumference = gauge.width(forStitches: Double(bodyStitches))
+        metrics.upperArmCircumference = gauge.width(forStitches: Double(sleeveStitches))
+        metrics.cuffCircumference = gauge.width(forStitches: Double(cuffStitches))
+        metrics.yokeDepth = yokeDepth
+        metrics.bodyLength = yokeDepth + gauge.length(forRows: Double(bodyRoundsTotal))
+        metrics.sleeveLength = gauge.length(forRows: Double(sleeveRoundsTotal))
+        metrics.ribDepth = gauge.length(forRows: Double(hemRounds))
+
         return ProjectPlan(
             title: "Top-down raglan sweater",
             gauge: gauge,
@@ -265,7 +280,8 @@ enum RaglanSweaterCalculator {
             ],
             blocks: blocks,
             notes: notes,
-            warnings: warnings
+            warnings: warnings,
+            metrics: metrics
         )
     }
 }
