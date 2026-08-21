@@ -75,7 +75,7 @@ struct ProjectRow: View {
 
             Spacer()
 
-            ForEach(project.effectiveAllocations.prefix(4)) { allocation in
+            ForEach(Array(project.effectiveAllocations.prefix(4))) { allocation in
                 Circle()
                     .fill(allocation.yarn.colour)
                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.2), lineWidth: 0.5))

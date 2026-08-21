@@ -287,7 +287,7 @@ struct TextImportPane: View {
                 Text("\(pattern.verifiedRowCount) of \(pattern.rows.count) rows check out")
                     .font(.headline)
 
-                ForEach(pattern.rows.prefix(60)) { row in
+                ForEach(Array(pattern.rows.prefix(60))) { row in
                     VStack(alignment: .leading, spacing: 3) {
                         HStack {
                             Text(row.label)
