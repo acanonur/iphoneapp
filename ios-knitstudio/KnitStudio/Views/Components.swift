@@ -127,6 +127,7 @@ struct LengthField: View {
                         centimetres = min(max(cm, range.lowerBound), range.upperBound)
                     }),
                 format: .number.precision(.fractionLength(0 ... 1)))
+                .labelsHidden()
                 .knitDecimalKeyboard()
                 .multilineTextAlignment(.trailing)
                 .frame(width: 70)
@@ -153,6 +154,7 @@ struct PercentField: View {
                     get: { (fraction * 100).rounded() },
                     set: { fraction = min(max($0 / 100, range.lowerBound), range.upperBound) }),
                 format: .number.precision(.fractionLength(0)))
+                .labelsHidden()
                 .knitSignedKeyboard()
                 .multilineTextAlignment(.trailing)
                 .frame(width: 60)
