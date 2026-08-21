@@ -287,7 +287,7 @@ struct TextImportPane: View {
                 Text("\(pattern.verifiedRowCount) of \(pattern.rows.count) rows check out")
                     .font(.headline)
 
-                ForEach(Array(pattern.rows.prefix(60))) { row in
+                ForEach(Array(pattern.rows.prefix(60))) { (row: ParsedRow) in
                     VStack(alignment: .leading, spacing: 3) {
                         HStack {
                             Text(row.label)
@@ -302,7 +302,7 @@ struct TextImportPane: View {
                                 Text("\(ending) sts")
                                     .font(.caption)
                                     .monospacedDigit()
-                                    .foregroundStyle(row.issues.isEmpty ? .secondary : .orange)
+                                    .foregroundStyle(row.issues.isEmpty ? Color.secondary : Color.orange)
                             }
                         }
                         Text(row.text)
