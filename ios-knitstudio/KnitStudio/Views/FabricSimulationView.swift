@@ -1,37 +1,14 @@
 import SwiftUI
 
-/// One yarn colour together with the shades a knitted loop needs: the flat
-/// colour of the ground, the shadow between the legs of a stitch and the light
-/// that catches the top of a purl bump.
-private struct FabricInk {
-    let red: Double
-    let green: Double
-    let blue: Double
+// MARK: - The fabric
 
-    init(hex: String) {
-        let value = UInt32(Yarn.normalise(hex: hex), radix: 16) ?? 0x9E9E9E
-        red = Double((value >> 16) & 0xFF) / 255
-        green = Double((value >> 8) & 0xFF) / 255
-        blue = Double(value & 0xFF) / 255
-    }
-
-    /// Multiplying alone leaves a near-black yarn perfectly flat, so a
-    /// highlight adds a little light of its own on top of the multiplication.
-    func shaded(_ factor: Double) -> Color {
-        let lift = factor > 1 ? (factor - 1) * 0.30 : 0
-        let r = FabricInk.clamped(red * factor + lift)
-        let g = FabricInk.clamped(green * factor + lift)
-        let b = FabricInk.clamped(blue * factor + lift)
-        return Color(.sRGB, red: r, green: g, blue: b, opacity: 1)
-    }
-
-    private static func clamped(_ value: Double) -> Double {
-        min(1, max(0, value))
-    }
-}
-
-/// Draws what the knitted fabric will actually look like: every stitch is a
-/// V, purls are bumps, and the proportions come from the knitter's own gauge.
+/// Draws what the knitting will actually look like.
+///
+/// Not a grid of coloured squares: every stitch is a loop of yarn, its two legs
+/// running down into the head of the stitch below so the fabric reads as
+/// interlocked rather than stacked. Where the stitches sit comes from
+/// `StitchMesh`, which lets the fabric settle first — so a cable pulls its
+/// columns in, lace opens up, and the edges scallop the way they really do.
 struct FabricSimulationView: View {
     let pattern: StitchPattern
     let palette: [Yarn]
@@ -39,513 +16,356 @@ struct FabricSimulationView: View {
     var stitchesWide: Int = 40
     var rowsHigh: Int = 30
     var stitchWidth: CGFloat = 16
-    var showsNeedle: Bool = false
+    var settings: FabricSettings = FabricSettings()
 
-    // A Canvas redrawing thousands of paths on every slider tick is the one way
-    // this screen can feel broken, so the swatch is capped before it is drawn.
-    private static let maximumCells = 3000
-    private static let undyedWool = "CFC6B4"
+    /// Settling a mesh is far too slow to redo on every frame, so it is kept
+    /// here and rebuilt only when something it depends on changes. Zoom is not
+    /// one of those: the mesh is in stitch widths, and the view scales it.
+    @State private var mesh: StitchMesh = StitchMesh.flat(columns: 1, rows: 1)
 
     var body: some View {
         Canvas { context, _ in
             drawFabric(in: context)
         }
         .frame(width: canvasSize.width, height: canvasSize.height)
-        .accessibilityElement()
+        .onAppear { rebuildMesh() }
+        .onChange(of: meshKey) { _, _ in rebuildMesh() }
         .accessibilityLabel(Text(accessibilityDescription))
     }
 
-    // MARK: - How much fabric is drawn
+    // MARK: - Size
 
-    static func columnsDrawn(stitchesWide: Int) -> Int {
-        min(max(1, stitchesWide), 400)
-    }
+    /// A Canvas redrawing many thousands of paths on every slider tick is the
+    /// one way this screen can feel broken.
+    private static let maximumStitches = 3000
 
-    /// Rows go rather than stitches when the swatch would cost more than the
-    /// drawing budget: a swatch narrower than the repeat shows the knitter
-    /// nothing, a shorter one still shows the pattern.
-    static func rowsDrawn(stitchesWide: Int, rowsHigh: Int) -> Int {
-        let across = columnsDrawn(stitchesWide: stitchesWide)
-        let allowed = max(1, maximumCells / across)
-        return max(1, min(max(1, rowsHigh), allowed))
-    }
-
-    private var columns: Int {
-        FabricSimulationView.columnsDrawn(stitchesWide: stitchesWide)
-    }
+    private var columns: Int { max(2, min(stitchesWide, 120)) }
 
     private var rows: Int {
-        FabricSimulationView.rowsDrawn(stitchesWide: stitchesWide, rowsHigh: rowsHigh)
+        let wanted = max(2, rowsHigh)
+        let allowed = max(2, FabricSimulationView.maximumStitches / columns)
+        return min(wanted, allowed)
     }
 
-    // MARK: - Geometry
-
-    private var cellWidth: CGFloat {
-        max(3, stitchWidth)
-    }
+    private var cellWidth: CGFloat { max(4, stitchWidth) }
 
     /// A knitted stitch is wider than it is tall, and taking that from the
-    /// knitter's own row gauge is what makes the picture read as knitting
-    /// rather than as a spreadsheet.
-    private var cellHeight: CGFloat {
-        guard gauge.stitchWidth > 0 else { return cellWidth }
-        let ratio = CGFloat(gauge.rowHeight / gauge.stitchWidth)
-        return max(3, cellWidth * ratio)
+    /// knitter's own gauge is what stops the picture looking like a spreadsheet.
+    private var rowHeight: CGFloat {
+        guard gauge.stitchWidth > 0 else { return cellWidth * 0.75 }
+        return max(3, cellWidth * CGFloat(gauge.rowHeight / gauge.stitchWidth))
     }
 
-    /// Real stitch legs sit inside the loops of the row below, so every cell is
-    /// drawn taller than its own row and the rows are painted from the bottom
-    /// up, letting each row close over the one beneath it.
-    private var overlap: CGFloat {
-        cellHeight * 0.15
-    }
+    private var yarnWidth: CGFloat { cellWidth * 0.24 * CGFloat(settings.fullness) }
 
-    /// The band above the fabric that the needle sits in.
-    private var fabricTop: CGFloat {
-        showsNeedle ? cellHeight * 0.62 : 0
-    }
+    private var padding: CGFloat { cellWidth * 0.8 }
 
     private var canvasSize: CGSize {
-        let width = cellWidth * CGFloat(columns)
-        let height = fabricTop + cellHeight * CGFloat(rows) + overlap
-        return CGSize(width: width, height: height)
+        let extent = mesh.bounds
+        return CGSize(
+            width: CGFloat(extent.width) * cellWidth + padding * 2,
+            height: CGFloat(extent.height) * rowHeight + padding * 2)
+    }
+
+    /// Everything the settled mesh depends on, and nothing it does not.
+    private var meshKey: String {
+        let tension = Int(settings.tension * 100)
+        let settling = Int(settings.settling * 100)
+        return "\(pattern.id)-\(columns)x\(rows)-\(tension)-\(settling)"
+    }
+
+    private func rebuildMesh() {
+        mesh = StitchMesh.build(
+            pattern: pattern, columns: columns, rows: rows, settings: settings)
     }
 
     private var accessibilityDescription: String {
         "A drawing of \(pattern.name) knitted up, \(columns) stitches across and \(rows) rows tall."
     }
 
-    // MARK: - Reading the chart
+    // MARK: - Mesh to screen
 
-    /// One charted row can stand for more than one knitted row, so the fabric
-    /// is taller than the chart it came from.
-    private func chartedRow(for fabricRow: Int) -> Int {
-        let perChartedRow = max(1, pattern.rowsPerChartedRow)
-        let charted = fabricRow / perChartedRow
-        let height = max(1, pattern.height)
-        return ((charted % height) + height) % height
+    private func point(_ meshPoint: StitchMesh.Point) -> CGPoint {
+        CGPoint(
+            x: padding + CGFloat(meshPoint.x) * cellWidth,
+            y: canvasSize.height - padding - CGFloat(meshPoint.y) * rowHeight)
     }
 
-    /// The repeat carried on sideways for ever, seen from the right side. The
-    /// pattern has already accounted for wrong-side-charted rows.
-    private func appearance(x: Int, chartedRow: Int) -> StitchSymbol {
-        let width = max(1, pattern.width)
-        let column = ((x % width) + width) % width
-        return pattern.rightSideAppearance(x: column, y: chartedRow)
+    /// A position inside one stitch: `across` runs 0 at its left to 1 at its
+    /// right, `up` runs 0 at its bottom to 1 at its top, following whatever
+    /// shape the settled mesh gave that particular stitch.
+    private func inCell(_ x: Int, _ y: Int, across: CGFloat, up: CGFloat) -> CGPoint {
+        let corners = mesh.cell(x: x, y: y)
+        let bottom = lerp(point(corners.bottomLeft), point(corners.bottomRight), across)
+        let top = lerp(point(corners.topLeft), point(corners.topRight), across)
+        return lerp(bottom, top, up)
     }
 
-    private func rowInk(_ chartedRow: Int) -> FabricInk {
-        guard !palette.isEmpty else { return FabricInk(hex: FabricSimulationView.undyedWool) }
-        let index = pattern.colourIndex(row: chartedRow)
-        let safe = min(max(0, index), palette.count - 1)
-        return FabricInk(hex: palette[safe].hex)
+    private func lerp(_ a: CGPoint, _ b: CGPoint, _ t: CGFloat) -> CGPoint {
+        CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
     }
 
-    /// A small, repeatable difference in brightness per stitch. Hand knitting
-    /// is never mechanically even, but a random number generator would make the
-    /// fabric flicker on every redraw, so this is hashed from the coordinates.
-    private static func wobble(x: Int, y: Int) -> Double {
-        var hash = UInt64(truncatingIfNeeded: x &* 73_856_093)
-        hash ^= UInt64(truncatingIfNeeded: y &* 19_349_663)
-        hash = hash &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
-        hash ^= hash >> 33
-        let fraction = Double(hash % 512) / 512
-        return 0.95 + fraction * 0.10
+    // MARK: - Colour
+
+    private static let undyedWool = "D8D2C6"
+
+    private func yarn(_ y: Int) -> Yarn {
+        guard !palette.isEmpty else {
+            return Yarn(name: "Wool", hex: FabricSimulationView.undyedWool, weight: .light)
+        }
+        let index = pattern.fabricColourIndex(fabricRow: y)
+        return palette[min(max(0, index), palette.count - 1)]
     }
 
-    // MARK: - Drawing the fabric
+    /// The yarn colour and the shade it is outlined in. Line art drops the
+    /// colour entirely, which is how a pattern book prints a swatch.
+    private func ink(x: Int, y: Int) -> (fill: Color, outline: Color) {
+        if settings.outlined {
+            return (fill: Color.white, outline: Color(hex: "6E7076"))
+        }
+        let base = yarn(y)
+        let shift = 1 + 0.07 * StitchMesh.wobble(x: x, y: y, salt: 7)
+        return (fill: shade(base, by: shift), outline: shade(base, by: 0.55))
+    }
+
+    private func shade(_ source: Yarn, by factor: Double) -> Color {
+        let (red, green, blue) = source.rgb
+        return Color(
+            .sRGB,
+            red: min(1, max(0, red * factor)),
+            green: min(1, max(0, green * factor)),
+            blue: min(1, max(0, blue * factor)),
+            opacity: 1)
+    }
+
+    // MARK: - Drawing
 
     private func drawFabric(in context: GraphicsContext) {
-        // Fine detail costs a path per stitch and disappears below about a
-        // centimetre of screen, so it is dropped when the swatch is zoomed out.
-        let detailed = cellWidth >= 11
-
-        if showsNeedle {
-            drawNeedle(in: context)
-            drawLoopsOverNeedle(in: context)
-        }
-
-        for row in 0 ..< rows {
-            let top = fabricTop + CGFloat(rows - 1 - row) * cellHeight
-            let charted = chartedRow(for: row)
-            let colour = rowInk(charted)
+        for y in 0 ..< rows {
+            // Bottom up, so each row closes over the one beneath it — which is
+            // the order the stitches were made in.
+            for x in 0 ..< columns {
+                drawHead(in: context, x: x, y: y)
+            }
             var x = 0
             while x < columns {
-                let cell = appearance(x: x, chartedRow: charted)
-                let rect = CGRect(
-                    x: CGFloat(x) * cellWidth,
-                    y: top,
-                    width: cellWidth,
-                    height: cellHeight + overlap)
-                switch cell {
-                case .cable2Front, .cable2Back, .cable3Front, .cable3Back:
-                    let span = cableSpan(from: x, chartedRow: charted, symbol: cell)
-                    let groupRect = CGRect(
-                        x: rect.minX,
-                        y: rect.minY,
-                        width: cellWidth * CGFloat(span),
-                        height: rect.height)
-                    let leansLeft = cell == .cable2Front || cell == .cable3Front
-                    drawCable(
-                        in: context, rect: groupRect, span: span, ink: colour,
-                        leansLeft: leansLeft, x: x, y: row, detailed: detailed)
+                let cell = pattern.fabricAppearance(x: x, fabricRow: y)
+                let span = min(crossingSpan(cell), columns - x)
+                if span > 1 {
+                    drawCrossing(in: context, x: x, y: y, span: span, symbol: cell)
                     x += span
-                default:
-                    var cellInk = colour
-                    if (cell == .slip || cell == .slipWyif) && pattern.usesColourStripes {
-                        // A slipped stitch was not worked on this row, so it
-                        // still shows the colour it was knitted in.
-                        cellInk = rowInk(charted - 1)
-                    }
-                    drawCell(cell, in: context, rect: rect, ink: cellInk, x: x, y: row, detailed: detailed)
+                } else {
+                    drawStitch(cell, in: context, x: x, y: y)
                     x += 1
                 }
             }
         }
     }
 
-    /// How many cells one cable crossing covers, so the group is drawn as a
-    /// pair of bands crossing rather than as a row of unrelated cells.
-    private func cableSpan(from x: Int, chartedRow: Int, symbol: StitchSymbol) -> Int {
-        let wanted = max(2, symbol.produces)
-        var span = 1
-        while span < wanted, x + span < columns {
-            // A chart draws one cable cell and fills the columns it eats with
-            // "no stitch", so those fillers belong to the crossing as well.
-            let next = appearance(x: x + span, chartedRow: chartedRow)
-            guard next == symbol || next == .noStitch else { break }
-            span += 1
+    private func crossingSpan(_ symbol: StitchSymbol) -> Int {
+        switch symbol {
+        case .cable2Front, .cable2Back: return 4
+        case .cable3Front, .cable3Back: return 6
+        default: return 1
         }
-        return span
     }
 
-    private func drawCell(
-        _ cell: StitchSymbol,
+    private func stroke(
+        _ context: GraphicsContext,
+        _ path: Path,
+        _ colours: (fill: Color, outline: Color),
+        _ width: CGFloat
+    ) {
+        let outlineWidth = width + max(1.2, yarnWidth * 0.55)
+        context.stroke(
+            path, with: .color(colours.outline),
+            style: StrokeStyle(lineWidth: outlineWidth, lineCap: .round, lineJoin: .round))
+        context.stroke(
+            path, with: .color(colours.fill),
+            style: StrokeStyle(lineWidth: max(0.7, width), lineCap: .round, lineJoin: .round))
+    }
+
+    /// The top of the loop. The row above threads its legs through the middle of
+    /// it, so only the shoulders stay visible — which is the whole trick.
+    private func drawHead(in context: GraphicsContext, x: Int, y: Int) {
+        let cell = pattern.fabricAppearance(x: x, fabricRow: y)
+        guard cell != .noStitch, cell != .yarnOver else { return }
+        var path = Path()
+        path.move(to: inCell(x, y, across: 0.03, up: 0.88))
+        path.addQuadCurve(
+            to: inCell(x, y, across: 0.97, up: 0.88),
+            control: inCell(x, y, across: 0.50, up: 1.20))
+        stroke(context, path, ink(x: x, y: y), yarnWidth * 0.92)
+    }
+
+    private func drawStitch(_ cell: StitchSymbol, in context: GraphicsContext, x: Int, y: Int) {
+        guard cell != .noStitch else { return }
+        let colours = ink(x: x, y: y)
+        switch cell {
+        case .purl:
+            drawPurl(in: context, x: x, y: y, colours: colours)
+        case .yarnOver:
+            drawStrand(in: context, x: x, y: y, colours: colours)
+        case .k2tog:
+            drawLegs(in: context, x: x, y: y, colours: colours, spread: 0.62, lean: 0.30)
+        case .ssk:
+            drawLegs(in: context, x: x, y: y, colours: colours, spread: 0.62, lean: -0.30)
+        case .cdd, .k3tog:
+            drawLegs(in: context, x: x, y: y, colours: colours, spread: 0.52, lean: 0)
+        case .make1:
+            drawLegs(in: context, x: x, y: y, colours: colours, spread: 0.58, lean: 0)
+        case .slip, .slipWyif:
+            drawLegs(in: context, x: x, y: y, colours: colours, spread: 0.66, lean: 0, drop: 0.85)
+        case .bobble:
+            drawBobble(in: context, x: x, y: y, colours: colours)
+        default:
+            drawLegs(in: context, x: x, y: y, colours: colours)
+        }
+    }
+
+    /// The V. Its point reaches down into the head of the stitch below, and that
+    /// overlap is what makes knitted fabric look solid instead of stacked.
+    private func drawLegs(
         in context: GraphicsContext,
-        rect: CGRect,
-        ink: FabricInk,
         x: Int,
         y: Int,
-        detailed: Bool
+        colours: (fill: Color, outline: Color),
+        spread: CGFloat = 0.88,
+        lean: CGFloat = 0,
+        drop: CGFloat = 0
     ) {
-        let wobble = FabricSimulationView.wobble(x: x, y: y)
-        switch cell {
-        case .noStitch:
-            return
-        case .knit:
-            drawKnitV(in: context, rect: rect, ink: ink, wobble: wobble, detailed: detailed)
-        case .make1:
-            drawKnitV(in: context, rect: rect, ink: ink, wobble: wobble, narrow: 0.16, detailed: detailed)
-        case .purl:
-            drawPurlBump(in: context, rect: rect, ink: ink, wobble: wobble, detailed: detailed)
-        case .yarnOver:
-            drawYarnOver(in: context, rect: rect, ink: ink, wobble: wobble)
-        case .k2tog:
-            drawKnitV(in: context, rect: rect, ink: ink, wobble: wobble, lean: 0.20, detailed: detailed)
-        case .ssk:
-            drawKnitV(in: context, rect: rect, ink: ink, wobble: wobble, lean: -0.20, detailed: detailed)
-        case .k3tog:
-            drawKnitV(in: context, rect: rect, ink: ink, wobble: wobble, lean: 0.32, detailed: detailed)
-        case .cdd:
-            drawKnitV(in: context, rect: rect, ink: ink, wobble: wobble, narrow: 0.34, detailed: detailed)
-        case .slip, .slipWyif:
-            // A slipped stitch is pulled up over the row it skipped, so its V
-            // is long and narrow.
-            drawKnitV(
-                in: context, rect: rect, ink: ink, wobble: wobble,
-                narrow: 0.20, depth: 0.86, detailed: detailed)
-        case .bobble:
-            drawBobble(in: context, rect: rect, ink: ink, wobble: wobble)
-        case .cable2Front, .cable2Back, .cable3Front, .cable3Back:
-            drawKnitV(in: context, rect: rect, ink: ink, wobble: wobble, detailed: detailed)
+        let foot = inCell(x, y, across: 0.5 + lean * 0.22, up: -0.06 - drop)
+        for side in [CGFloat(-1), CGFloat(1)] {
+            let top = inCell(x, y, across: 0.5 + side * spread / 2 + lean * 0.16, up: 0.94)
+            let first = inCell(
+                x, y, across: 0.5 + side * spread * 0.22 + lean * 0.20, up: 0.22 - drop * 0.6)
+            let second = inCell(x, y, across: 0.5 + side * spread * 0.48 + lean * 0.18, up: 0.68)
+            var path = Path()
+            path.move(to: foot)
+            path.addCurve(to: top, control1: first, control2: second)
+            stroke(context, path, colours, yarnWidth)
         }
     }
 
-    // MARK: - Stitch shapes
-
-    /// A knit stitch seen from the right side: two legs falling from the top
-    /// corners to a point below the middle, bowed outwards the way yarn under
-    /// tension actually sits. `lean` slides the point sideways for a decrease.
-    private func drawKnitV(
+    /// A purl shows the head of the loop coming towards you: a bump lying across
+    /// the stitch rather than a V.
+    private func drawPurl(
         in context: GraphicsContext,
-        rect: CGRect,
-        ink: FabricInk,
-        wobble: Double,
-        lean: CGFloat = 0,
-        narrow: CGFloat = 0,
-        depth: CGFloat = 0.58,
-        detailed: Bool = true
+        x: Int,
+        y: Int,
+        colours: (fill: Color, outline: Color)
     ) {
-        context.fill(Path(rect), with: .color(ink.shaded(wobble)))
-
-        let width = rect.width
-        let height = rect.height
-        let inset = width * (0.10 + narrow * 0.50)
-        let slide = width * lean
-        let topY = rect.minY + height * 0.02
-        let waistY = rect.minY + height * 0.42
-
-        let leftTop = CGPoint(x: rect.minX + inset + slide * 0.35, y: topY)
-        let rightTop = CGPoint(x: rect.maxX - inset + slide * 0.35, y: topY)
-        let point = CGPoint(x: rect.midX + slide, y: rect.minY + height * depth)
-        let leftControl = CGPoint(x: rect.minX + inset * 0.65 + slide * 0.6, y: waistY)
-        let rightControl = CGPoint(x: rect.maxX - inset * 0.65 + slide * 0.6, y: waistY)
-
-        var legs = Path()
-        legs.move(to: leftTop)
-        legs.addQuadCurve(to: point, control: leftControl)
-        legs.addQuadCurve(to: rightTop, control: rightControl)
-
-        let legWidth = max(0.6, width * 0.26)
-        let legStyle = StrokeStyle(lineWidth: legWidth, lineCap: .round, lineJoin: .round)
-        context.stroke(legs, with: .color(ink.shaded(wobble * 0.74)), style: legStyle)
-
-        guard detailed else { return }
-
-        // A thin light line down the inside of the left leg is the sheen that
-        // stops a flat V looking like ink on paper.
-        let sheenTop = CGPoint(x: leftTop.x + width * 0.07, y: leftTop.y + height * 0.08)
-        let sheenEnd = CGPoint(x: point.x - width * 0.03, y: point.y - height * 0.10)
-        let sheenControl = CGPoint(x: leftControl.x + width * 0.11, y: leftControl.y)
-        var sheen = Path()
-        sheen.move(to: sheenTop)
-        sheen.addQuadCurve(to: sheenEnd, control: sheenControl)
-        let sheenStyle = StrokeStyle(lineWidth: max(0.4, width * 0.07), lineCap: .round)
-        context.stroke(sheen, with: .color(ink.shaded(wobble * 1.18)), style: sheenStyle)
-    }
-
-    /// A purl is the same loop lying on its side: a fat bump lit along the top
-    /// and in shadow underneath, which is the only thing that tells the eye it
-    /// is standing proud of the fabric.
-    private func drawPurlBump(
-        in context: GraphicsContext,
-        rect: CGRect,
-        ink: FabricInk,
-        wobble: Double,
-        detailed: Bool
-    ) {
-        context.fill(Path(rect), with: .color(ink.shaded(wobble * 0.86)))
-
-        let width = rect.width
-        let height = rect.height
-        let restY = rect.minY + height * 0.50
-        let left = CGPoint(x: rect.minX - width * 0.04, y: restY)
-        let right = CGPoint(x: rect.maxX + width * 0.04, y: restY)
-        let crest = CGPoint(x: rect.midX, y: rect.minY + height * 0.26)
-
         var bump = Path()
-        bump.move(to: left)
-        bump.addQuadCurve(to: right, control: crest)
+        bump.move(to: inCell(x, y, across: -0.04, up: 0.34))
+        bump.addQuadCurve(
+            to: inCell(x, y, across: 1.04, up: 0.34),
+            control: inCell(x, y, across: 0.50, up: 0.94))
+        stroke(context, bump, colours, yarnWidth * 1.45)
 
-        let shades: [Color] = [ink.shaded(wobble * 1.24), ink.shaded(wobble * 0.68)]
-        let gradient = Gradient(colors: shades)
-        let lit = CGPoint(x: rect.midX, y: rect.minY + height * 0.16)
-        let shadowed = CGPoint(x: rect.midX, y: rect.minY + height * 0.86)
-        let shading: GraphicsContext.Shading = .linearGradient(gradient, startPoint: lit, endPoint: shadowed)
-        let bumpStyle = StrokeStyle(lineWidth: max(1, height * 0.44), lineCap: .round)
-        context.stroke(bump, with: shading, style: bumpStyle)
-
-        guard detailed else { return }
-
-        // The groove where the next bump starts.
-        let grooveY = rect.minY + height * 0.90
-        var groove = Path()
-        groove.move(to: CGPoint(x: rect.minX, y: grooveY))
-        groove.addLine(to: CGPoint(x: rect.maxX, y: grooveY))
-        context.stroke(groove, with: .color(ink.shaded(wobble * 0.60)), lineWidth: max(0.4, height * 0.05))
+        var under = Path()
+        under.move(to: inCell(x, y, across: 0.10, up: 0.16))
+        under.addQuadCurve(
+            to: inCell(x, y, across: 0.90, up: 0.16),
+            control: inCell(x, y, across: 0.50, up: 0.40))
+        stroke(context, under, colours, yarnWidth * 0.60)
     }
 
-    /// A yarn over is a hole. Clearing the fabric rather than painting over it
-    /// means the swatch really does show through to whatever is behind it.
-    private func drawYarnOver(
+    /// A yarn-over is not a stitch yet — it is a bare strand lying across the
+    /// needle, and the hole underneath it is the entire point of lace.
+    private func drawStrand(
         in context: GraphicsContext,
-        rect: CGRect,
-        ink: FabricInk,
-        wobble: Double
+        x: Int,
+        y: Int,
+        colours: (fill: Color, outline: Color)
     ) {
-        context.fill(Path(rect), with: .color(ink.shaded(wobble)))
-
-        let inset = rect.width * 0.20
-        let hole = CGRect(
-            x: rect.minX + inset,
-            y: rect.minY + rect.height * 0.26,
-            width: rect.width - inset * 2,
-            height: rect.height * 0.44)
-        let ring = Path(ellipseIn: hole)
-
-        var punch = context
-        punch.blendMode = .destinationOut
-        punch.fill(ring, with: .color(.black))
-
-        let rimWidth = max(0.6, rect.width * 0.17)
-        context.stroke(ring, with: .color(ink.shaded(wobble * 0.72)), lineWidth: rimWidth)
+        var path = Path()
+        path.move(to: inCell(x, y, across: 0.14, up: 0.74))
+        path.addQuadCurve(
+            to: inCell(x, y, across: 0.86, up: 0.74),
+            control: inCell(x, y, across: 0.50, up: 1.06))
+        stroke(context, path, colours, yarnWidth * 0.82)
     }
 
     private func drawBobble(
         in context: GraphicsContext,
-        rect: CGRect,
-        ink: FabricInk,
-        wobble: Double
-    ) {
-        context.fill(Path(rect), with: .color(ink.shaded(wobble * 0.86)))
-
-        let size = min(rect.width, rect.height) * 0.84
-        let ball = CGRect(
-            x: rect.midX - size / 2,
-            y: rect.midY - size / 2,
-            width: size,
-            height: size)
-        let path = Path(ellipseIn: ball)
-        let shades: [Color] = [ink.shaded(wobble * 1.26), ink.shaded(wobble * 0.64)]
-        let gradient = Gradient(colors: shades)
-        let top = CGPoint(x: ball.midX, y: ball.minY)
-        let bottom = CGPoint(x: ball.midX, y: ball.maxY)
-        let shading: GraphicsContext.Shading = .linearGradient(gradient, startPoint: top, endPoint: bottom)
-        context.fill(path, with: shading)
-        context.stroke(path, with: .color(ink.shaded(wobble * 0.56)), lineWidth: max(0.4, rect.width * 0.06))
-    }
-
-    /// A cable crossing: two bands of stitches passing over each other. Which
-    /// band is drawn last is the whole difference between a front and a back
-    /// cross, so it is the only cue the picture needs to get right.
-    private func drawCable(
-        in context: GraphicsContext,
-        rect: CGRect,
-        span: Int,
-        ink: FabricInk,
-        leansLeft: Bool,
         x: Int,
         y: Int,
-        detailed: Bool
+        colours: (fill: Color, outline: Color)
     ) {
-        let wobble = FabricSimulationView.wobble(x: x, y: y)
-        // Crossings pull the fabric in, so the ground between the bands is deep
-        // in shadow.
-        context.fill(Path(rect), with: .color(ink.shaded(wobble * 0.78)))
-
-        let width = rect.width
-        let height = rect.height
-        let lowY = rect.minY + height * 0.86
-        let highY = rect.minY + height * 0.12
-        let leftX = rect.minX + width * 0.22
-        let rightX = rect.maxX - width * 0.22
-        let middle = CGPoint(x: rect.midX, y: rect.midY)
-
-        let risingStart = CGPoint(x: leftX, y: lowY)
-        let risingEnd = CGPoint(x: rightX, y: highY)
-        let fallingStart = CGPoint(x: rightX, y: lowY)
-        let fallingEnd = CGPoint(x: leftX, y: highY)
-
-        var rising = Path()
-        rising.move(to: risingStart)
-        rising.addQuadCurve(to: risingEnd, control: middle)
-
-        var falling = Path()
-        falling.move(to: fallingStart)
-        falling.addQuadCurve(to: fallingEnd, control: middle)
-
-        let over = leansLeft ? falling : rising
-        let under = leansLeft ? rising : falling
-        let bandWidth = max(1.5, width * 0.34)
-        let bandStyle = StrokeStyle(lineWidth: bandWidth, lineCap: .round)
-        let edgeStyle = StrokeStyle(lineWidth: bandWidth * 1.22, lineCap: .round)
-
-        context.stroke(under, with: .color(ink.shaded(wobble * 0.72)), style: bandStyle)
-        context.stroke(over, with: .color(ink.shaded(wobble * 0.50)), style: edgeStyle)
-        context.stroke(over, with: .color(ink.shaded(wobble * 1.04)), style: bandStyle)
-
-        guard detailed else { return }
-
-        let perBand = max(1, span / 2)
-        let markWidth = width / CGFloat(span) * 0.86
-        let markHeight = height * 0.30
-        let overStart = leansLeft ? fallingStart : risingStart
-        let overEnd = leansLeft ? fallingEnd : risingEnd
-        let underStart = leansLeft ? risingStart : fallingStart
-        let underEnd = leansLeft ? risingEnd : fallingEnd
-        drawBandStitches(
-            in: context, from: underStart, to: underEnd, count: perBand,
-            width: markWidth, height: markHeight, colour: ink.shaded(wobble * 0.56))
-        drawBandStitches(
-            in: context, from: overStart, to: overEnd, count: perBand,
-            width: markWidth, height: markHeight, colour: ink.shaded(wobble * 0.74))
+        let centre = inCell(x, y, across: 0.5, up: 0.5)
+        let radius = min(cellWidth, rowHeight) * 0.38
+        let box = CGRect(
+            x: centre.x - radius, y: centre.y - radius, width: radius * 2, height: radius * 2)
+        context.fill(Path(ellipseIn: box), with: .color(colours.fill))
+        context.stroke(
+            Path(ellipseIn: box), with: .color(colours.outline),
+            lineWidth: max(1, yarnWidth * 0.4))
     }
 
-    /// Small Vs spaced along a cable band, so a crossing still reads as knit
-    /// stitches rather than as two plain ribbons.
-    private func drawBandStitches(
+    /// A crossing: the two halves swap columns. Each stitch keeps its own V and
+    /// leans across, because that is what a cable actually is — travelling
+    /// stitches, not a rope laid on top. The front half is drawn last so it
+    /// genuinely passes over the other.
+    private func drawCrossing(
         in context: GraphicsContext,
-        from start: CGPoint,
-        to end: CGPoint,
-        count: Int,
-        width: CGFloat,
-        height: CGFloat,
-        colour: Color
+        x: Int,
+        y: Int,
+        span: Int,
+        symbol: StitchSymbol
     ) {
-        guard count > 0 else { return }
-        let steps = CGFloat(count)
-        let runX = end.x - start.x
-        let runY = end.y - start.y
-        var marks = Path()
-        for index in 0 ..< count {
-            let along = (CGFloat(index) + 0.5) / steps
-            let centreX = start.x + runX * along
-            let centreY = start.y + runY * along
-            marks.move(to: CGPoint(x: centreX - width / 2, y: centreY - height / 2))
-            marks.addLine(to: CGPoint(x: centreX, y: centreY + height / 2))
-            marks.addLine(to: CGPoint(x: centreX + width / 2, y: centreY - height / 2))
+        let half = max(1, span / 2)
+        let frontIsLeft = symbol == .cable2Front || symbol == .cable3Front
+        var groups: [(start: Int, end: Int, shift: Int)] = [
+            (start: 0, end: half, shift: half),
+            (start: half, end: span, shift: -half),
+        ]
+        if frontIsLeft { groups.reverse() }
+
+        for (order, group) in groups.enumerated() {
+            let inFront = order == groups.count - 1
+            let width = yarnWidth * (inFront ? 1.12 : 0.94)
+            for index in group.start ..< group.end {
+                drawTravellingStitch(
+                    in: context, from: x + index, shift: group.shift, row: y, width: width)
+            }
         }
-        let style = StrokeStyle(lineWidth: max(0.5, width * 0.22), lineCap: .round, lineJoin: .round)
-        context.stroke(marks, with: .color(colour), style: style)
     }
 
-    // MARK: - The needle
-
-    private func drawNeedle(in context: GraphicsContext) {
-        let thickness = cellHeight * 0.62
-        let centreY = cellHeight * 0.42
-        let bar = CGRect(
-            x: -cellWidth * 0.5,
-            y: centreY - thickness / 2,
-            width: canvasSize.width + cellWidth,
-            height: thickness)
-        let path = Path(roundedRect: bar, cornerRadius: thickness / 2)
-
-        let shades: [Color] = [Color(hex: "EBD9B8"), Color(hex: "B79466")]
-        let gradient = Gradient(colors: shades)
-        let top = CGPoint(x: bar.midX, y: bar.minY)
-        let bottom = CGPoint(x: bar.midX, y: bar.maxY)
-        let shading: GraphicsContext.Shading = .linearGradient(gradient, startPoint: top, endPoint: bottom)
-        context.fill(path, with: shading)
-        context.stroke(path, with: .color(Color(hex: "8A6A42").opacity(0.55)), lineWidth: 0.8)
-    }
-
-    /// The live stitches are wrapped round the needle, not resting under it, so
-    /// each one is drawn as a band crossing in front of the bar.
-    private func drawLoopsOverNeedle(in context: GraphicsContext) {
-        let charted = chartedRow(for: rows - 1)
-        let ink = rowInk(charted)
-        let topY = cellHeight * 0.06
-        let bottomY = fabricTop + cellHeight * 0.25
-
-        for x in 0 ..< columns {
-            let cell = appearance(x: x, chartedRow: charted)
-            guard cell != .noStitch else { continue }
-            let centreX = (CGFloat(x) + 0.5) * cellWidth
-            var loop = Path()
-            loop.move(to: CGPoint(x: centreX, y: topY))
-            loop.addLine(to: CGPoint(x: centreX, y: bottomY))
-            let wobble = FabricSimulationView.wobble(x: x, y: rows)
-            let style = StrokeStyle(lineWidth: max(1, cellWidth * 0.36), lineCap: .round)
-            context.stroke(loop, with: .color(ink.shaded(wobble * 0.94)), style: style)
+    private func drawTravellingStitch(
+        in context: GraphicsContext,
+        from sourceX: Int,
+        shift: Int,
+        row y: Int,
+        width: CGFloat
+    ) {
+        let targetX = min(max(0, sourceX + shift), columns - 1)
+        let colours = ink(x: sourceX, y: y)
+        // The foot travels most of the way too, so the stitch leans rather than
+        // splaying open across two columns.
+        let foot = lerp(
+            inCell(sourceX, y, across: 0.5, up: -0.06),
+            inCell(targetX, y, across: 0.5, up: -0.06),
+            0.55)
+        for side in [CGFloat(-1), CGFloat(1)] {
+            let top = inCell(targetX, y, across: 0.5 + side * 0.40, up: 0.96)
+            let first = lerp(
+                inCell(sourceX, y, across: 0.5 + side * 0.20, up: 0.24),
+                inCell(targetX, y, across: 0.5 + side * 0.20, up: 0.24),
+                0.55)
+            let second = inCell(targetX, y, across: 0.5 + side * 0.38, up: 0.68)
+            var path = Path()
+            path.move(to: foot)
+            path.addCurve(to: top, control1: first, control2: second)
+            stroke(context, path, colours, width)
         }
     }
 }
 
-// MARK: - Pane
+// MARK: - The pane around it
 
-/// The simulation plus its zoom control and a caption saying how big the
-/// swatch on screen is in real centimetres.
+/// The simulation with the controls a knitter would want: how big to draw it,
+/// how tightly it was knitted, how fat the yarn is, how far the fabric has been
+/// allowed to settle, and whether to see it as yarn or as line art.
 struct FabricSimulationPane: View {
     let pattern: StitchPattern
     let palette: [Yarn]
@@ -554,57 +374,136 @@ struct FabricSimulationPane: View {
     /// Left at a swatch's worth unless the caller knows the real cast-on.
     var stitchesWide: Int = 40
 
-    @State private var stitchWidth: CGFloat = 16
+    @State private var stitchWidth: CGFloat = 18
+    @State private var settings = FabricSettings()
+    @State private var showingControls = false
 
-    private let rowsHigh = 30
+    private let rowsHigh = 26
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ScrollView([.horizontal, .vertical]) {
-                FabricSimulationView(
-                    pattern: pattern,
-                    palette: palette,
-                    gauge: gauge,
-                    stitchesWide: stitchesWide,
-                    rowsHigh: rowsHigh,
-                    stitchWidth: stitchWidth,
-                    showsNeedle: true)
-                    .padding(14)
-            }
-            .frame(maxHeight: 380)
-            .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 12))
-
-            zoomControl
-
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 10) {
+            canvas
+            caption
+            controls
         }
     }
 
-    private var zoomControl: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "minus.magnifyingglass")
-            Slider(value: $stitchWidth, in: 6 ... 34)
-            Image(systemName: "plus.magnifyingglass")
+    private var canvas: some View {
+        ScrollView([.horizontal, .vertical]) {
+            FabricSimulationView(
+                pattern: pattern,
+                palette: palette,
+                gauge: gauge,
+                stitchesWide: stitchesWide,
+                rowsHigh: rowsHigh,
+                stitchWidth: stitchWidth,
+                settings: settings)
+                .padding(6)
+        }
+        .frame(maxHeight: 420)
+        .background(fabricBackdrop, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var fabricBackdrop: Color {
+        settings.outlined ? Color.white.opacity(0.75) : Color.knitSecondaryBackground
+    }
+
+    private var caption: some View {
+        HStack(spacing: 12) {
+            Text(sizeCaption)
+            Spacer(minLength: 8)
+            Button(showingControls ? "Hide settings" : "Settings") {
+                showingControls.toggle()
+            }
+            .buttonStyle(.bordered)
         }
         .font(.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Color.secondary)
     }
 
-    private var columns: Int {
-        FabricSimulationView.columnsDrawn(stitchesWide: stitchesWide)
+    /// What is on screen, measured as real cloth.
+    private var sizeCaption: String {
+        let across = gauge.width(forStitches: Double(stitchesWide))
+        let up = gauge.length(forRows: Double(rowsHigh))
+        return "\(stitchesWide) sts × \(rowsHigh) rows — "
+            + "\(units.formatLength(across)) × \(units.formatLength(up)) at this gauge"
     }
 
-    private var rows: Int {
-        FabricSimulationView.rowsDrawn(stitchesWide: stitchesWide, rowsHigh: rowsHigh)
+    @ViewBuilder
+    private var controls: some View {
+        if showingControls {
+            VStack(alignment: .leading, spacing: 12) {
+                slider("Zoom", value: $stitchWidth, range: 8 ... 40)
+                slider("Tension", value: tensionBinding, range: 0.7 ... 1.4,
+                       note: "How tightly it was knitted.")
+                slider("Yarn fullness", value: fullnessBinding, range: 0.6 ... 1.5,
+                       note: "A fatter yarn fills more of its stitch.")
+                slider("Settling", value: settlingBinding, range: 0 ... 1,
+                       note: "How far the fabric relaxes out of the grid it was charted on.")
+                Toggle("Line art", isOn: outlinedBinding)
+                    .font(.caption)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 
-    private var caption: String {
-        let across = units.formatLength(gauge.width(forStitches: Double(columns)))
-        let tall = units.formatLength(gauge.length(forRows: Double(rows)))
-        let counts = "\(columns) sts × \(rows) rows"
-        return "\(counts) of \(pattern.name), about \(across) across and \(tall) tall at your gauge."
+    private func slider(
+        _ label: String,
+        value: Binding<CGFloat>,
+        range: ClosedRange<CGFloat>,
+        note: String? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption.weight(.medium))
+            Slider(value: value, in: range)
+            if let note {
+                Text(note)
+                    .font(.caption2)
+                    .foregroundStyle(Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    // FabricSettings clamps in its initialiser, so every change goes back
+    // through it rather than writing the stored properties directly.
+    private func updated(
+        tension: Double? = nil,
+        fullness: Double? = nil,
+        settling: Double? = nil,
+        outlined: Bool? = nil
+    ) -> FabricSettings {
+        FabricSettings(
+            tension: tension ?? settings.tension,
+            fullness: fullness ?? settings.fullness,
+            settling: settling ?? settings.settling,
+            outlined: outlined ?? settings.outlined)
+    }
+
+    private var tensionBinding: Binding<CGFloat> {
+        Binding(
+            get: { CGFloat(settings.tension) },
+            set: { settings = updated(tension: Double($0)) })
+    }
+
+    private var fullnessBinding: Binding<CGFloat> {
+        Binding(
+            get: { CGFloat(settings.fullness) },
+            set: { settings = updated(fullness: Double($0)) })
+    }
+
+    private var settlingBinding: Binding<CGFloat> {
+        Binding(
+            get: { CGFloat(settings.settling) },
+            set: { settings = updated(settling: Double($0)) })
+    }
+
+    private var outlinedBinding: Binding<Bool> {
+        Binding(
+            get: { settings.outlined },
+            set: { settings = updated(outlined: $0) })
     }
 }

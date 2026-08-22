@@ -224,6 +224,41 @@ enum StitchSymbol: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// How wide this stitch wants to sit once the fabric has settled, relative
+    /// to a plain knit. A yarn-over is a hole and takes up room; a decrease has
+    /// eaten a stitch and gives room back.
+    var relaxedWidth: Double {
+        switch self {
+        case .knit: return 1.00
+        case .purl: return 0.94
+        case .yarnOver: return 1.62
+        case .make1: return 0.82
+        case .k2tog, .ssk: return 0.70
+        case .cdd, .k3tog: return 0.58
+        case .slip, .slipWyif: return 0.86
+        case .bobble: return 1.28
+        case .cable2Front, .cable2Back, .cable3Front, .cable3Back: return 0.84
+        case .noStitch: return 1.00
+        }
+    }
+
+    /// The same for height. A slipped stitch is pulled up over two rows, and a
+    /// crossing squashes the row it happens on.
+    var relaxedHeight: Double {
+        switch self {
+        case .knit: return 1.00
+        case .purl: return 1.07
+        case .yarnOver: return 1.12
+        case .make1: return 1.00
+        case .k2tog, .ssk: return 0.98
+        case .cdd, .k3tog: return 0.96
+        case .slip, .slipWyif: return 1.30
+        case .bobble: return 1.32
+        case .cable2Front, .cable2Back, .cable3Front, .cable3Back: return 0.90
+        case .noStitch: return 1.00
+        }
+    }
+
     /// How this cell looks from the right side of the fabric, which is what the
     /// simulation draws. A purl worked on a wrong-side row shows as a knit.
     var wrongSideAppearance: StitchSymbol {
@@ -351,6 +386,31 @@ struct StitchPattern: Codable, Identifiable, Equatable {
     func rightSideAppearance(x: Int, y: Int) -> StitchSymbol {
         let charted = symbol(x: x, y: y)
         return chartsWrongSideRows ? charted.wrongSideAppearance : charted
+    }
+
+    // MARK: - Fabric coordinates
+
+    /// The charted row a given row of knitted fabric comes from. One charted
+    /// row can stand for more than one worked row, and the repeat carries on
+    /// upwards for as long as the knitting does.
+    func chartedRow(forFabricRow row: Int) -> Int {
+        let perChartedRow = max(1, rowsPerChartedRow)
+        let charted = Int(floor(Double(row) / Double(perChartedRow)))
+        let tall = max(1, height)
+        return ((charted % tall) + tall) % tall
+    }
+
+    /// What the knitter sees at this spot in a piece of fabric wider and taller
+    /// than one repeat, already accounting for wrong-side-charted patterns.
+    func fabricAppearance(x: Int, fabricRow: Int) -> StitchSymbol {
+        let wide = max(1, width)
+        let column = ((x % wide) + wide) % wide
+        return rightSideAppearance(x: column, y: chartedRow(forFabricRow: fabricRow))
+    }
+
+    /// The colour a given row of fabric is worked in.
+    func fabricColourIndex(fabricRow: Int) -> Int {
+        colourIndex(row: chartedRow(forFabricRow: fabricRow))
     }
 
     // MARK: - Reading order
