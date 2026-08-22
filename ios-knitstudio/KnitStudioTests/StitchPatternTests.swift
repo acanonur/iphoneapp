@@ -290,3 +290,111 @@ final class StitchPatternTests: XCTestCase {
         XCTAssertEqual(plain.rightSideAppearance(x: 0, y: 0), plain.symbol(x: 0, y: 0))
     }
 }
+
+// MARK: - Reading the chart
+
+/// A chart nobody can read is not a chart. These cover the labelling and the
+/// colour coding rather than the knitting arithmetic.
+final class ChartLegibilityTests: XCTestCase {
+
+    func testEverySymbolHasALabelThatFitsACell() {
+        for symbol in StitchSymbol.allCases {
+            if symbol == .noStitch {
+                XCTAssertTrue(symbol.chartLabel.isEmpty, "no stitch draws a hatch, not a label")
+                continue
+            }
+            let label = symbol.chartLabel
+            XCTAssertFalse(label.isEmpty, "\(symbol.rawValue) has no chart label")
+            XCTAssertLessThanOrEqual(label.count, 3, "\(label) will not fit a cell")
+            XCTAssertEqual(label, label.uppercased(), "\(label) should be upper case")
+        }
+    }
+
+    /// The two a knitter reads constantly must never collide.
+    func testKnitAndPurlAreALetterEach() {
+        XCTAssertEqual(StitchSymbol.knit.chartLabel, "K")
+        XCTAssertEqual(StitchSymbol.purl.chartLabel, "P")
+        XCTAssertNotEqual(StitchSymbol.knit.category, StitchSymbol.purl.category)
+    }
+
+    func testCategoriesCoverEverySymbolAndEachHasATint() {
+        for symbol in StitchSymbol.allCases {
+            let hex = symbol.category.tintHex
+            XCTAssertEqual(Yarn.normalise(hex: hex), hex, "\(hex) is not a plain sRGB hex")
+        }
+        for category in StitchCategory.allCases {
+            XCTAssertFalse(category.name.isEmpty)
+        }
+    }
+
+    /// Decreases share a colour, increases share a different one, and neither
+    /// shares with knit — that is the whole point of the coding.
+    func testTheCategoryColoursSeparateWhatMatters() {
+        let decreases: [StitchSymbol] = [.k2tog, .ssk, .cdd, .k3tog]
+        for symbol in decreases {
+            XCTAssertEqual(symbol.category, .decrease, "\(symbol.rawValue) is a decrease")
+        }
+        for symbol in [StitchSymbol.yarnOver, .make1] {
+            XCTAssertEqual(symbol.category, .increase)
+        }
+        let distinct = Set(StitchCategory.allCases.map(\.tintHex))
+        XCTAssertEqual(distinct.count, StitchCategory.allCases.count, "two categories share a tint")
+    }
+
+    func testLegendByCategoryCoversTheWholeLegendWithoutRepeats() {
+        for pattern in StitchPatternLibrary.all {
+            let grouped = pattern.legendByCategory.flatMap(\.symbols)
+            XCTAssertEqual(
+                Set(grouped), Set(pattern.legend),
+                "\(pattern.name): the grouped legend and the flat legend disagree")
+            XCTAssertEqual(grouped.count, pattern.legend.count, "\(pattern.name): a symbol is listed twice")
+        }
+    }
+
+    // MARK: - Telling two yarns apart
+
+    func testContrastRatioMatchesTheStandardEndpoints() {
+        let black = Yarn(name: "Black", hex: "000000", weight: .light)
+        let white = Yarn(name: "White", hex: "FFFFFF", weight: .light)
+        XCTAssertEqual(Yarn.contrastRatio(black, white), 21, accuracy: 0.01)
+        XCTAssertEqual(Yarn.contrastRatio(white, white), 1, accuracy: 0.0001)
+        // Symmetric, whichever way round the pair is given.
+        XCTAssertEqual(
+            Yarn.contrastRatio(black, white),
+            Yarn.contrastRatio(white, black),
+            accuracy: 0.0001)
+    }
+
+    func testTwoCloseYarnsAreFlaggedAndTwoClearOnesAreNot() {
+        let chalk = Yarn(name: "Sami", colourName: "Chalk", hex: "F2EDE4", weight: .light)
+        let cream = Yarn(name: "Sami", colourName: "Cream", hex: "EFE8DD", weight: .light)
+        let moss = Yarn(name: "Sami", colourName: "Moss", hex: "5C6B3C", weight: .light)
+
+        let tooClose = Yarn.contrastWarnings(for: [chalk, cream])
+        XCTAssertEqual(tooClose.count, 1)
+        XCTAssertTrue(tooClose[0].contains("Chalk"), "the warning should name the yarns")
+
+        XCTAssertTrue(Yarn.contrastWarnings(for: [chalk, moss]).isEmpty,
+                      "a light and a dark yarn read apart and must not be flagged")
+        XCTAssertTrue(Yarn.contrastWarnings(for: [chalk]).isEmpty, "one yarn cannot clash")
+        XCTAssertTrue(Yarn.contrastWarnings(for: []).isEmpty)
+    }
+
+    /// Every pair is reported, not just the first.
+    func testEveryClashingPairIsReported() {
+        let one = Yarn(name: "A", hex: "F0F0F0", weight: .light)
+        let two = Yarn(name: "B", hex: "EDEDED", weight: .light)
+        let three = Yarn(name: "C", hex: "EAEAEA", weight: .light)
+        XCTAssertEqual(Yarn.contrastWarnings(for: [one, two, three]).count, 3)
+    }
+
+    func testChartSymbolStyleRoundTrips() throws {
+        for style in ChartSymbolStyle.allCases {
+            let data = try JSONEncoder().encode(style)
+            XCTAssertEqual(try JSONDecoder().decode(ChartSymbolStyle.self, from: data), style)
+            XCTAssertFalse(style.name.isEmpty)
+            XCTAssertFalse(style.explanation.isEmpty)
+        }
+    }
+}
+

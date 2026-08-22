@@ -146,7 +146,8 @@ struct StitchPatternDetailView: View {
                 StitchPatternPreview(
                     pattern: pattern,
                     palette: store.stash,
-                    gauge: store.lastGauge)
+                    gauge: store.lastGauge,
+                    symbolStyle: store.chartSymbolStyle)
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Knitted up")

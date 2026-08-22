@@ -9,7 +9,12 @@ struct StitchChartGridView: View {
     var palette: [Yarn] = []
     var gauge: Gauge?
     var cellWidth: CGFloat = 20
+    var symbolStyle: ChartSymbolStyle = .letters
     var showRowNumbers: Bool = true
+    /// The colour letter down the left edge. A chart whose rows differ only by
+    /// yarn colour is unreadable without it, and unreadable to a colourblind
+    /// knitter with it.
+    var showColourGutter: Bool = true
     var highlightRow: Int?
     var onTap: ((Int, Int) -> Void)?
 
@@ -28,11 +33,18 @@ struct StitchChartGridView: View {
     /// Below this the chart is a thumbnail and the numbers have nowhere to sit.
     private var drawsNumbers: Bool { showRowNumbers && cellWidth >= 14 }
 
+    /// Only worth a gutter when the pattern actually changes colour.
+    private var drawsColourGutter: Bool {
+        showColourGutter && pattern.usesColourStripes && !palette.isEmpty && cellWidth >= 12
+    }
+
+    private var colourGutterWidth: CGFloat { drawsColourGutter ? 18 : 0 }
+
     private var canvasSize: CGSize {
-        let gutterWidth: CGFloat = drawsNumbers ? 22 : 0
+        let numberWidth: CGFloat = drawsNumbers ? 22 : 0
         let gutterHeight: CGFloat = drawsNumbers ? 16 : 0
         return CGSize(
-            width: gridSize.width + gutterWidth,
+            width: colourGutterWidth + gridSize.width + numberWidth,
             height: gridSize.height + gutterHeight)
     }
 
@@ -41,6 +53,7 @@ struct StitchChartGridView: View {
             drawRows(in: context)
             drawGridLines(in: context)
             drawNumbers(in: context)
+            drawColourGutter(in: context)
         }
         .frame(width: canvasSize.width, height: canvasSize.height)
         .contentShape(Rectangle())
@@ -53,7 +66,8 @@ struct StitchChartGridView: View {
         for y in 0 ..< pattern.height {
             // Chart row 0 is the bottom row, drawn last from the top.
             let drawY = CGFloat(pattern.height - 1 - y) * cellHeight
-            let rowRect = CGRect(x: 0, y: drawY, width: gridSize.width, height: cellHeight)
+            let rowRect = CGRect(
+                x: colourGutterWidth, y: drawY, width: gridSize.width, height: cellHeight)
             context.fill(Path(rowRect), with: .color(rowBackground(y)))
             drawSymbols(in: context, row: y, top: drawY, ink: rowInk(y))
             if let highlightRow, highlightRow == y {
@@ -65,15 +79,113 @@ struct StitchChartGridView: View {
     private func drawSymbols(in context: GraphicsContext, row y: Int, top: CGFloat, ink: Color) {
         for x in 0 ..< pattern.width {
             let cell = pattern.symbol(x: x, y: y)
-            if cell == .knit { continue }
+            // In the traditional style a knit is an empty square. In the letters
+            // style it is spelled out, because an empty square tells a knitter
+            // who has not learned the glyphs nothing at all.
+            if cell == .knit, symbolStyle == .symbols { continue }
             if cell == .noStitch, isUnderCable(x: x, y: y) { continue }
             let span = min(cellSpan(for: cell), pattern.width - x)
             let rect = CGRect(
-                x: CGFloat(x) * cellWidth,
+                x: colourGutterWidth + CGFloat(x) * cellWidth,
                 y: top,
                 width: cellWidth * CGFloat(span),
                 height: cellHeight)
-            drawSymbol(cell, in: context, rect: rect, colour: ink)
+            switch symbolStyle {
+            case .letters:
+                drawLetter(cell, in: context, rect: rect, over: rowBackground(y))
+            case .symbols:
+                drawSymbol(cell, in: context, rect: rect, colour: ink)
+            }
+        }
+    }
+
+    /// The letters style carries three things at once: the yarn is the cell
+    /// background, the stitch is the text, and what the stitch *does* is the
+    /// colour of the text. They are three separate channels so none of them has
+    /// to be guessed from the others.
+    private func drawLetter(
+        _ cell: StitchSymbol,
+        in context: GraphicsContext,
+        rect: CGRect,
+        over background: Color
+    ) {
+        if cell == .noStitch {
+            drawNoStitch(context, rect, Color.secondary)
+            return
+        }
+
+        let tint = Color(hex: cell.category.tintHex)
+        let label = cell.chartLabel
+        guard !label.isEmpty else { return }
+        let size = letterSize(for: label, in: rect)
+        guard size >= 5 else {
+            // Too small for text. The category wash alone still shows the shape
+            // of the pattern, which is all a thumbnail needs to do.
+            if cell != .knit {
+                context.fill(Path(rect.insetBy(dx: 0.5, dy: 0.5)), with: .color(tint.opacity(0.45)))
+            }
+            return
+        }
+
+        // The chip is sized to the text, not to the cell, so the yarn colour
+        // still shows around it — the row colour and the stitch are two
+        // separate things to read and neither may hide the other.
+        let chipWidth = min(rect.width - 2, size * 0.66 * CGFloat(label.count) + size * 0.55)
+        let chipHeight = min(rect.height - 2, size * 1.34)
+        let chip = CGRect(
+            x: rect.midX - chipWidth / 2,
+            y: rect.midY - chipHeight / 2,
+            width: chipWidth,
+            height: chipHeight)
+        let shape = RoundedRectangle(cornerRadius: chipHeight * 0.32)
+
+        // A dark yarn swallows a dark letter, so it gets a pale chip to sit on.
+        let onDarkYarn = backgroundIsDark(background)
+        if onDarkYarn {
+            context.fill(shape.path(in: chip), with: .color(Color.white.opacity(0.92)))
+        } else if cell != .knit {
+            // Knit is the quiet default; anything else is worth noticing.
+            context.fill(shape.path(in: chip), with: .color(tint.opacity(0.15)))
+        }
+
+        let text = Text(label).font(.system(size: size, weight: .semibold, design: .rounded))
+        var resolved = context.resolve(text)
+        resolved.shading = .color(tint)
+        context.draw(resolved, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
+    }
+
+    /// Shrink the text until the longest label fits its cell.
+    private func letterSize(for label: String, in rect: CGRect) -> CGFloat {
+        let byHeight = rect.height * 0.62
+        let byWidth = rect.width / CGFloat(max(1, label.count)) * 1.35
+        return min(12, min(byHeight, byWidth))
+    }
+
+    private func backgroundIsDark(_ colour: Color) -> Bool {
+        Yarn(name: "", hex: colour.knitHex, weight: .light).relativeLuminance < 0.42
+    }
+
+    // MARK: - Colour gutter
+
+    /// A letter per row saying which yarn it is worked in. The row background
+    /// already carries the colour, but two close colours look the same and some
+    /// knitters cannot tell them apart at all.
+    private func drawColourGutter(in context: GraphicsContext) {
+        guard drawsColourGutter else { return }
+        for y in 0 ..< pattern.height {
+            let drawY = CGFloat(pattern.height - 1 - y) * cellHeight
+            let rect = CGRect(x: 0, y: drawY, width: colourGutterWidth - 3, height: cellHeight)
+            guard let yarn = rowYarn(y) else { continue }
+            context.fill(Path(rect), with: .color(yarn.colour))
+            context.stroke(Path(rect), with: .color(Color.primary.opacity(0.18)), lineWidth: 0.5)
+
+            guard cellHeight >= 9 else { continue }
+            let letter = StitchPattern.letter(for: pattern.colourIndex(row: y))
+            let size = min(9, cellHeight * 0.62)
+            let text = Text(letter).font(.system(size: size, weight: .bold, design: .rounded))
+            var resolved = context.resolve(text)
+            resolved.shading = .color(yarn.contrastingColour)
+            context.draw(resolved, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
         }
     }
 
@@ -127,14 +239,14 @@ struct StitchChartGridView: View {
         guard cellWidth >= 8 else { return }
         var path = Path()
         for x in 0 ... pattern.width {
-            let px = CGFloat(x) * cellWidth
+            let px = colourGutterWidth + CGFloat(x) * cellWidth
             path.move(to: CGPoint(x: px, y: 0))
             path.addLine(to: CGPoint(x: px, y: gridSize.height))
         }
         for y in 0 ... pattern.height {
             let py = CGFloat(y) * cellHeight
-            path.move(to: CGPoint(x: 0, y: py))
-            path.addLine(to: CGPoint(x: gridSize.width, y: py))
+            path.move(to: CGPoint(x: colourGutterWidth, y: py))
+            path.addLine(to: CGPoint(x: colourGutterWidth + gridSize.width, y: py))
         }
         context.stroke(path, with: .color(Color.primary.opacity(0.15)), lineWidth: 0.5)
 
@@ -143,14 +255,14 @@ struct StitchChartGridView: View {
         for x in stride(from: 0, through: pattern.width, by: 10) {
             // Stitch 1 is the rightmost stitch, so the tens are counted from
             // the right edge just as the rows are counted from the bottom.
-            let px = CGFloat(pattern.width - x) * cellWidth
+            let px = colourGutterWidth + CGFloat(pattern.width - x) * cellWidth
             major.move(to: CGPoint(x: px, y: 0))
             major.addLine(to: CGPoint(x: px, y: gridSize.height))
         }
         for y in stride(from: 0, through: pattern.height, by: 10) {
             let py = CGFloat(pattern.height - y) * cellHeight
-            major.move(to: CGPoint(x: 0, y: py))
-            major.addLine(to: CGPoint(x: gridSize.width, y: py))
+            major.move(to: CGPoint(x: colourGutterWidth, y: py))
+            major.addLine(to: CGPoint(x: colourGutterWidth + gridSize.width, y: py))
         }
         context.stroke(major, with: .color(Color.primary.opacity(0.35)), lineWidth: 1)
     }
@@ -166,14 +278,14 @@ struct StitchChartGridView: View {
             // what a knitter counts by anyway.
             if cellHeight < 16, number % 2 == 0 { continue }
             let drawY = CGFloat(pattern.height - 1 - y) * cellHeight
-            let point = CGPoint(x: gridSize.width + 4, y: drawY + halfCell)
+            let point = CGPoint(x: colourGutterWidth + gridSize.width + 4, y: drawY + halfCell)
             draw(number: number, at: point, anchor: .leading, in: context)
         }
         for x in 0 ..< pattern.width {
             // Stitch 1 is the rightmost stitch: charts count the way they read.
             let number = pattern.width - x
             guard showsStitchNumber(number) else { continue }
-            let px = CGFloat(x) * cellWidth + cellWidth / 2
+            let px = colourGutterWidth + CGFloat(x) * cellWidth + cellWidth / 2
             let point = CGPoint(x: px, y: gridSize.height + 7)
             draw(number: number, at: point, anchor: .center, in: context)
         }
@@ -202,7 +314,10 @@ struct StitchChartGridView: View {
         DragGesture(minimumDistance: 0)
             .onEnded { value in
                 guard let onTap else { return }
-                let x = Int(value.location.x / cellWidth)
+                // The gutter is not part of the grid, so a tap in it is not a cell.
+                let inGrid = value.location.x - colourGutterWidth
+                guard inGrid >= 0 else { return }
+                let x = Int(inGrid / cellWidth)
                 let drawnY = Int(value.location.y / cellHeight)
                 let y = pattern.height - 1 - drawnY
                 guard x >= 0, x < pattern.width, y >= 0, y < pattern.height else { return }
@@ -213,23 +328,101 @@ struct StitchChartGridView: View {
 
 // MARK: - Legend
 
+/// The key. Grouped by what the stitches do, and colour-coded to match the
+/// chart, so the two are read the same way round. Both the letter and the
+/// printed glyph are shown for every stitch — whichever style the chart is set
+/// to, the other one is the one you will meet in a published pattern.
 struct StitchSymbolLegend: View {
     let pattern: StitchPattern
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(pattern.legend) { (symbol: StitchSymbol) in
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(Array(pattern.legendByCategory.enumerated()), id: \.offset) { entry in
+                categorySection(entry.element.category, symbols: entry.element.symbols)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func categorySection(
+        _ category: StitchCategory,
+        symbols: [StitchSymbol]
+    ) -> some View {
+        let tint = Color(hex: category.tintHex)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(tint)
+                    .frame(width: 8, height: 8)
+                Text(category.name)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(tint)
+            }
+            ForEach(symbols) { (symbol: StitchSymbol) in
                 HStack(alignment: .top, spacing: 10) {
+                    StitchLetterChip(symbol: symbol)
                     StitchSymbolGlyph(symbol: symbol)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(symbol.rightSideAbbreviation) — \(symbol.name)")
                             .font(.subheadline.weight(.medium))
                         Text(symbol.meaning)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+            }
+        }
+    }
+}
+
+/// The letter as the chart draws it, in its category colour.
+struct StitchLetterChip: View {
+    let symbol: StitchSymbol
+    var size: CGFloat = 24
+
+    var body: some View {
+        let tint = Color(hex: symbol.category.tintHex)
+        Text(symbol.chartLabel.isEmpty ? "—" : symbol.chartLabel)
+            .font(.system(size: size * 0.42, weight: .semibold, design: .rounded))
+            .foregroundStyle(tint)
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
+            .frame(width: size * 1.5, height: size)
+            .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 5))
+    }
+}
+
+/// Which yarn is which. The chart paints the row in the yarn's own colour, but
+/// two close colours look the same and some knitters cannot separate them at
+/// all, so every colour also gets a letter.
+struct ChartColourKey: View {
+    let palette: [Yarn]
+    var usedIndices: [Int] = []
+
+    private var entries: [(index: Int, yarn: Yarn)] {
+        let wanted = usedIndices.isEmpty ? Array(palette.indices) : usedIndices
+        return wanted.compactMap { index in
+            guard index >= 0, index < palette.count else { return nil }
+            return (index: index, yarn: palette[index])
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(entries.enumerated()), id: \.offset) { entry in
+                HStack(spacing: 8) {
+                    YarnSwatch(
+                        yarn: entry.element.yarn,
+                        size: 24,
+                        label: StitchPattern.letter(for: entry.element.index))
+                    Text(entry.element.yarn.displayName)
+                        .font(.caption)
+                        .lineLimit(1)
+                }
+            }
+            ForEach(Yarn.contrastWarnings(for: entries.map(\.yarn)), id: \.self) { (warning: String) in
+                NoteBox(kind: .warning, text: warning)
             }
         }
     }
@@ -268,9 +461,16 @@ struct StitchPatternPreview: View {
     var palette: [Yarn] = []
     var gauge: Gauge?
     var cellWidth: CGFloat = 20
+    var symbolStyle: ChartSymbolStyle = .letters
+
+    @State private var style: ChartSymbolStyle?
+
+    /// The picker overrides the caller's choice for as long as this view lives.
+    private var activeStyle: ChartSymbolStyle { style ?? symbolStyle }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            stylePicker
             chartPane
             colourStrip
             facts
@@ -281,13 +481,33 @@ struct StitchPatternPreview: View {
     }
 
     @ViewBuilder
+    private var stylePicker: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Picker("Chart style", selection: Binding(
+                get: { activeStyle },
+                set: { style = $0 })) {
+                ForEach(ChartSymbolStyle.allCases) { (option: ChartSymbolStyle) in
+                    Text(option.name).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            Text(activeStyle.explanation)
+                .font(.caption)
+                .foregroundStyle(Color.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
     private var chartPane: some View {
         ScrollView([.horizontal, .vertical]) {
             StitchChartGridView(
                 pattern: pattern,
                 palette: palette,
                 gauge: gauge,
-                cellWidth: cellWidth)
+                cellWidth: cellWidth,
+                symbolStyle: activeStyle)
                 .padding(8)
         }
         .frame(maxHeight: 340)
@@ -297,16 +517,10 @@ struct StitchPatternPreview: View {
     @ViewBuilder
     private var colourStrip: some View {
         if pattern.usesColourStripes, !palette.isEmpty {
-            HStack(spacing: 14) {
-                ForEach(stripeIndices, id: \.self) { (index: Int) in
-                    let yarn = palette[min(index, palette.count - 1)]
-                    HStack(spacing: 6) {
-                        YarnSwatch(yarn: yarn, size: 22, label: StitchPattern.letter(for: index))
-                        Text(yarn.colourName.isEmpty ? yarn.name : yarn.colourName)
-                            .font(.caption)
-                            .lineLimit(1)
-                    }
-                }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Colours")
+                    .font(.subheadline.weight(.semibold))
+                ChartColourKey(palette: palette, usedIndices: stripeIndices)
             }
         }
     }
@@ -350,6 +564,10 @@ struct StitchPatternPreview: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Legend")
                     .font(.headline)
+                Text("Cells are coloured by what the stitch does, not by which stitch it is.")
+                    .font(.caption)
+                    .foregroundStyle(Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 StitchSymbolLegend(pattern: pattern)
             }
         }
@@ -410,7 +628,8 @@ struct StitchPatternRow: View {
             StitchChartGridView(
                 pattern: pattern,
                 cellWidth: thumbnailCell,
-                showRowNumbers: false)
+                showRowNumbers: false,
+                showColourGutter: false)
                 .frame(
                     width: StitchPatternRow.thumbnailWidth,
                     height: StitchPatternRow.thumbnailHeight,

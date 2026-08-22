@@ -271,7 +271,14 @@ struct ProjectEditorView: View {
             if let pattern = project.stitchPattern {
                 StitchPatternRow(pattern: pattern)
                 ScrollView(.horizontal) {
-                    StitchChartGridView(pattern: pattern, cellWidth: 12)
+                    // Bigger cells than a thumbnail needs, so the letters are
+                    // still readable in a form row.
+                    StitchChartGridView(
+                        pattern: pattern,
+                        palette: project.effectiveAllocations.map(\.yarn),
+                        cellWidth: 18,
+                        symbolStyle: store.chartSymbolStyle,
+                        showRowNumbers: false)
                         .padding(.vertical, 6)
                 }
             }
@@ -360,6 +367,10 @@ struct ProjectEditorView: View {
                 Label(project.chart == nil ? "Attach a colourwork chart" : "Change chart",
                       systemImage: "square.grid.3x3")
             }
+
+            ForEach(colourContrastWarnings, id: \.self) { (warning: String) in
+                NoteBox(kind: .warning, text: warning)
+            }
         } header: {
             Text("Colours")
         } footer: {
@@ -368,6 +379,12 @@ struct ProjectEditorView: View {
                  : "Every stitch in the chart is counted, so the split is exact.")
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// Checked here rather than only in the preview, because this is the screen
+    /// where the colours are chosen and the yarn is still unbought.
+    private var colourContrastWarnings: [String] {
+        Yarn.contrastWarnings(for: project.effectiveAllocations.map(\.yarn))
     }
 
     private func addColour(_ yarn: Yarn) {

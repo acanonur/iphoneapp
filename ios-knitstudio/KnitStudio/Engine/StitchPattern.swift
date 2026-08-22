@@ -1,5 +1,68 @@
 import Foundation
 
+/// How a chart draws its cells. The traditional convention leaves a knit blank
+/// and marks everything else with a glyph, which is compact but tells a knitter
+/// who has not learned the glyphs nothing at all.
+enum ChartSymbolStyle: String, Codable, CaseIterable, Identifiable {
+    /// Every cell labelled: K, P, YO, K2, SSK.
+    case letters
+    /// The printed-pattern glyphs: a knit is an empty square.
+    case symbols
+
+    var id: String { rawValue }
+
+    var name: String { self == .letters ? "Letters" : "Symbols" }
+
+    var explanation: String {
+        switch self {
+        case .letters:
+            return "Every stitch spelled out, and colour-coded by what it does."
+        case .symbols:
+            return "The glyphs a printed pattern uses. A knit is an empty square."
+        }
+    }
+}
+
+/// What a stitch does, which is what the chart colour-codes by. Knowing a cell
+/// is a decrease matters more at a glance than knowing which decrease it is.
+enum StitchCategory: String, Codable, CaseIterable, Identifiable {
+    case knit
+    case purl
+    case increase
+    case decrease
+    case cable
+    case slip
+    case other
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .knit: return "Knit"
+        case .purl: return "Purl"
+        case .increase: return "Increases"
+        case .decrease: return "Decreases"
+        case .cable: return "Cables"
+        case .slip: return "Slipped"
+        case .other: return "Other"
+        }
+    }
+
+    /// sRGB hex the chart inks this category in. Knit and purl are the two a
+    /// knitter reads constantly, so they get the strongest separation.
+    var tintHex: String {
+        switch self {
+        case .knit: return "2E4272"      // the app's accent blue
+        case .purl: return "B5561C"      // burnt orange, unmistakable against it
+        case .increase: return "1F7A4D"  // green: stitches arriving
+        case .decrease: return "A32B4F"  // red: stitches leaving
+        case .cable: return "6B3FA0"     // violet
+        case .slip: return "4A6E82"      // slate
+        case .other: return "5A5A5A"
+        }
+    }
+}
+
 /// One cell of a stitch chart.
 enum StitchSymbol: String, Codable, CaseIterable, Identifiable {
     case knit, purl, yarnOver, k2tog, ssk, cdd, k3tog, make1, slip, slipWyif
@@ -46,6 +109,41 @@ enum StitchSymbol: String, Codable, CaseIterable, Identifiable {
         case .cable3Back: return "C6B"
         case .bobble: return "MB"
         case .noStitch: return "no st"
+        }
+    }
+
+    /// One to three characters for the letters style. Short enough to fit a
+    /// cell, long enough to be guessable without the legend.
+    var chartLabel: String {
+        switch self {
+        case .knit: return "K"
+        case .purl: return "P"
+        case .yarnOver: return "YO"
+        case .k2tog: return "K2"
+        case .ssk: return "SSK"
+        case .cdd: return "CDD"
+        case .k3tog: return "K3"
+        case .make1: return "M1"
+        case .slip: return "SL"
+        case .slipWyif: return "SLF"
+        case .cable2Front: return "C4F"
+        case .cable2Back: return "C4B"
+        case .cable3Front: return "C6F"
+        case .cable3Back: return "C6B"
+        case .bobble: return "MB"
+        case .noStitch: return ""
+        }
+    }
+
+    var category: StitchCategory {
+        switch self {
+        case .knit: return .knit
+        case .purl: return .purl
+        case .yarnOver, .make1: return .increase
+        case .k2tog, .ssk, .cdd, .k3tog: return .decrease
+        case .cable2Front, .cable2Back, .cable3Front, .cable3Back: return .cable
+        case .slip, .slipWyif: return .slip
+        case .bobble, .noStitch: return .other
         }
     }
 
@@ -428,6 +526,20 @@ struct StitchPattern: Codable, Identifiable, Equatable {
     var legend: [StitchSymbol] {
         let used = Set(symbols)
         return StitchSymbol.allCases.filter { used.contains($0) }
+    }
+
+    /// The legend grouped the way the chart colour-codes it, so the key and the
+    /// chart are read the same way.
+    var legendByCategory: [(category: StitchCategory, symbols: [StitchSymbol])] {
+        let used = legend
+        var groups: [(category: StitchCategory, symbols: [StitchSymbol])] = []
+        for category in StitchCategory.allCases {
+            let matching = used.filter { $0.category == category }
+            if !matching.isEmpty {
+                groups.append((category: category, symbols: matching))
+            }
+        }
+        return groups
     }
 
     var colourCount: Int {

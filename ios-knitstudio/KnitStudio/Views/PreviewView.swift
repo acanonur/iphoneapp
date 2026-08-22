@@ -134,7 +134,8 @@ struct ProjectPreviewView: View {
         StitchPatternPreview(
             pattern: stitchPattern,
             palette: paletteYarns,
-            gauge: project.gauge)
+            gauge: project.gauge,
+            symbolStyle: store.chartSymbolStyle)
 
         PatternColourTable(project: project, units: store.units)
     }
@@ -177,6 +178,7 @@ struct PatternColourTable: View {
             Text("Colours and symbols")
                 .font(.headline)
             table
+            contrastNotes
             legend
             ShareLink(item: plainText) {
                 Label("Share the colour table", systemImage: "square.and.arrow.up")
@@ -251,6 +253,20 @@ struct PatternColourTable: View {
             .monospacedDigit()
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
+    }
+
+    /// Two yarns that photograph the same in black and white will knit up as
+    /// one colour, however different they look in the ball.
+    @ViewBuilder
+    private var contrastNotes: some View {
+        let warnings = Yarn.contrastWarnings(for: lines.map(\.yarn))
+        if !warnings.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(warnings, id: \.self) { (warning: String) in
+                    NoteBox(kind: .warning, text: warning)
+                }
+            }
+        }
     }
 
     // MARK: - Legend

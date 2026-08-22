@@ -9,6 +9,8 @@ final class AppStore: ObservableObject {
     @Published var stash: [Yarn] = [] { didSet { scheduleSave() } }
     @Published var units: UnitSystem = .metric { didSet { scheduleSave() } }
     @Published var favouriteTechniques: Set<String> = [] { didSet { scheduleSave() } }
+    /// Letters or the printed glyphs, remembered across launches.
+    @Published var chartSymbolStyle: ChartSymbolStyle = .letters { didSet { scheduleSave() } }
     /// The gauge the knitter last measured, reused as the default for new projects.
     @Published var lastGauge: Gauge = YarnWeight.light.nominalGauge { didSet { scheduleSave() } }
 
@@ -55,6 +57,8 @@ final class AppStore: ObservableObject {
         var units: UnitSystem
         var favouriteTechniques: [String]
         var lastGauge: Gauge
+        /// Added after the first release, so older files decode without it.
+        var chartSymbolStyle: ChartSymbolStyle?
     }
 
     private static var storeURL: URL {
@@ -79,7 +83,8 @@ final class AppStore: ObservableObject {
             stash: stash,
             units: units,
             favouriteTechniques: Array(favouriteTechniques),
-            lastGauge: lastGauge)
+            lastGauge: lastGauge,
+            chartSymbolStyle: chartSymbolStyle)
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -107,6 +112,7 @@ final class AppStore: ObservableObject {
         units = snapshot.units
         favouriteTechniques = Set(snapshot.favouriteTechniques)
         lastGauge = snapshot.lastGauge
+        chartSymbolStyle = snapshot.chartSymbolStyle ?? .letters
     }
 
     /// A first launch with an empty library is unhelpful — start with a stash

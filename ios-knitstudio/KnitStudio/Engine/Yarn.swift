@@ -168,6 +168,53 @@ struct Yarn: Codable, Identifiable, Hashable {
     }
 }
 
+// MARK: - Telling two colours apart
+
+extension Yarn {
+
+    /// WCAG relative luminance. Two yarns can look different on a screen and
+    /// still knit up as one colour, which is what a knitter means by "no
+    /// contrast" — luminance is the part of the difference that survives.
+    var relativeLuminance: Double {
+        func channel(_ value: Double) -> Double {
+            value <= 0.03928 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
+        }
+        let (red, green, blue) = rgb
+        return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
+    }
+
+    /// 1 for two identical colours, 21 for black against white.
+    static func contrastRatio(_ first: Yarn, _ second: Yarn) -> Double {
+        let a = first.relativeLuminance
+        let b = second.relativeLuminance
+        let lighter = max(a, b)
+        let darker = min(a, b)
+        return (lighter + 0.05) / (darker + 0.05)
+    }
+
+    /// The old trick for checking two yarns is to photograph them and look at
+    /// the picture in black and white. This is that test, done arithmetically.
+    /// Below about 1.6 the pattern will not read at arm's length.
+    static func contrastWarnings(for palette: [Yarn]) -> [String] {
+        guard palette.count > 1 else { return [] }
+        var warnings: [String] = []
+        for first in 0 ..< palette.count {
+            for second in (first + 1) ..< palette.count {
+                let ratio = contrastRatio(palette[first], palette[second])
+                guard ratio < 1.6 else { continue }
+                let one = palette[first].displayName
+                let other = palette[second].displayName
+                warnings.append(String(
+                    format: "%@ and %@ are too close in tone (%.1f:1). Photograph them "
+                    + "together and look at the picture in black and white — if you cannot "
+                    + "tell them apart there, the pattern will not show in the knitting.",
+                    one, other, ratio))
+            }
+        }
+        return warnings
+    }
+}
+
 /// How much yarn a fabric structure eats relative to plain stockinette at the
 /// same measured gauge.
 enum FabricStructure: String, Codable, CaseIterable, Identifiable {
