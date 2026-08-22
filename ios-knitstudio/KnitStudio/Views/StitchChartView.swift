@@ -402,7 +402,7 @@ struct ChartColourKey: View {
 
     private var entries: [(index: Int, yarn: Yarn)] {
         let wanted = usedIndices.isEmpty ? Array(palette.indices) : usedIndices
-        return wanted.compactMap { index in
+        return wanted.compactMap { (index: Int) -> (index: Int, yarn: Yarn)? in
             guard index >= 0, index < palette.count else { return nil }
             return (index: index, yarn: palette[index])
         }
@@ -480,12 +480,16 @@ struct StitchPatternPreview: View {
         }
     }
 
+    private var styleBinding: Binding<ChartSymbolStyle> {
+        Binding(
+            get: { activeStyle },
+            set: { (chosen: ChartSymbolStyle) in style = chosen })
+    }
+
     @ViewBuilder
     private var stylePicker: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Picker("Chart style", selection: Binding(
-                get: { activeStyle },
-                set: { style = $0 })) {
+            Picker("Chart style", selection: styleBinding) {
                 ForEach(ChartSymbolStyle.allCases) { (option: ChartSymbolStyle) in
                     Text(option.name).tag(option)
                 }
