@@ -181,6 +181,35 @@ extension View {
         #endif
     }
 
+    /// Hides the navigation bar so a screen can supply its own header.
+    ///
+    /// The 1c screens draw their own clay header, which would otherwise sit
+    /// under a second, system one. macOS has no navigation bar to hide.
+    @ViewBuilder
+    func knitHideNavigationBar() -> some View {
+        #if os(macOS)
+        self
+        #else
+        toolbar(.hidden, for: .navigationBar)
+        #endif
+    }
+
+    /// Caps a phone-shaped layout so it does not stretch across a Mac window.
+    ///
+    /// The Organic redesign is drawn at 390pt portrait. On iPhone that is the
+    /// screen; on a Mac it is a column, and letting a 390pt design span 1200pt
+    /// pulls the header numbers to opposite ends of the window and strands the
+    /// counter in the middle of a field of cream. Left-aligned rather than
+    /// centred, which is the direction the system asks for.
+    @ViewBuilder
+    func knitReadableWidth(_ width: CGFloat = 560) -> some View {
+        #if os(macOS)
+        frame(maxWidth: width, alignment: .leading)
+        #else
+        self
+        #endif
+    }
+
     /// Mac windows need a sensible opening size; iOS ignores this.
     @ViewBuilder
     func knitMinimumWindowSize() -> some View {

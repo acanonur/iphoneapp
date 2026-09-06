@@ -69,6 +69,12 @@ struct ProjectPlan: Identifiable, Equatable {
 
     func metres() -> Double { YarnEstimator.metres(for: blocks, gauge: gauge) }
 
+    /// The value of a headline fact by name, or nil if this project has none.
+    /// Mirrors `ProjectPlan.fact` in the Kotlin engine.
+    func fact(_ label: String) -> String? {
+        facts.first { $0.label == label }?.value
+    }
+
     /// Flat plain-text rendering, used for sharing and export.
     func plainText(units: UnitSystem) -> String {
         var lines: [String] = [title, String(repeating: "=", count: title.count), ""]

@@ -110,95 +110,140 @@ struct TechniqueRow: View {
     }
 }
 
+/// The 1c Technique screen. Sage rather than clay: Learn is the other half of
+/// the app, and the header colour is the fastest way to know which half you are
+/// looking at without reading a word. Steps are numbered sage circles; the tip
+/// is the one clay note on the page, so it reads as an aside rather than a
+/// further step.
 struct TechniqueDetailView: View {
     let technique: Technique
     @EnvironmentObject private var store: AppStore
+    @Environment(\.dismiss) private var dismiss
+
+    private var saved: Bool { store.favouriteTechniques.contains(technique.id) }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        DifficultyBadge(difficulty: technique.difficulty)
-                        Text(technique.category.name)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            OrganicHeader(tone: Organic.headerSage, bottomPadding: 28) {
+                OrganicHeaderBar(backLabel: "Learn", tint: Organic.sage.s100) {
+                    dismiss()
+                } action: {
+                    Button {
+                        store.toggleFavourite(technique.id)
+                    } label: {
+                        LucideBookmark(tint: .white, filled: saved)
                     }
-                    Text(technique.summary)
-                        .font(.title3)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(technique.whenToUse)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    .buttonStyle(.plain)
                 }
 
-                VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    OrganicPill(
+                        text: technique.difficulty.name,
+                        background: Organic.sage.s200,
+                        foreground: Organic.sage.s900)
+                    OrganicPill(
+                        text: technique.category.name,
+                        background: Organic.sage.s700,
+                        foreground: .white)
+                }
+                .padding(.top, 18)
+
+                Text(technique.name)
+                    .font(KnitType.display(36))
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+
+                Text(technique.summary)
+                    .font(KnitType.body(19))
+                    .foregroundStyle(Organic.sage.s100)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(technique.whenToUse)
+                        .font(KnitType.body(18))
+                        .foregroundStyle(Organic.neutral.s700)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     Text("How to")
-                        .font(.headline)
+                        .font(KnitType.display(24))
+                        .foregroundStyle(Organic.text)
+
                     ForEach(Array(technique.steps.enumerated()), id: \.offset) { index, step in
-                        HStack(alignment: .top, spacing: 12) {
+                        HStack(alignment: .top, spacing: 16) {
                             Text("\(index + 1)")
-                                .font(.caption.weight(.bold))
-                                .frame(width: 22, height: 22)
-                                .background(Color.accentColor.opacity(0.15), in: Circle())
+                                .font(KnitType.display(20))
+                                .foregroundStyle(Organic.sage.s900)
+                                .frame(width: 44, height: 44)
+                                .background(Organic.sage.s200, in: Circle())
                             Text(step)
+                                .font(KnitType.body(19))
+                                .foregroundStyle(Organic.text)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, 6)
+                        }
+                    }
+
+                    ForEach(Array(technique.tips.enumerated()), id: \.offset) { _, tip in
+                        HStack(alignment: .top, spacing: 12) {
+                            Text("Tip")
+                                .font(KnitType.display(20))
+                                .foregroundStyle(Organic.clay.s800)
+                            Text(tip)
+                                .font(KnitType.body(18))
+                                .foregroundStyle(Organic.clay.s900)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 18)
+                        .background(Organic.clay.s100,
+                                    in: RoundedRectangle(cornerRadius: Organic.radiusLg))
                     }
-                }
 
-                if !technique.tips.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Worth knowing")
-                            .font(.headline)
-                        ForEach(Array(technique.tips.enumerated()), id: \.offset) { _, tip in
-                            NoteBox(kind: .note, text: tip)
-                        }
-                    }
-                }
-
-                if !technique.abbreviations.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
+                    if !technique.abbreviations.isEmpty {
                         Text("In patterns you will see")
-                            .font(.headline)
+                            .font(KnitType.display(24))
+                            .foregroundStyle(Organic.text)
+                            .padding(.top, 8)
+
                         ForEach(technique.abbreviations, id: \.self) { short in
                             if let entry = AbbreviationGlossary.lookup(short) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("\(entry.short) — \(entry.full)")
-                                        .font(.subheadline.weight(.medium))
+                                        .font(KnitType.body(18, .bold))
+                                        .foregroundStyle(Organic.text)
                                     Text(entry.meaning)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .font(KnitType.body(17))
+                                        .foregroundStyle(Organic.neutral.s700)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                     }
-                }
 
-                if !technique.alsoKnownAs.isEmpty {
-                    Text("Also called: \(technique.alsoKnownAs.joined(separator: ", "))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if !technique.alsoKnownAs.isEmpty {
+                        Text("Also called: \(technique.alsoKnownAs.joined(separator: ", "))")
+                            .font(KnitType.body(16))
+                            .foregroundStyle(Organic.neutral.s700)
+                    }
                 }
-            }
-            .padding()
-        }
-        .navigationTitle(technique.name)
-        .knitInlineTitle()
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    store.toggleFavourite(technique.id)
-                } label: {
-                    Image(systemName: store.favouriteTechniques.contains(technique.id)
-                          ? "bookmark.fill" : "bookmark")
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 24)
+                .knitReadableWidth()
             }
         }
+        .background(Organic.bg)
+        .knitHideNavigationBar()
     }
 }
+
 
 struct AbbreviationsView: View {
     @State private var query = ""

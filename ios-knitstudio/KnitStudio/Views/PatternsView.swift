@@ -1,110 +1,99 @@
 import SwiftUI
 
-/// Browse ready-made patterns, build charts, and import files.
+/// The 1c Patterns screen: a clay header, a row of kind filters, then a divided
+/// list rather than a stack of cards. Rows are 88pt so a preset can be picked
+/// without aiming, and the rule does the work a card outline used to.
 struct PatternsView: View {
     @EnvironmentObject private var store: AppStore
     @State private var draft: SavedProject?
     @State private var newChart: ColourChart?
     @State private var showingImport = false
+    @State private var kindFilter: PatternKind?
+
+    private var presets: [PatternPreset] {
+        guard let kindFilter else { return BuiltInPatterns.all }
+        return BuiltInPatterns.all.filter { $0.kind == kindFilter }
+    }
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    Button {
-                        showingImport = true
-                    } label: {
-                        Label("Import a file", systemImage: "square.and.arrow.down")
-                    }
-                    Button {
-                        newChart = ColourChart.blank(
-                            name: "New chart",
-                            width: 24,
-                            height: 24,
-                            palette: Array(store.stash.prefix(4)))
-                    } label: {
-                        Label("Draw a chart from scratch", systemImage: "square.grid.3x3")
-                    }
-                } header: {
-                    Text("Create")
-                } footer: {
-                    Text("Import a written pattern to check its stitch counts, or an image to "
-                         + "turn into a colourwork chart.")
+            VStack(spacing: 0) {
+                OrganicHeader(tone: Organic.headerClay, topPadding: 24, bottomPadding: 28) {
+                    Text("Patterns")
+                        .font(KnitType.display(38))
+                        .foregroundStyle(.white)
+                    Text("Ready-made starting points. Pick one and the numbers come from your gauge.")
+                        .font(KnitType.body(18))
+                        .foregroundStyle(Organic.clay.s100)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 4)
                 }
 
-                Section {
-                    ForEach(PatternKind.allCases) { kind in
-                        DisclosureGroup {
-                            ForEach(BuiltInPatterns.all.filter { $0.kind == kind }) { preset in
-                                Button {
-                                    draft = SavedProject.fromPreset(preset)
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        HStack {
-                                            Text(preset.name)
-                                                .foregroundStyle(.primary)
-                                            Spacer()
-                                            DifficultyBadge(difficulty: kind.difficulty)
-                                        }
-                                        Text(preset.blurb)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                }
-                            }
-                        } label: {
-                            Label(kind.name, systemImage: kind.symbol)
-                        }
-                    }
-                } header: {
-                    Text("Start from a pattern")
-                } footer: {
-                    Text("Each one fills in the calculator with sensible defaults. Change anything "
-                         + "you like — the numbers recalculate from your gauge.")
-                }
-
-                Section("Charts") {
-                    if store.charts.isEmpty {
-                        Text("No charts yet.")
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach($store.charts) { $chart in
-                        NavigationLink {
-                            ChartWorkspace(chart: $chart)
-                        } label: {
-                            HStack(spacing: 12) {
-                                ChartGridView(chart: chart, cellWidth: 4, showGridLines: false)
-                                    .frame(width: 72, alignment: .leading)
-                                    .clipped()
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(chart.name)
-                                    Text("\(chart.width) × \(chart.height), \(chart.palette.count) colours")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        OrganicChip(text: "All", selected: kindFilter == nil) { kindFilter = nil }
+                        ForEach(PatternKind.allCases) { kind in
+                            OrganicChip(text: kind.name, selected: kindFilter == kind) {
+                                kindFilter = kind
                             }
                         }
                     }
-                    .onDelete { store.charts.remove(atOffsets: $0) }
+                    .padding(.horizontal, 20)
                 }
+                .padding(.top, 18)
 
-                Section {
-                    ForEach(StitchPatternLibrary.all) { (pattern: StitchPattern) in
-                        NavigationLink {
-                            StitchPatternDetailView(pattern: pattern)
-                        } label: {
-                            StitchPatternRow(pattern: pattern)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(presets.enumerated()), id: \.element.id) { index, preset in
+                            OrganicListRow(
+                                title: preset.name,
+                                blurb: preset.blurb,
+                                tintIndex: index
+                            ) { draft = SavedProject.fromPreset(preset) }
+                        }
+
+                        sectionHeading("Stitch patterns")
+                        ForEach(Array(StitchPatternLibrary.all.enumerated()), id: \.element.id) { index, pattern in
+                            NavigationLink {
+                                StitchPatternDetailView(pattern: pattern)
+                            } label: {
+                                OrganicRowLabel(
+                                    title: pattern.name,
+                                    blurb: pattern.summary,
+                                    tintIndex: index + 1)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        sectionHeading("Charts")
+                        OrganicWideButton(label: "Turn a picture into a chart") {
+                            showingImport = true
+                        }
+                        .padding(.bottom, 6)
+
+                        // Enumerating a Binding array does not give elements
+                        // with an id, so iterate the values and take the
+                        // binding by index.
+                        ForEach(Array(store.charts.enumerated()), id: \.element.id) { index, chart in
+                            NavigationLink {
+                                ChartWorkspace(chart: $store.charts[index])
+                            } label: {
+                                OrganicRowLabel(
+                                    title: chart.name,
+                                    blurb: "\(chart.width) sts × \(chart.height) rows, \(chart.palette.count) colours",
+                                    tintIndex: index + 2)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
-                } header: {
-                    Text("Stitch patterns")
-                } footer: {
-                    Text("The stitch dictionary: what each fabric looks like knitted up at your "
-                         + "gauge, and the multiple its cast-on needs.")
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 24)
+                    .knitReadableWidth()
                 }
             }
-            .navigationTitle("Patterns")
+            .background(Organic.bg)
+            .knitHideNavigationBar()
             .sheet(item: $draft) { project in
                 NavigationStack {
                     ProjectEditorView(project: project, existingID: nil)
@@ -126,7 +115,55 @@ struct PatternsView: View {
             }
         }
     }
+
+    private func sectionHeading(_ text: String) -> some View {
+        Text(text)
+            .font(KnitType.display(24))
+            .foregroundStyle(Organic.text)
+            .padding(.top, 26)
+            .padding(.bottom, 10)
+    }
 }
+
+/// The visual half of a list row, for the places that need a NavigationLink
+/// rather than a Button. Kept in step with `OrganicListRow` by hand — there is
+/// no way to hand a NavigationLink its own label from inside a Button.
+struct OrganicRowLabel: View {
+    var title: String
+    var blurb: String
+    var tintIndex: Int
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                Circle()
+                    .fill(OrganicTint.pair(tintIndex).background)
+                    .frame(width: 60, height: 60)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(KnitType.body(20, .bold))
+                        .foregroundStyle(Organic.text)
+                    Text(blurb)
+                        .font(KnitType.body(17))
+                        .foregroundStyle(Organic.neutral.s700)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                LucideChevronRight(tint: Organic.clay.s800, size: 24)
+            }
+            .frame(minHeight: 88)
+            .padding(.vertical, 16)
+            .contentShape(Rectangle())
+
+            Rectangle()
+                .fill(Organic.neutral.s300)
+                .frame(height: 2)
+        }
+    }
+}
+
 
 /// One stitch pattern on its own: the chart it is read from, and the fabric it
 /// makes at the gauge the knitter last measured.

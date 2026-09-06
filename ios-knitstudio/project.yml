@@ -5,14 +5,17 @@
 # file list and reports the new types as "cannot find in scope":
 #
 #   brew install xcodegen          # 2.35 or newer
-#   cd ios-knitstudio && xcodegen generate && open KnitStudio.xcodeproj
+#   cd apple && xcodegen generate && open KnitStudio.xcodeproj
 #
-# MAC ONLY FOR NOW. The code is written for iOS as well and nothing in it is
-# Mac-specific outside KnitStudio/Platform/PlatformCompat.swift; iPhone and iPad
-# come back by putting iOS into BOTH supportedDestinations lists below. They are
-# left out while the Mac build is being finished because a shared target makes
-# Xcode resolve an iOS provisioning profile on every build, which fails on a
-# personal team with no registered device.
+# BUILDS FOR MAC, IPHONE AND IPAD. Nothing outside
+# KnitStudio/Platform/PlatformCompat.swift is platform-specific.
+#
+# The Organic redesign is drawn at 390x844 — an iPhone — so iOS is back in both
+# supportedDestinations lists. That does mean Xcode resolves an iOS provisioning
+# profile on every build. If it complains about signing, open the target's
+# Signing & Capabilities tab, tick "Automatically manage signing" and pick your
+# personal team; the bundle id below is already unique to you. Dropping iOS from
+# both lists puts the build back to Mac-only if you need it.
 name: KnitStudio
 options:
   bundleIdPrefix: com.acanonur
@@ -24,8 +27,7 @@ options:
 targets:
   KnitStudio:
     type: application
-    # Add iOS back here (and in the test target) to build for iPhone and iPad.
-    supportedDestinations: [macOS]
+    supportedDestinations: [macOS, iOS]
     sources:
       - KnitStudio
     info:
@@ -50,9 +52,9 @@ targets:
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.9"
-        # Native macOS, not Mac Catalyst. Put TARGETED_DEVICE_FAMILY: "1,2"
-        # back alongside this when iOS returns to supportedDestinations.
+        # Native macOS and native iOS, not Mac Catalyst.
         SUPPORTS_MACCATALYST: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         ENABLE_HARDENED_RUNTIME: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -60,7 +62,7 @@ targets:
 
   KnitStudioTests:
     type: bundle.unit-test
-    supportedDestinations: [macOS]
+    supportedDestinations: [macOS, iOS]
     sources:
       - KnitStudioTests
     dependencies:

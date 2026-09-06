@@ -89,46 +89,58 @@ struct ProjectRow: View {
 
 // MARK: - Detail
 
+/// The 1c Project screen: a deep clay header carrying the name and the three
+/// numbers you check most, with the tab pill floated across the seam onto the
+/// cream body below.
 struct ProjectDetailView: View {
     @EnvironmentObject private var store: AppStore
     @Binding var project: SavedProject
-    @State private var tab = 0
+    @State private var tab = 1
     @State private var editing = false
+    @Environment(\.dismiss) private var dismiss
+
+    private var plan: ProjectPlan { project.plan(units: store.units) }
+
+    private var tabs: [String] {
+        var names = ["Preview", "Plan", "Shop", "Counter"]
+        if project.chart != nil { names.append("Chart") }
+        return names
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("View", selection: $tab) {
-                Text("Preview").tag(0)
-                Text("Plan").tag(1)
-                Text("Shopping").tag(2)
-                Text("Counter").tag(3)
-                if project.chart != nil { Text("Chart").tag(4) }
-            }
-            .pickerStyle(.segmented)
-            .padding()
-
-            switch tab {
-            case 0: ProjectPreviewView(project: project)
-            case 1: ProjectPlanView(project: project)
-            case 2: ShoppingListDetailView(project: project)
-            case 3: RowCounterView(project: $project)
-            default:
-                if project.chart != nil {
-                    ChartEditorView(
-                        chart: Binding(
-                            get: { project.chart ?? ColourChart.blank(palette: store.stash) },
-                            set: { project.chart = $0 }),
-                        gauge: project.gauge)
+            OrganicHeader(tone: Organic.headerClay, bottomInset: 30) {
+                OrganicHeaderBar(backLabel: "Projects", tint: Organic.clay.s100) {
+                    dismiss()
+                } action: {
+                    Button("Edit") { editing = true }
+                        .font(KnitType.body(18, .semibold))
+                        .foregroundStyle(Organic.clay.s100)
+                        .buttonStyle(.plain)
                 }
+
+                Text(project.name)
+                    .font(KnitType.display(36))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 18)
+
+                HStack(spacing: 10) {
+                    OrganicStatTile(label: "Cast on", value: castOn)
+                    OrganicStatTile(label: "Rows", value: "\(plan.totalRows)")
+                    OrganicStatTile(label: "Yarn", value: yarn)
+                }
+                .padding(.top, 16)
             }
+
+            OrganicSegmentedControl(options: tabs, selection: $tab)
+
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle(project.name)
-        .knitInlineTitle()
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("Edit") { editing = true }
-            }
-        }
+        .background(Organic.bg)
+        .knitHideNavigationBar()
         .sheet(isPresented: $editing) {
             NavigationStack {
                 ProjectEditorView(project: project, existingID: project.id)
@@ -137,125 +149,103 @@ struct ProjectDetailView: View {
             .knitSheetFrame()
         }
     }
+
+    @ViewBuilder
+    private var content: some View {
+        switch tabs[min(tab, tabs.count - 1)] {
+        case "Preview": ProjectPreviewView(project: project)
+        case "Plan": ProjectPlanView(project: project)
+        case "Shop": ShoppingListDetailView(project: project)
+        case "Counter": RowCounterView(project: $project)
+        default:
+            ChartEditorView(
+                chart: Binding(
+                    get: { project.chart ?? ColourChart.blank(palette: store.stash) },
+                    set: { project.chart = $0 }),
+                gauge: project.gauge)
+        }
+    }
+
+    private var castOn: String {
+        plan.fact("Cast on") ?? plan.facts.first?.value ?? "—"
+    }
+
+    private var yarn: String {
+        plan.fact("Yarn") ?? String(format: "%.0f m", plan.metres())
+    }
 }
+
 
 // MARK: - Plan
 
+/// The plan as a vertical timeline. Each section is a numbered node on a rail,
+/// which suits knitting better than a stack of cards: the work is strictly
+/// sequential and what you want to know is where you are in it.
 struct ProjectPlanView: View {
     @EnvironmentObject private var store: AppStore
     let project: SavedProject
 
     private var plan: ProjectPlan { project.plan(units: store.units) }
 
+    /// The section the row counter has reached, so the rail can show it.
+    private var currentIndex: Int {
+        var running = 0
+        for (index, section) in plan.sections.enumerated() {
+            running += section.totalRows
+            if project.rowsCompleted < running { return index }
+        }
+        return plan.sections.count
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                FactGrid(facts: plan.facts)
-
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(plan.warnings, id: \.self) { warning in
                     NoteBox(kind: .warning, text: warning)
+                        .padding(.bottom, 12)
+                }
+
+                ForEach(Array(plan.sections.enumerated()), id: \.offset) { index, section in
+                    OrganicTimelineRow(
+                        number: index + 1,
+                        title: section.name,
+                        meta: section.totalRows > 0 ? "\(section.totalRows) rounds" : "",
+                        text: section.detail ?? section.steps.first?.text ?? "",
+                        stitches: section.steps.last?.stitchCount.map { "\($0) sts" },
+                        state: index < currentIndex ? .done
+                            : (index == currentIndex ? .current : .todo),
+                        isLast: index == plan.sections.count - 1)
                 }
 
                 yarnSummary
-
-                ForEach(plan.sections) { section in
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(section.name)
-                                .font(.headline)
-                            Spacer()
-                            if section.totalRows > 0 {
-                                Text("\(section.totalRows) rows")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        if let detail = section.detail {
-                            Text(detail)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        ForEach(section.steps) { step in
-                            HStack(alignment: .top, spacing: 10) {
-                                Image(systemName: step.isMilestone ? "flag.fill" : "circle.fill")
-                                    .font(.system(size: step.isMilestone ? 10 : 5))
-                                    .foregroundStyle(step.isMilestone ? Color.accentColor : .secondary)
-                                    .frame(width: 14)
-                                    .padding(.top, 6)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(step.text)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    if let count = step.stitchCount {
-                                        Text("\(count) sts")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .monospacedDigit()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
-                }
-
-                ForEach(plan.notes, id: \.self) { note in
-                    NoteBox(kind: .note, text: note)
-                }
-
-                let techniques = TechniqueLibrary.recommended(
-                    for: project.kind, structure: project.structure)
-                if !techniques.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Techniques this uses")
-                            .font(.headline)
-                        ForEach(techniques) { technique in
-                            NavigationLink {
-                                TechniqueDetailView(technique: technique)
-                            } label: {
-                                HStack {
-                                    Text(technique.name)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
-                }
-
-                ShareLink(item: plan.plainText(units: store.units)) {
-                    Label("Share the pattern", systemImage: "square.and.arrow.up")
-                }
-                .buttonStyle(.bordered)
+                    .padding(.top, 4)
             }
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.top, 22)
+            .padding(.bottom, 24)
+            .knitReadableWidth()
         }
     }
 
     private var yarnSummary: some View {
-        let metres = plan.metres()
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("Yarn needed")
-                .font(.headline)
-            Text(String(format: "%.0f m of %@ across %.0f stitches",
-                        metres, project.structure.name.lowercased(), plan.totalStitches))
-                .font(.subheadline)
-            Text("Estimated from your gauge, not from a table — a tighter swatch means more yarn.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Yarn")
+                .font(KnitType.display(20))
+                .foregroundStyle(Organic.clay.s800)
+            Text(String(format: "%.0f m across %.0f stitches", plan.metres(), plan.totalStitches))
+                .font(KnitType.body(18))
+                .foregroundStyle(Organic.clay.s900)
+            Text("Worked out from your own gauge, not a table — a tighter swatch means more yarn.")
+                .font(KnitType.body(16))
+                .foregroundStyle(Organic.neutral.s700)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
+        .padding(18)
+        .background(Organic.clay.s100, in: RoundedRectangle(cornerRadius: Organic.radiusLg))
     }
 }
+
 
 // MARK: - Shopping
 
@@ -332,6 +322,9 @@ struct ShoppingListDetailView: View {
 
 // MARK: - Row counter
 
+/// The counter, 1c style: the section you are in as a sage pill, the row count
+/// huge and in clay, and two circular buttons sized so they can be hit without
+/// looking away from the needles.
 struct RowCounterView: View {
     @EnvironmentObject private var store: AppStore
     @Binding var project: SavedProject
@@ -350,62 +343,59 @@ struct RowCounterView: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 18) {
             Spacer()
 
+            if let position {
+                OrganicPill(
+                    text: "\(position.section.name) · row \(position.rowInSection) of \(position.section.totalRows)",
+                    background: Organic.sage.s200,
+                    foreground: Organic.sage.s800)
+            }
+
             Text("\(project.rowsCompleted)")
-                .font(.system(size: 84, weight: .bold, design: .rounded))
+                .font(KnitType.display(130))
+                .foregroundStyle(Organic.clay.s800)
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
                 .contentTransition(.numericText())
 
             Text("rows worked of \(plan.totalRows)")
-                .foregroundStyle(.secondary)
+                .font(KnitType.body(20))
+                .foregroundStyle(Organic.neutral.s700)
 
-            if let position {
-                VStack(spacing: 4) {
-                    Text(position.section.name)
-                        .font(.headline)
-                    Text("row \(position.rowInSection) of \(position.section.totalRows)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Color.knitSecondaryBackground, in: RoundedRectangle(cornerRadius: 14))
-            }
-
-            ProgressView(
-                value: Double(project.rowsCompleted),
-                total: Double(max(1, plan.totalRows)))
-                .padding(.horizontal, 40)
-
-            HStack(spacing: 30) {
+            HStack(spacing: 18) {
                 Button {
                     project.rowsCompleted = max(0, project.rowsCompleted - 1)
                 } label: {
-                    Image(systemName: "minus")
-                        .font(.title2)
-                        .frame(width: 64, height: 64)
+                    LucideMinus(tint: Organic.clay.s800)
+                        .frame(width: 88, height: 88)
+                        .overlay(Circle().strokeBorder(Organic.clay.s800, lineWidth: 3))
                 }
-                .buttonStyle(.bordered)
-                .clipShape(Circle())
+                .buttonStyle(.plain)
 
                 Button {
                     project.rowsCompleted += 1
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.largeTitle)
-                        .frame(width: 96, height: 96)
+                    LucidePlus(tint: .white)
+                        .frame(width: 132, height: 132)
+                        .background(Organic.clay.s800, in: Circle())
+                        .organicShadow(Organic.shadowLg)
                 }
-                .buttonStyle(.borderedProminent)
-                .clipShape(Circle())
+                .buttonStyle(.plain)
             }
+            .padding(.top, 10)
 
-            Button("Reset", role: .destructive) { project.rowsCompleted = 0 }
-                .font(.caption)
+            Button("Reset to 0") { project.rowsCompleted = 0 }
+                .font(KnitType.body(16, .semibold))
+                .foregroundStyle(Organic.clay.s700)
+                .buttonStyle(.plain)
 
             Spacer()
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
     }
 }
+
