@@ -57,7 +57,9 @@ targets:
           the text is sent — the photograph stays on your phone.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.aisecretary
+        # Must be unique across the App Store — com.example.* is a placeholder
+        # that is already claimed, and Apple will refuse to sign against it.
+        PRODUCT_BUNDLE_IDENTIFIER: com.canonur.aisecretary
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.9"
