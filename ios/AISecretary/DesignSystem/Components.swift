@@ -43,12 +43,15 @@ struct ModernistButtonStyle: ButtonStyle {
     var foreground: Color?
 
     func makeBody(configuration: Configuration) -> some View {
-        Body(style: self, configuration: configuration)
+        StyledLabel(style: self, configuration: configuration)
     }
 
     /// A real view, so `isEnabled` is read from the live environment. A
     /// `ButtonStyle` is not part of the view graph and would never see it.
-    private struct Body: View {
+    ///
+    /// Not named `Body`: that is `ButtonStyle`'s own associated type, and a
+    /// nested type of that name would be inferred as the conformance's witness.
+    private struct StyledLabel: View {
         @Environment(\.isEnabled) private var isEnabled
 
         let style: ModernistButtonStyle
