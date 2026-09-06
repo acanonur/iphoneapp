@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Needles, crossed behind the ball. -->
+    <path
+        android:strokeWidth="3.5"
+        android:strokeColor="#F0E9DA"
+        android:strokeLineCap="round"
+        android:pathData="M36,72 L74,34" />
+    <path
+        android:strokeWidth="3.5"
+        android:strokeColor="#F0E9DA"
+        android:strokeLineCap="round"
+        android:pathData="M72,72 L34,34" />
+
+    <!-- Ball of yarn. -->
+    <path
+        android:fillColor="#D6A32E"
+        android:pathData="M54,32 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0" />
+
+    <!-- Wound strands across the ball. -->
+    <path
+        android:strokeWidth="2"
+        android:strokeColor="#8A6412"
+        android:strokeLineCap="round"
+        android:pathData="M38,24 Q54,32 70,24" />
+    <path
+        android:strokeWidth="2"
+        android:strokeColor="#8A6412"
+        android:strokeLineCap="round"
+        android:pathData="M36,38 Q54,30 72,38" />
+    <path
+        android:strokeWidth="2"
+        android:strokeColor="#8A6412"
+        android:strokeLineCap="round"
+        android:pathData="M44,15 Q52,32 44,49" />
+    <path
+        android:strokeWidth="2"
+        android:strokeColor="#8A6412"
+        android:strokeLineCap="round"
+        android:pathData="M64,15 Q56,32 64,49" />
+
+    <!-- Loose tail running down to the needles. -->
+    <path
+        android:strokeWidth="2.5"
+        android:strokeColor="#D6A32E"
+        android:strokeLineCap="round"
+        android:pathData="M54,52 Q50,62 56,68 Q62,74 54,82" />
+</vector>
