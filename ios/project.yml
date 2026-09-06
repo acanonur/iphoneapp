@@ -34,6 +34,12 @@ targets:
         # Remove for production (use HTTPS).
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # On a real device the backend is reached at the developer Mac's LAN
+        # address, and since iOS 14 that needs the user's permission. Without
+        # this string the request is refused before it is ever made.
+        NSLocalNetworkUsageDescription: >-
+          The app talks to the secretary backend running on your computer, so it
+          needs to reach it over your local network.
         # Live translator permissions
         NSMicrophoneUsageDescription: >-
           The microphone is used by the live translator so what is said can be
