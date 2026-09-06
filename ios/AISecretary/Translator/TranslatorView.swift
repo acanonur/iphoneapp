@@ -2,28 +2,33 @@ import SwiftUI
 import Translation
 
 struct ConversationEntry: Identifiable, Equatable {
-    enum Direction {
+    enum Side {
         /// You spoke; translated into their language.
-        case outgoing
+        case mine
         /// They spoke; translated into your language.
-        case incoming
+        case theirs
     }
 
-    let id = UUID()
-    let direction: Direction
+    let id = UUID().uuidString
+    let side: Side
     let original: String
     let translated: String
 }
 
 private struct PendingUtterance: Equatable {
     let text: String
-    let direction: ConversationEntry.Direction
+    let side: ConversationEntry.Side
 }
 
-/// Live two-way conversation translator: tap a mic, speak, and the app shows
-/// the translation as text and speaks it aloud. Recognition, translation and
-/// speech all use Apple's on-device frameworks — no server, no per-use cost.
+/// Live two-way conversation translator, laid out as a two-column ledger: what
+/// was said on one side, what the other side hears on the other.
+///
+/// Recognition, translation and speech all use Apple's on-device frameworks —
+/// no server, no per-use cost, and it keeps working offline once the language
+/// packs are downloaded.
 struct TranslatorView: View {
+    var goBack: () -> Void
+
     @AppStorage("translator.myLanguage") private var myLanguageRaw = Language.tr.rawValue
     @AppStorage("translator.theirLanguage") private var theirLanguageRaw = Language.de.rawValue
     @AppStorage("translator.autoSpeak") private var autoSpeak = true
@@ -32,7 +37,7 @@ struct TranslatorView: View {
     @State private var speaker = Speaker()
 
     @State private var entries: [ConversationEntry] = []
-    @State private var activeDirection: ConversationEntry.Direction?
+    @State private var listening: ConversationEntry.Side?
     @State private var pending: PendingUtterance?
     @State private var configuration: TranslationSession.Configuration?
     @State private var errorMessage: String?
@@ -42,97 +47,122 @@ struct TranslatorView: View {
     private var theirLanguage: Language { Language(rawValue: theirLanguageRaw) ?? .de }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                languageBar
-                Divider()
-                conversation
-                Divider()
-                controls
-            }
-            .navigationTitle("Translator")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        autoSpeak.toggle()
-                    } label: {
-                        Image(systemName: autoSpeak ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                    }
-                    .accessibilityLabel(autoSpeak ? "Voice output on" : "Voice output off")
+        VStack(spacing: 0) {
+            header
+            languageBar
+            conversation
+            controls
+        }
+        .translationTask(configuration) { session in
+            await translatePending(with: session)
+        }
+        .task {
+            permissionsGranted = await SpeechRecognizer.requestPermissions()
+        }
+        .alert("Translator", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    // MARK: - Chrome
+
+    private var header: some View {
+        HeaderBar {
+            HStack {
+                HStack(spacing: 6) {
+                    IconButton(glyph: .chevronLeft, accessibilityLabel: "Back", action: goBack)
+                        .padding(.leading, -10)
+                    Wordmark(title: "Live translator")
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    if !entries.isEmpty {
-                        Button("Clear") { entries.removeAll() }
-                    }
+                Spacer()
+                IconButton(
+                    glyph: autoSpeak ? .volumeHigh : .volumeOff,
+                    accessibilityLabel: autoSpeak ? "Voice output on" : "Voice output off"
+                ) {
+                    autoSpeak.toggle()
+                    if !autoSpeak { speaker.stop() }
                 }
-            }
-            .translationTask(configuration) { session in
-                await translatePending(with: session)
-            }
-            .task {
-                permissionsGranted = await SpeechRecognizer.requestPermissions()
-            }
-            .alert("Translator", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") { errorMessage = nil }
-            } message: {
-                Text(errorMessage ?? "")
+                .padding(.trailing, -8)
             }
         }
     }
 
-    // MARK: - Subviews
-
+    /// Who speaks what. Tapping a side cycles through the three languages;
+    /// the middle control swaps them.
     private var languageBar: some View {
-        HStack(spacing: 12) {
-            VStack(spacing: 2) {
-                Text("You speak").font(.caption2).foregroundStyle(.secondary)
-                Picker("You speak", selection: $myLanguageRaw) {
-                    ForEach(Language.allCases) { lang in
-                        Text(lang.displayName).tag(lang.rawValue)
-                    }
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                languageButton(title: "You speak", language: myLanguage) {
+                    myLanguageRaw = cycled(from: myLanguage).rawValue
                 }
-                .pickerStyle(.menu)
-            }
-            .frame(maxWidth: .infinity)
 
-            Button {
-                (myLanguageRaw, theirLanguageRaw) = (theirLanguageRaw, myLanguageRaw)
-            } label: {
-                Image(systemName: "arrow.left.arrow.right")
-            }
-            .accessibilityLabel("Swap languages")
-
-            VStack(spacing: 2) {
-                Text("They speak").font(.caption2).foregroundStyle(.secondary)
-                Picker("They speak", selection: $theirLanguageRaw) {
-                    ForEach(Language.allCases) { lang in
-                        Text(lang.displayName).tag(lang.rawValue)
-                    }
+                IconButton(glyph: .swap, accessibilityLabel: "Swap languages") {
+                    let mine = myLanguageRaw
+                    myLanguageRaw = theirLanguageRaw
+                    theirLanguageRaw = mine
                 }
-                .pickerStyle(.menu)
+                .frame(width: 44)
+
+                HStack(spacing: 0) {
+                    VHairline()
+                    languageButton(title: "They speak", language: theirLanguage) {
+                        theirLanguageRaw = cycled(from: theirLanguage).rawValue
+                    }
+                    .padding(.leading, 12)
+                }
             }
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, Modernist.gutter)
+            .padding(.vertical, 12)
+            Rule()
         }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
+        .fixedSize(horizontal: false, vertical: true)
     }
+
+    private func languageButton(
+        title: String,
+        language: Language,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 4) {
+                Kicker(text: title)
+                Text(language.displayName)
+                    .typeStyle(.subhead)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title): \(language.displayName)")
+    }
+
+    /// tr → de → en → tr, as the design cycles them.
+    private func cycled(from language: Language) -> Language {
+        let order: [Language] = [.tr, .de, .en]
+        let index = order.firstIndex(of: language) ?? 0
+        return order[(index + 1) % order.count]
+    }
+
+    // MARK: - The conversation
 
     private var conversation: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 10) {
-                    if entries.isEmpty && activeDirection == nil {
-                        emptyHint
+                VStack(spacing: 0) {
+                    if entries.isEmpty, listening == nil {
+                        emptyState
                     }
                     ForEach(entries) { entry in
-                        bubble(for: entry)
+                        entryRow(entry).id(entry.id)
                     }
-                    if let direction = activeDirection {
-                        listeningBubble(direction: direction)
+                    if let listening {
+                        listeningRow(listening)
                     }
+                    Color.clear.frame(height: 20)
                 }
-                .padding()
+                .padding(.horizontal, Modernist.gutter)
             }
             .onChange(of: entries) {
                 if let last = entries.last {
@@ -142,135 +172,191 @@ struct TranslatorView: View {
         }
     }
 
-    private var emptyHint: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "waveform.and.mic")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-            Text("Hold a conversation across languages")
-                .font(.headline)
-            Text("Tap “I speak” and talk — the other person instantly sees and hears it in their language. Tap “They speak” for their turn. Great for reception desks, offices and speakerphone conversations.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Hold a conversation across languages.")
+                .typeStyle(.headlineSmall)
+            Text(
+                "Tap “I speak” and talk. The other side reads and hears it in their language. Tap “They speak” for their turn. Suited to reception desks, offices and speakerphone calls."
+            )
+            .typeStyle(TypeStyle(size: 14, weight: .regular, lineHeight: 1.5))
+            .foregroundStyle(Modernist.Neutral.s700)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 40)
     }
 
-    private func bubble(for entry: ConversationEntry) -> some View {
-        let isOutgoing = entry.direction == .outgoing
-        return VStack(alignment: isOutgoing ? .trailing : .leading, spacing: 4) {
-            Text(entry.original)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+    /// Original on the speaker's side, translation on the listener's.
+    private func entryRow(_ entry: ConversationEntry) -> some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
+                if entry.side == .mine {
+                    originalCell(entry.original).padding(.trailing, 12)
+                    VHairline()
+                    translationCell(entry).padding(.leading, 12)
+                } else {
+                    translationCell(entry).padding(.trailing, 12)
+                    VHairline()
+                    originalCell(entry.original).padding(.leading, 12)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Hairline()
+        }
+    }
+
+    private func originalCell(_ text: String) -> some View {
+        Text(text)
+            .typeStyle(.smallTight)
+            .foregroundStyle(Modernist.Neutral.s700)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 14)
+    }
+
+    private func translationCell(_ entry: ConversationEntry) -> some View {
+        VStack(alignment: .leading, spacing: Modernist.Space.s2) {
             Text(entry.translated)
-                .font(.title3.weight(.medium))
+                .typeStyle(.translated)
                 .textSelection(.enabled)
             Button {
-                let target = languagePair(for: entry.direction).target
-                speaker.speak(entry.translated, languageCode: target.voiceLanguageCode)
+                play(entry)
             } label: {
-                Label("Play", systemImage: "play.circle")
-                    .font(.caption)
+                HStack(spacing: 5) {
+                    Icon(glyph: .volumeLow, size: 14)
+                    Text(speaker.speakingID == entry.id ? "Speaking…" : "Play")
+                }
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(
+                ModernistButtonStyle(
+                    variant: .ghost, fontSize: 12, horizontalPadding: 4, verticalPadding: 2
+                )
+            )
+            .padding(.leading, -4)
         }
-        .padding(12)
-        .background(
-            (isOutgoing ? Color.blue : Color.green).opacity(0.10),
-            in: RoundedRectangle(cornerRadius: 14)
-        )
-        .frame(maxWidth: .infinity, alignment: isOutgoing ? .trailing : .leading)
-        .id(entry.id)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 14)
     }
 
-    private func listeningBubble(direction: ConversationEntry.Direction) -> some View {
-        let isOutgoing = direction == .outgoing
-        return HStack(spacing: 8) {
-            Image(systemName: "waveform")
-                .symbolEffect(.variableColor.iterative, isActive: true)
-            Text(recognizer.transcript.isEmpty ? "Listening…" : recognizer.transcript)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+    /// The live row while the microphone is open: a level meter and the words
+    /// as they are recognised.
+    private func listeningRow(_ side: ConversationEntry.Side) -> some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
+                if side == .mine {
+                    partialCell.padding(.trailing, 12)
+                    VHairline()
+                    waitingCell("Translating as you speak…").padding(.leading, 12)
+                } else {
+                    waitingCell("Translating as they speak…").padding(.trailing, 12)
+                    VHairline()
+                    partialCell.padding(.leading, 12)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Hairline()
         }
-        .padding(12)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
-        .frame(maxWidth: .infinity, alignment: isOutgoing ? .trailing : .leading)
     }
+
+    private var partialCell: some View {
+        VStack(alignment: .leading, spacing: Modernist.Space.s2) {
+            ListeningBars()
+            Text(recognizer.transcript.isEmpty ? "Listening…" : recognizer.transcript)
+                .typeStyle(TypeStyle(size: 14, weight: .regular, lineHeight: 1.4))
+                .foregroundStyle(Modernist.Accent.s700)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 14)
+    }
+
+    private func waitingCell(_ text: String) -> some View {
+        Text(text)
+            .typeStyle(.smallTight)
+            .foregroundStyle(Modernist.Neutral.s700)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 14)
+    }
+
+    // MARK: - Controls
 
     private var controls: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                micButton(
-                    direction: .incoming,
-                    language: theirLanguage,
-                    tint: .green,
-                    idleLabel: "\(theirLanguage.shortFlag) They speak"
-                )
-                micButton(
-                    direction: .outgoing,
-                    language: myLanguage,
-                    tint: .blue,
-                    idleLabel: "\(myLanguage.shortFlag) I speak"
-                )
+        VStack(spacing: 0) {
+            Rule()
+            HStack(spacing: 0) {
+                micButton(side: .mine, language: myLanguage, idleKicker: "I speak")
+                VHairline()
+                micButton(side: .theirs, language: theirLanguage, idleKicker: "They speak")
             }
-            Text("Works face-to-face and over speakerphone. During your own phone call, iOS does not let apps hear the call — translated in-app calls are on the roadmap.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            Hairline()
+            Text(
+                "Works face-to-face and over speakerphone. iOS does not let apps listen to your own phone call."
+            )
+            .typeStyle(.captionSmall)
+            .foregroundStyle(Modernist.Neutral.s700)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Modernist.gutter)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
         }
-        .padding()
     }
 
     private func micButton(
-        direction: ConversationEntry.Direction,
+        side: ConversationEntry.Side,
         language: Language,
-        tint: Color,
-        idleLabel: String
+        idleKicker: String
     ) -> some View {
-        let isActive = activeDirection == direction
+        let isActive = listening == side
         return Button {
             if isActive {
                 finishListening()
-            } else if activeDirection == nil {
-                startListening(direction: direction, language: language)
+            } else if listening == nil {
+                startListening(side: side, language: language)
             }
         } label: {
-            VStack(spacing: 6) {
-                Image(systemName: isActive ? "stop.circle.fill" : "mic.circle.fill")
-                    .font(.system(size: 42))
-                Text(isActive ? "Tap when done" : idleLabel)
-                    .font(.footnote.weight(.semibold))
+            VStack(alignment: .leading, spacing: 0) {
+                Icon(glyph: isActive ? .stop : .mic, size: 22)
+                Spacer(minLength: Modernist.Space.s2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text((isActive ? "Listening" : idleKicker).uppercased())
+                        .typeStyle(.kickerRow)
+                    Text(isActive ? "Tap when done" : language.displayName)
+                        .typeStyle(TypeStyle(size: 16, weight: .extrabold, lineHeight: 1.2))
+                }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(tint.opacity(isActive ? 0.25 : 0.12), in: RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, Modernist.gutter)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
+            .foregroundStyle(isActive ? Modernist.bg : Modernist.text)
+            .background(isActive ? Modernist.accent : .clear)
+            .contentShape(Rectangle())
         }
-        .tint(tint)
-        .disabled(activeDirection != nil && !isActive)
+        .buttonStyle(.plain)
+        .opacity(listening != nil && !isActive ? 0.45 : 1)
+        .disabled(listening != nil && !isActive)
     }
 
-    // MARK: - Actions
+    // MARK: - Speech
 
-    private func languagePair(
-        for direction: ConversationEntry.Direction
+    private func pair(
+        for side: ConversationEntry.Side
     ) -> (source: Language, target: Language) {
-        direction == .outgoing ? (myLanguage, theirLanguage) : (theirLanguage, myLanguage)
+        side == .mine ? (myLanguage, theirLanguage) : (theirLanguage, myLanguage)
     }
 
-    private func startListening(direction: ConversationEntry.Direction, language: Language) {
+    private func startListening(side: ConversationEntry.Side, language: Language) {
         guard myLanguage != theirLanguage else {
             errorMessage = "Please choose two different languages."
             return
         }
         guard permissionsGranted else {
-            errorMessage = "Microphone and speech recognition access are needed. Please allow both in Settings."
+            errorMessage =
+                "Microphone and speech recognition access are needed. Please allow both in Settings."
             return
         }
         speaker.stop()
         do {
             try recognizer.start(localeIdentifier: language.speechLocaleIdentifier)
-            activeDirection = direction
+            listening = side
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -278,14 +364,14 @@ struct TranslatorView: View {
 
     private func finishListening() {
         let text = recognizer.stop().trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let direction = activeDirection else { return }
-        activeDirection = nil
+        guard let side = listening else { return }
+        listening = nil
         guard !text.isEmpty else { return }
 
-        pending = PendingUtterance(text: text, direction: direction)
-        let pair = languagePair(for: direction)
-        let source = pair.source.localeLanguage
-        let target = pair.target.localeLanguage
+        pending = PendingUtterance(text: text, side: side)
+        let languages = pair(for: side)
+        let source = languages.source.localeLanguage
+        let target = languages.target.localeLanguage
         if configuration?.source == source, configuration?.target == target {
             // Same language pair: re-trigger the existing translation task.
             configuration?.invalidate()
@@ -298,19 +384,22 @@ struct TranslatorView: View {
         guard let utterance = pending else { return }
         do {
             let response = try await session.translate(utterance.text)
-            entries.append(ConversationEntry(
-                direction: utterance.direction,
+            let entry = ConversationEntry(
+                side: utterance.side,
                 original: utterance.text,
                 translated: response.targetText
-            ))
+            )
+            entries.append(entry)
             pending = nil
-            if autoSpeak {
-                let target = languagePair(for: utterance.direction).target
-                speaker.speak(response.targetText, languageCode: target.voiceLanguageCode)
-            }
+            if autoSpeak { play(entry) }
         } catch {
             pending = nil
             errorMessage = "Translation failed: \(error.localizedDescription)"
         }
+    }
+
+    private func play(_ entry: ConversationEntry) {
+        let target = pair(for: entry.side).target
+        speaker.speak(entry.translated, languageCode: target.voiceLanguageCode, id: entry.id)
     }
 }

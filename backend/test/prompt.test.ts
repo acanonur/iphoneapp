@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildAgentVariables, disclosureLine } from '../src/prompt.js';
-import type { CallTask } from '../src/types.js';
+import type { SecretaryTask } from '../src/types.js';
 
-const baseTask: CallTask = {
+const baseTask: SecretaryTask = {
   id: 't1',
   deviceId: 'd1',
+  kind: 'call',
   goal: 'Book a dentist appointment for next week',
   phoneNumber: '+493012345678',
   language: 'de',
@@ -12,9 +13,14 @@ const baseTask: CallTask = {
   userName: 'Ali',
   status: 'queued',
   providerCallId: null,
+  documentText: null,
   transcript: null,
   summary: null,
+  result: null,
+  todo: null,
+  todoWhen: null,
   outcome: null,
+  durationSeconds: null,
   error: null,
   createdAt: new Date(0).toISOString(),
   updatedAt: new Date(0).toISOString(),

@@ -28,16 +28,16 @@ struct APIClient {
         return fresh
     }
 
-    func createCall(_ request: NewCallRequest) async throws -> CallTask {
-        try await send(path: "/api/calls", method: "POST", body: request)
+    func createTask(_ request: NewTaskRequest) async throws -> SecretaryTask {
+        try await send(path: "/api/tasks", method: "POST", body: request)
     }
 
-    func listCalls() async throws -> [CallTask] {
-        try await send(path: "/api/calls", method: "GET", body: Optional<NewCallRequest>.none)
+    func listTasks() async throws -> [SecretaryTask] {
+        try await send(path: "/api/tasks", method: "GET", body: Optional<NewTaskRequest>.none)
     }
 
-    func getCall(id: String) async throws -> CallTask {
-        try await send(path: "/api/calls/\(id)", method: "GET", body: Optional<NewCallRequest>.none)
+    func getTask(id: String) async throws -> SecretaryTask {
+        try await send(path: "/api/tasks/\(id)", method: "GET", body: Optional<NewTaskRequest>.none)
     }
 
     private func send<Body: Encodable, Response: Decodable>(

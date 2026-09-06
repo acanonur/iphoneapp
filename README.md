@@ -12,13 +12,20 @@
 An iPhone app for people living in a country whose language they don't speak well.
 Two tools in one app:
 
-**1. Secretary** — you type **what you need** and **a phone number**; your AI secretary
-makes the real phone call in **German, English or Turkish**, has the conversation, and
-reports back in your own language.
+**1. Secretary** — you type **what you need**; your AI secretary does it and reports back
+in your own language. It makes the real phone call in **German, English or Turkish**,
+reads the official letter you photograph, drafts the email you can't phrase, fills in the
+form as far as it can, and keeps the follow-up.
 
 > *"Call my dentist at +49 30 1234567 and book a check-up appointment for next week,
 > mornings preferred."* → 3 minutes later: *"Randevunuz salı 10:30'da alındı.
 > Sigorta kartınızı getirmeniz gerekiyor."*
+
+The interface was designed in [Claude Design](https://claude.ai/design) on the **Modernist**
+system — Archivo, ink on a light ground, one red, zero corner radius, 2px rules,
+everything flush left. One home, one primary action, and a ledger of everything the
+secretary has been asked to do. See **[docs/ai-secretary-design.md](docs/ai-secretary-design.md)**
+for how the design maps onto the code.
 
 **2. Live Translator** — a two-way conversation translator for the moments you're there
 in person (reception desks, offices, speakerphone conversations). Tap "I speak", talk in
@@ -29,7 +36,7 @@ once the language packs are downloaded.
 
 ## How it works
 
-### Feature 1: Secretary (server-side calls)
+### Feature 1: Secretary (server-side tasks)
 
 iPhones cannot place and control carrier phone calls from an app, so the app is a thin
 client and the call happens server-side:
@@ -54,6 +61,21 @@ iPhone app (SwiftUI)          Backend (Node/Fastify)            The real phone c
   into a short report in the user's language with an outcome verdict; otherwise it falls back
   to Retell's summary or the transcript.
 
+**Beyond calls.** The secretary also handles the paperwork, as text tasks rather than voice
+ones. Each kind ends in the state the app's ledger shows:
+
+| Kind | What Claude does | Ends as |
+| --- | --- | --- |
+| **Letter or document** | Explains who sent it, what it asks for, any deadline, whether money is due; drafts a reply in the letter's language | `completed` |
+| **Email or message** | Writes the message, ready to send | `draft` — waiting for your approval |
+| **Fill in a form** | Fills it in as far as the information allows, marking what it cannot | `needs_input` |
+| **Follow-up or reminder** | Nothing — it is a date, not a piece of writing | `scheduled` |
+
+A photographed letter or form is read **on the phone** with Vision, and only the recognised
+text is sent; the photograph never leaves the device. With no `ANTHROPIC_API_KEY` the same
+states are reached with an honest placeholder summary, so the whole app stays demoable
+with no keys at all.
+
 ### Feature 2: Live Translator (fully on-device)
 
 ```
@@ -75,7 +97,9 @@ answer a normal incoming call (no app audio plumbing needed) — see Roadmap.
 ```
 backend/   Node 22 + TypeScript + Fastify API, SQLite (node:sqlite), tests (vitest)
 ios/       SwiftUI app (XcodeGen project definition + sources)
-docs/      Retell agent prompt & setup guide
+             AISecretary/DesignSystem/  the Modernist system in SwiftUI
+             AISecretary/Views/         the redesigned screens
+docs/      Retell agent prompt & setup guide, and how the design maps onto the code
 ```
 
 ## Quickstart — backend (no keys needed)
@@ -92,12 +116,17 @@ Try it:
 
 ```bash
 # start a (simulated) call
-curl -X POST http://localhost:8787/api/calls \
+curl -X POST http://localhost:8787/api/tasks \
   -H 'content-type: application/json' -H 'x-device-id: demo' \
-  -d '{"goal":"Book a dentist appointment for next week","phoneNumber":"+493012345678","language":"de","summaryLanguage":"tr","userName":"Can"}'
+  -d '{"kind":"call","goal":"Book a dentist appointment for next week","phoneNumber":"+493012345678","language":"de","summaryLanguage":"tr","userName":"Can"}'
+
+# ask it to read a letter instead — no phone number needed
+curl -X POST http://localhost:8787/api/tasks \
+  -H 'content-type: application/json' -H 'x-device-id: demo' \
+  -d '{"kind":"letter","goal":"What does this letter from the Finanzamt ask for?","documentText":"Sehr geehrte Damen und Herren, ...","summaryLanguage":"tr"}'
 
 # ~10s later: status "completed" with transcript + report
-curl http://localhost:8787/api/calls -H 'x-device-id: demo'
+curl http://localhost:8787/api/tasks -H 'x-device-id: demo'
 ```
 
 Tests & typecheck: `npm test && npm run typecheck`
@@ -106,10 +135,14 @@ Tests & typecheck: `npm test && npm run typecheck`
 
 | Method & path                  | Purpose                                            |
 | ------------------------------ | -------------------------------------------------- |
-| `POST /api/calls`              | Start a call. Body: `goal`, `phoneNumber` (E.164), `language` (`de/en/tr`), optional `summaryLanguage`, `userName`. Header `X-Device-Id` required. |
-| `GET /api/calls`               | List this device's calls.                          |
-| `GET /api/calls/:id`           | One call with live `status`, `transcript`, `summary`, `outcome`. |
+| `POST /api/tasks`              | Start a task. Body: `goal`, optional `kind` (`call`/`letter`/`message`/`form`/`followup`/`reminder`, default `call`), `phoneNumber` (E.164, required for a call), `language` (`de/en/tr`), `summaryLanguage`, `userName`, `documentText`, `todoWhen`. Header `X-Device-Id` required. |
+| `GET /api/tasks`               | List this device's tasks.                          |
+| `GET /api/tasks/:id`           | One task with live `status`, `transcript`, `summary`, `result`, `outcome`. |
 | `POST /webhooks/retell/:token` | Retell webhook (token = `WEBHOOK_SECRET`).         |
+
+`/api/calls` still works as it did — it is the same handler with `phoneNumber` required —
+so an older build of the app keeps running against a newer backend. Existing SQLite
+databases are migrated in place on startup.
 
 ## Quickstart — iOS app
 
@@ -121,13 +154,16 @@ cd ios && xcodegen generate
 open AISecretary.xcodeproj    # pick a simulator, press Run
 ```
 
-- **Secretary tab** talks to `http://localhost:8787` (see `AISecretary/AppConfig.swift`) —
-  start the backend first, then create a call and watch it go
-  *Queued → Dialing → On the call → Completed* with the report and transcript.
-  On a physical device, change `AppConfig.baseURL` to your Mac's LAN IP or a deployed URL.
-- **Translator tab** needs no backend. Test it on a **real device** (the simulator has
-  limited microphone/translation support). On first use, iOS asks to download the
-  language packs and to allow microphone + speech recognition.
+- The app talks to `http://localhost:8787` (see `AISecretary/AppConfig.swift`) — start the
+  backend first, then brief the secretary and watch a call go
+  *Queued → Dialing → On the call → Report* on the live screen, with the transcript
+  filling in. On a physical device, change `AppConfig.baseURL` to your Mac's LAN IP or a
+  deployed URL.
+- **The translator** (from the home screen's grid, or the header) needs no backend. Test it
+  on a **real device** (the simulator has limited microphone/translation support). On first
+  use, iOS asks to download the language packs and to allow microphone + speech recognition.
+- **Photographing a letter or form** uses the document camera on a device and falls back to
+  the photo library in the simulator.
 
 ## Going live with real calls
 

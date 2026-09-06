@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { CallOutcome, CallTask, Language } from './types.js';
+import type { CallOutcome, SecretaryTask, Language } from './types.js';
 import { LANGUAGE_NAMES } from './prompt.js';
 
 export interface CallReport {
@@ -31,7 +31,7 @@ const REPORT_SCHEMA = {
  */
 export async function summarizeCall(
   apiKey: string,
-  task: CallTask,
+  task: SecretaryTask,
   transcript: string,
 ): Promise<CallReport | null> {
   const client = new Anthropic({ apiKey });

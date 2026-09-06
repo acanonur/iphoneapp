@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type {
   CallProvider,
-  CallTask,
-  CallUpdateHandler,
+  SecretaryTask,
+  TaskUpdateHandler,
   Language,
   StartCallResult,
 } from '../types.js';
@@ -20,7 +20,7 @@ const DEFAULT_DELAYS: MockDelays = {
   completedMs: 9_000,
 };
 
-function fakeTranscript(task: CallTask): string {
+function fakeTranscript(task: SecretaryTask): string {
   const ai = disclosureLine(task.language, task.userName);
   const lines: Record<Language, string[]> = {
     de: [
@@ -60,11 +60,11 @@ function fakeTranscript(task: CallTask): string {
  */
 export class MockProvider implements CallProvider {
   readonly name = 'mock';
-  private readonly onUpdate: CallUpdateHandler;
+  private readonly onUpdate: TaskUpdateHandler;
   private readonly delays: MockDelays;
   private readonly timers = new Set<NodeJS.Timeout>();
 
-  constructor(onUpdate: CallUpdateHandler, delays: Partial<MockDelays> = {}) {
+  constructor(onUpdate: TaskUpdateHandler, delays: Partial<MockDelays> = {}) {
     this.onUpdate = onUpdate;
     this.delays = { ...DEFAULT_DELAYS, ...delays };
   }
@@ -75,7 +75,7 @@ export class MockProvider implements CallProvider {
     this.timers.clear();
   }
 
-  async startCall(task: CallTask): Promise<StartCallResult> {
+  async startCall(task: SecretaryTask): Promise<StartCallResult> {
     const providerCallId = `mock_${randomUUID()}`;
     const schedule = (ms: number, fn: () => void) => {
       const t = setTimeout(() => {

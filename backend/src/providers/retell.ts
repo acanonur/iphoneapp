@@ -1,4 +1,4 @@
-import type { CallProvider, CallTask, StartCallResult } from '../types.js';
+import type { CallProvider, SecretaryTask, StartCallResult } from '../types.js';
 import type { RetellConfig } from '../config.js';
 import { buildAgentVariables } from '../prompt.js';
 
@@ -22,11 +22,14 @@ export class RetellProvider implements CallProvider {
     this.cfg = cfg;
   }
 
-  private agentIdFor(task: CallTask): string {
+  private agentIdFor(task: SecretaryTask): string {
     return this.cfg.agentIds[task.language] ?? this.cfg.agentId;
   }
 
-  async startCall(task: CallTask): Promise<StartCallResult> {
+  async startCall(task: SecretaryTask): Promise<StartCallResult> {
+    if (!task.phoneNumber) {
+      throw new Error('Cannot place a call for a task without a phone number');
+    }
     const res = await fetch(`${RETELL_API_BASE}/v2/create-phone-call`, {
       method: 'POST',
       headers: {
