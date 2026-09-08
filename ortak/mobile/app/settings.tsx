@@ -10,11 +10,15 @@ import * as Clipboard from 'expo-clipboard';
 import { useStore, pendingCount } from '../src/store/useStore.js';
 import {
   listWritableCalendars,
+  listReminderLists,
   loadCalendarSettings,
+  publishAvailability,
+  remindersSupported,
   saveCalendarSettings,
   suggestDefaultCalendar,
   type CalendarChoice,
   type CalendarSettings,
+  type ReminderList,
 } from '../src/calendar/deviceCalendar.js';
 import { Avatar, Button, Card, Chip, Divider, Field, Muted, Row, Screen } from '../src/ui/components.js';
 import { colors, shortDateTime, spacing, typography } from '../src/ui/theme.js';
@@ -27,6 +31,8 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<CalendarSettings | null>(null);
   const [loadingCalendars, setLoadingCalendars] = useState(true);
   const [name, setName] = useState(store.user?.name ?? '');
+  const [reminderLists, setReminderLists] = useState<ReminderList[]>([]);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -228,6 +234,169 @@ export default function SettingsScreen() {
           ))}
         </Row>
       </Card>
+
+      {/* ---- Availability ---- */}
+      <Text style={[typography.heading, { marginTop: spacing.lg, marginBottom: spacing.sm }]}>
+        Sharing when you're busy
+      </Text>
+
+      <Card>
+        <Muted>
+          The other half of calendar sync. Pick which of your own calendars Ortak may read, and the
+          app can tell you when the two of you are both actually free instead of only writing events
+          out. Nothing here leaves your server.
+        </Muted>
+
+        {calendars.length === 0 ? null : (
+          <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
+            {calendars.map((calendar) => {
+              const sharing = settings?.availabilityCalendarIds.includes(calendar.id) ?? false;
+              return (
+                <Pressable
+                  key={`avail-${calendar.id}`}
+                  onPress={() => {
+                    const current = settings?.availabilityCalendarIds ?? [];
+                    void update({
+                      availabilityCalendarIds: sharing
+                        ? current.filter((id) => id !== calendar.id)
+                        : [...current, calendar.id],
+                    });
+                  }}
+                  style={{
+                    padding: spacing.md,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: sharing ? colors.success : colors.border,
+                    backgroundColor: sharing ? '#182A20' : 'transparent',
+                  }}
+                >
+                  <Row>
+                    <Text style={{ fontSize: 15 }}>{sharing ? '✓' : '○'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={typography.body}>{calendar.title}</Text>
+                      <Text style={typography.tiny}>{calendar.sourceLabel}</Text>
+                    </View>
+                  </Row>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
+        <Divider />
+
+        <Row style={{ justifyContent: 'space-between' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={typography.body}>Also share what it is</Text>
+            <Muted>Off means the other phone sees only that you're busy, not the titles.</Muted>
+          </View>
+          <Switch
+            value={settings?.shareBusyTitles ?? false}
+            onValueChange={(value) => void update({ shareBusyTitles: value })}
+            trackColor={{ true: colors.accent, false: colors.border }}
+          />
+        </Row>
+
+        {(settings?.availabilityCalendarIds.length ?? 0) > 0 ? (
+          <>
+            <Button
+              label="Update now"
+              variant="secondary"
+              busy={publishing}
+              style={{ marginTop: spacing.md }}
+              onPress={async () => {
+                if (!settings) return;
+                setPublishing(true);
+                const report = await publishAvailability(store.api(), settings);
+                setPublishing(false);
+                Alert.alert(
+                  'Availability shared',
+                  report.blocked === 'permission'
+                    ? 'Ortak needs calendar permission to read your calendars.'
+                    : `${report.published} entr${report.published === 1 ? 'y' : 'ies'} read` +
+                      (report.removed > 0 ? `, ${report.removed} no longer there.` : '.'),
+                );
+              }}
+            />
+            <Button
+              label="Stop sharing"
+              variant="ghost"
+              onPress={() =>
+                Alert.alert('Stop sharing your availability?', 'Everything already shared is removed.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Stop',
+                    style: 'destructive',
+                    onPress: async () => {
+                      await update({ availabilityCalendarIds: [] });
+                      try {
+                        await store.api().stopSharingAvailability();
+                        await store.sync({ force: true });
+                      } catch {
+                        // It will be cleared on the next successful publish.
+                      }
+                    },
+                  },
+                ])
+              }
+            />
+          </>
+        ) : null}
+      </Card>
+
+      {/* ---- Reminders ---- */}
+      {remindersSupported() ? (
+        <>
+          <Text style={[typography.heading, { marginTop: spacing.lg, marginBottom: spacing.sm }]}>
+            Apple Reminders
+          </Text>
+          <Card>
+            <Muted>
+              Apple Notes has no API, but Reminders does — so shared to-dos can be copied into a real
+              Reminders list, where Siri and your watch can see them. One direction: Ortak stays the
+              shared original.
+            </Muted>
+
+            {reminderLists.length === 0 ? (
+              <Button
+                label="Choose a list"
+                variant="secondary"
+                style={{ marginTop: spacing.md }}
+                onPress={async () => {
+                  const lists = await listReminderLists();
+                  setReminderLists(lists);
+                  if (lists.length === 0) {
+                    Alert.alert(
+                      'No reminder lists',
+                      'Ortak needs permission to use Reminders. Turn it on in your phone’s settings.',
+                    );
+                  }
+                }}
+              />
+            ) : (
+              <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
+                {reminderLists.map((list) => (
+                  <Pressable
+                    key={list.id}
+                    onPress={() => void update({ reminderListId: list.id })}
+                    style={{
+                      padding: spacing.md,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: settings?.reminderListId === list.id ? colors.accent : colors.border,
+                      backgroundColor:
+                        settings?.reminderListId === list.id ? colors.accentSoft : 'transparent',
+                    }}
+                  >
+                    <Text style={typography.body}>{list.title}</Text>
+                    <Text style={typography.tiny}>{list.sourceLabel}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </Card>
+        </>
+      ) : null}
 
       {/* ---- Notes ---- */}
       <Text style={[typography.heading, { marginTop: spacing.lg, marginBottom: spacing.sm }]}>

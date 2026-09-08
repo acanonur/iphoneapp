@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useStore, selectAll, memberColor, memberName } from '../../src/store/useStore.js';
 import { newId } from '../../src/util/id.js';
 import { parseQuickAdd } from '../../../shared/src/datetime.js';
@@ -17,10 +17,14 @@ import {
   type CalendarSettings,
   type MirrorReport,
 } from '../../src/calendar/deviceCalendar.js';
-import { Avatar, Button, Card, Field, Muted, Row } from '../../src/ui/components.js';
+import { Avatar, Button, Card, Chip, Field, Muted, Row } from '../../src/ui/components.js';
 import { colors, clockTime, relativeDay, spacing, typography } from '../../src/ui/theme.js';
 
+/** The contexts a Fantastical-style calendar set can filter to. */
+const DEFAULT_SETS = ['Ev', 'Work', 'Family'];
+
 export default function CalendarScreen() {
+  const { suggestStart } = useLocalSearchParams<{ suggestStart?: string }>();
   const store = useStore();
   // The client is a module-level singleton, so this reference is stable across
   // renders — unlike `store` itself, which is a new object after every change
@@ -30,6 +34,8 @@ export default function CalendarScreen() {
   const [settings, setSettings] = useState<CalendarSettings | null>(null);
   const [mirroring, setMirroring] = useState(false);
   const [lastReport, setLastReport] = useState<MirrorReport | null>(null);
+  const [activeSet, setActiveSet] = useState<string | null>(null);
+  const [draftSet, setDraftSet] = useState<string | null>(null);
 
   const now = Date.now();
   const utcOffsetMinutes = -new Date().getTimezoneOffset();
@@ -62,9 +68,19 @@ export default function CalendarScreen() {
     };
   }, [settings, store.rev, store.online, api]);
 
+  /** Every context in use, so the filter row reflects reality rather than a guess. */
+  const sets = useMemo(() => {
+    const used = new Set(events.map((e) => e.calendarSet).filter((s): s is string => Boolean(s)));
+    return [...new Set([...used, ...DEFAULT_SETS])];
+  }, [events]);
+
   const upcoming = useMemo(
-    () => events.filter((e) => e.endsAt >= now - 12 * 3600_000).sort((a, b) => a.startsAt - b.startsAt),
-    [events, now],
+    () =>
+      events
+        .filter((e) => e.endsAt >= now - 12 * 3600_000)
+        .filter((e) => !activeSet || e.calendarSet === activeSet)
+        .sort((a, b) => a.startsAt - b.startsAt),
+    [events, now, activeSet],
   );
 
   const grouped = useMemo(() => {
@@ -87,7 +103,9 @@ export default function CalendarScreen() {
     const text = draft.trim();
     if (!text) return;
     const parsed = parseQuickAdd(text, { now, utcOffsetMinutes });
-    const startsAt = parsed.startsAt ?? now + 3600_000;
+    // Coming from a tapped gap on the timeline, the slot is already chosen.
+    const suggested = suggestStart ? Number(suggestStart) : null;
+    const startsAt = parsed.startsAt ?? (suggested && suggested > now ? suggested : now + 3600_000);
 
     store.upsert('events', {
       id: newId('ev'),
@@ -100,6 +118,7 @@ export default function CalendarScreen() {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
       reminderMinutes: parsed.allDay ? null : (settings?.defaultReminderMinutes ?? 30),
       color: null,
+      calendarSet: draftSet ?? activeSet,
     });
     setDraft('');
   }
@@ -152,6 +171,27 @@ export default function CalendarScreen() {
               : 'Type it the way you’d say it — English, Türkçe or Deutsch.'
           }
         />
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+          <Row gap={spacing.xs}>
+            <Chip label="Everything" selected={!activeSet} onPress={() => setActiveSet(null)} />
+            {sets.map((name) => (
+              <Chip
+                key={name}
+                label={name}
+                selected={activeSet === name}
+                onPress={() => {
+                  const next = activeSet === name ? null : name;
+                  setActiveSet(next);
+                  // Adding while a context is filtered should file it there.
+                  setDraftSet(next);
+                }}
+              />
+            ))}
+          </Row>
+        </ScrollView>
+
+        <FindATime />
 
         <MirrorStatus settings={settings} report={lastReport} busy={mirroring} onPress={() => void mirrorNow()} />
 
@@ -267,6 +307,147 @@ function EventRow({ event }: { event: EventItem }) {
             </Pressable>
           </Row>
         </View>
+      ) : null}
+    </Card>
+  );
+}
+
+/**
+ * "When can we both do this?"
+ *
+ * Fantastical sells Openings as a booking link for other people; for a
+ * household the useful shape is the same question asked inward — propose times
+ * that work for everyone here, from what their real calendars say. The answer
+ * comes from the server, which holds both people's published availability.
+ */
+function FindATime() {
+  const store = useStore();
+  const api = useStore((s) => s.api());
+
+  const [open, setOpen] = useState(false);
+  const [duration, setDuration] = useState(60);
+  const [evenings, setEvenings] = useState(true);
+  const [slots, setSlots] = useState<{ startsAt: number; endsAt: number }[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [title, setTitle] = useState('');
+
+  const utcOffsetMinutes = -new Date().getTimezoneOffset();
+
+  async function search() {
+    setBusy(true);
+    setSlots(null);
+    try {
+      const from = Date.now();
+      const result = await api.findSlots({
+        from,
+        to: from + 21 * 24 * 3600_000,
+        durationMinutes: duration,
+        utcOffsetMinutes,
+        dayStartMinutes: evenings ? 18 * 60 : 9 * 60,
+        dayEndMinutes: evenings ? 22 * 60 : 21 * 60,
+        maxResults: 6,
+      });
+      setSlots(result.slots);
+    } catch {
+      setSlots([]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function book(slot: { startsAt: number; endsAt: number }) {
+    store.upsert('events', {
+      id: newId('ev'),
+      title: title.trim() || 'Us',
+      notes: null,
+      location: null,
+      startsAt: slot.startsAt,
+      endsAt: slot.endsAt,
+      allDay: false,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
+      reminderMinutes: 30,
+      color: null,
+      calendarSet: null,
+    });
+    setSlots(null);
+    setTitle('');
+    setOpen(false);
+  }
+
+  if (!open) {
+    return (
+      <Button
+        label="Find a time for us"
+        variant="secondary"
+        onPress={() => setOpen(true)}
+        style={{ marginBottom: spacing.md }}
+      />
+    );
+  }
+
+  return (
+    <Card>
+      <Row style={{ justifyContent: 'space-between', marginBottom: spacing.sm }}>
+        <Text style={typography.subheading}>Find a time for us</Text>
+        <Pressable onPress={() => setOpen(false)} hitSlop={8}>
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>Close</Text>
+        </Pressable>
+      </Row>
+
+      <Muted>
+        Looks at both your calendars over the next three weeks and suggests when you are both
+        actually free.
+      </Muted>
+
+      <Row style={{ flexWrap: 'wrap', marginTop: spacing.md }} gap={spacing.xs}>
+        {[30, 60, 90, 120].map((minutes) => (
+          <Chip
+            key={minutes}
+            label={minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`}
+            selected={duration === minutes}
+            onPress={() => setDuration(minutes)}
+          />
+        ))}
+        <Chip label="Evenings" selected={evenings} onPress={() => setEvenings(true)} />
+        <Chip label="Daytime" selected={!evenings} onPress={() => setEvenings(false)} />
+      </Row>
+
+      <Button
+        label="Search"
+        onPress={() => void search()}
+        busy={busy}
+        style={{ marginTop: spacing.md }}
+      />
+
+      {busy ? <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.md }} /> : null}
+
+      {slots !== null ? (
+        slots.length === 0 ? (
+          <Muted>
+            No shared gaps found. Either nobody has shared a calendar yet (Settings → Calendar) or
+            you are both genuinely booked.
+          </Muted>
+        ) : (
+          <View style={{ marginTop: spacing.md }}>
+            <Field
+              placeholder="What is it? (optional)"
+              value={title}
+              onChangeText={setTitle}
+              style={{ marginBottom: spacing.sm }}
+            />
+            {slots.map((slot) => (
+              <Card key={slot.startsAt} onPress={() => book(slot)}>
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <Text style={typography.body}>{relativeDay(slot.startsAt)}</Text>
+                  <Text style={typography.small}>
+                    {clockTime(slot.startsAt)}–{clockTime(slot.endsAt)}
+                  </Text>
+                </Row>
+              </Card>
+            ))}
+            <Muted>Tap one to put it in both calendars.</Muted>
+          </View>
+        )
       ) : null}
     </Card>
   );

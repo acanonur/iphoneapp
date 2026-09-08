@@ -13,8 +13,10 @@ import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useStore, selectAll, memberColor, memberName } from '../../src/store/useStore.js';
 import { announcePresence } from '../../src/store/socket.js';
+import { useReminderMirror } from '../../src/calendar/useReminderMirror.js';
 import { newId } from '../../src/util/id.js';
 import { parseQuickAdd } from '../../../shared/src/datetime.js';
+import { bucketTasks, bucketCounts, groupUpcomingByDay, type Bucket } from '../../../shared/src/planning.js';
 import { parseAmountToCents, formatCents } from '../../../shared/src/money.js';
 import type { ShoppingItem, TaskItem } from '../../../shared/src/types.js';
 import { Avatar, Button, Card, CheckCircle, Chip, Field, Muted, Row } from '../../src/ui/components.js';
@@ -75,35 +77,42 @@ export default function ListsScreen() {
 
 function TodoList() {
   const store = useStore();
+  // Keeps the chosen Apple Reminders list in step, where one is configured.
+  useReminderMirror();
   const [draft, setDraft] = useState('');
-  const [showDone, setShowDone] = useState(false);
+  const [view, setView] = useState<Bucket>('today');
 
   const tasks = selectAll<TaskItem>(store, 'tasks');
   const now = Date.now();
+  const utcOffsetMinutes = -new Date().getTimezoneOffset();
 
-  const open = useMemo(
-    () =>
-      tasks
-        .filter((t) => !t.done)
-        .sort((a, b) => (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity) || b.position - a.position),
-    [tasks],
+  /**
+   * Things' structure, which the survey calls the gold standard: a task lands in
+   * exactly one bucket, and the bucket comes from its dates rather than from
+   * filing it anywhere.
+   */
+  const buckets = useMemo(
+    () => bucketTasks(tasks, { now, utcOffsetMinutes }),
+    [tasks, now, utcOffsetMinutes],
   );
-  const done = useMemo(
-    () => tasks.filter((t) => t.done).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0)).slice(0, 30),
-    [tasks],
+  const counts = bucketCounts(buckets);
+  const upcomingDays = useMemo(
+    () => groupUpcomingByDay(buckets.upcoming, { now, utcOffsetMinutes }),
+    [buckets.upcoming, now, utcOffsetMinutes],
   );
 
   function add() {
     const text = draft.trim();
     if (!text) return;
-    // A due date typed inline ("call landlord tomorrow") is picked up here too.
-    const parsed = parseQuickAdd(text, { now, utcOffsetMinutes: -new Date().getTimezoneOffset() });
+    // A date typed inline ("call landlord tomorrow") becomes the due date.
+    const parsed = parseQuickAdd(text, { now, utcOffsetMinutes });
 
     store.upsert('tasks', {
       id: newId('task'),
       title: parsed.startsAt ? parsed.title || text : text,
       notes: null,
       dueAt: parsed.startsAt,
+      deferAt: null,
       assigneeId: null,
       done: false,
       doneAt: null,
@@ -125,6 +134,31 @@ function TodoList() {
     });
   }
 
+  /** Push a task out of sight until a chosen day — the defer date in action. */
+  function defer(task: TaskItem, days: number | null) {
+    store.upsert('tasks', {
+      ...task,
+      deferAt: days === null ? null : startOfDayIn(days, now),
+    });
+  }
+
+  function schedule(task: TaskItem, days: number | null) {
+    store.upsert('tasks', {
+      ...task,
+      dueAt: days === null ? null : startOfDayIn(days, now) + 9 * 3600_000,
+    });
+  }
+
+  const TABS: { key: Bucket; label: string; badge: number }[] = [
+    { key: 'today', label: 'Today', badge: counts.today },
+    { key: 'upcoming', label: 'Upcoming', badge: counts.upcoming },
+    { key: 'anytime', label: 'Anytime', badge: counts.anytime },
+    { key: 'someday', label: 'Someday', badge: counts.someday },
+    { key: 'logbook', label: 'Logbook', badge: 0 },
+  ];
+
+  const visible = buckets[view];
+
   return (
     <ScrollView
       contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, paddingBottom: spacing.xxl * 2 }}
@@ -138,72 +172,166 @@ function TodoList() {
         returnKeyType="done"
       />
 
-      {open.length === 0 ? (
-        <Muted>Nothing to do. Enjoy it.</Muted>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+        <Row gap={spacing.xs}>
+          {TABS.map((tab) => (
+            <Chip
+              key={tab.key}
+              label={tab.badge > 0 ? `${tab.label} ${tab.badge}` : tab.label}
+              selected={view === tab.key}
+              onPress={() => setView(tab.key)}
+            />
+          ))}
+        </Row>
+      </ScrollView>
+
+      {view === 'today' && counts.overdue > 0 ? (
+        <Card style={{ borderColor: colors.danger }}>
+          <Muted>
+            {counts.overdue} thing{counts.overdue === 1 ? '' : 's'} overdue — still here rather than
+            hidden.
+          </Muted>
+        </Card>
+      ) : null}
+
+      {visible.length === 0 ? (
+        <Muted>{EMPTY_COPY[view]}</Muted>
+      ) : view === 'upcoming' ? (
+        upcomingDays.map((day) => (
+          <View key={day.dayStart} style={{ marginTop: spacing.md }}>
+            <Text style={[typography.small, { marginBottom: spacing.xs }]}>
+              {relativeDay(day.dayStart)}
+            </Text>
+            {day.tasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                now={now}
+                onToggle={toggle}
+                onDefer={defer}
+                onSchedule={schedule}
+              />
+            ))}
+          </View>
+        ))
       ) : (
-        open.map((task) => (
-          <Card key={task.id}>
-            <Row style={{ alignItems: 'flex-start' }}>
-              <CheckCircle checked={false} onPress={() => toggle(task)} />
-              <Pressable
-                style={{ flex: 1 }}
-                onLongPress={() =>
-                  Alert.alert('Delete this to-do?', task.title, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Delete', style: 'destructive', onPress: () => store.remove('tasks', task.id) },
-                  ])
-                }
-              >
-                <Text style={typography.body}>{task.title}</Text>
-                <Row gap={spacing.sm}>
-                  {task.dueAt ? (
-                    <Text
-                      style={[
-                        typography.tiny,
-                        { color: task.dueAt < now ? colors.danger : colors.textMuted },
-                      ]}
-                    >
-                      {relativeDay(task.dueAt)}
-                    </Text>
-                  ) : null}
-                  <Text style={typography.tiny}>added by {memberName(store, task.createdBy)}</Text>
-                </Row>
-              </Pressable>
-            </Row>
-          </Card>
+        visible.map((task) => (
+          <TaskRow
+            key={task.id}
+            task={task}
+            now={now}
+            onToggle={toggle}
+            onDefer={defer}
+            onSchedule={schedule}
+          />
         ))
       )}
+    </ScrollView>
+  );
+}
 
-      {done.length > 0 ? (
-        <View style={{ marginTop: spacing.lg }}>
-          <Pressable onPress={() => setShowDone((v) => !v)} hitSlop={8}>
-            <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
-              {showDone ? 'Hide' : 'Show'} {done.length} done
+const EMPTY_COPY: Record<Bucket, string> = {
+  today: 'Nothing due today. Enjoy it.',
+  upcoming: 'Nothing scheduled ahead.',
+  anytime: 'Nothing waiting to be picked up.',
+  someday: 'Nothing parked for later.',
+  logbook: 'Nothing finished yet.',
+};
+
+/** Local midnight `days` from now. */
+function startOfDayIn(days: number, now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d.getTime();
+}
+
+function TaskRow({
+  task,
+  now,
+  onToggle,
+  onDefer,
+  onSchedule,
+}: {
+  task: TaskItem;
+  now: number;
+  onToggle: (task: TaskItem) => void;
+  onDefer: (task: TaskItem, days: number | null) => void;
+  onSchedule: (task: TaskItem, days: number | null) => void;
+}) {
+  const store = useStore();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Card>
+      <Row style={{ alignItems: 'flex-start' }}>
+        <CheckCircle
+          checked={task.done}
+          onPress={() => onToggle(task)}
+          color={task.done ? colors.success : colors.accent}
+        />
+        <Pressable
+          style={{ flex: 1 }}
+          onPress={() => setOpen((v) => !v)}
+          onLongPress={() =>
+            Alert.alert('Delete this to-do?', task.title, [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete', style: 'destructive', onPress: () => store.remove('tasks', task.id) },
+            ])
+          }
+        >
+          <Text
+            style={[
+              typography.body,
+              task.done && { color: colors.textMuted, textDecorationLine: 'line-through' },
+            ]}
+          >
+            {task.title}
+          </Text>
+          <Row gap={spacing.sm}>
+            {task.dueAt ? (
+              <Text
+                style={[
+                  typography.tiny,
+                  { color: !task.done && task.dueAt < now ? colors.danger : colors.textMuted },
+                ]}
+              >
+                due {relativeDay(task.dueAt)}
+              </Text>
+            ) : null}
+            {task.deferAt && task.deferAt > now ? (
+              <Text style={typography.tiny}>starts {relativeDay(task.deferAt)}</Text>
+            ) : null}
+            <Text style={typography.tiny}>
+              {task.done && task.doneBy
+                ? `done by ${memberName(store, task.doneBy)}`
+                : `added by ${memberName(store, task.createdBy)}`}
             </Text>
-          </Pressable>
+          </Row>
+        </Pressable>
+      </Row>
 
-          {showDone
-            ? done.map((task) => (
-                <Card key={task.id}>
-                  <Row>
-                    <CheckCircle checked onPress={() => toggle(task)} color={colors.success} />
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[typography.body, { color: colors.textMuted, textDecorationLine: 'line-through' }]}
-                      >
-                        {task.title}
-                      </Text>
-                      {task.doneBy ? (
-                        <Text style={typography.tiny}>done by {memberName(store, task.doneBy)}</Text>
-                      ) : null}
-                    </View>
-                  </Row>
-                </Card>
-              ))
-            : null}
+      {open && !task.done ? (
+        <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+          <Text style={typography.tiny}>Due</Text>
+          <Row style={{ flexWrap: 'wrap' }} gap={spacing.xs}>
+            <Chip label="Today" onPress={() => onSchedule(task, 0)} />
+            <Chip label="Tomorrow" onPress={() => onSchedule(task, 1)} />
+            <Chip label="Next week" onPress={() => onSchedule(task, 7)} />
+            <Chip label="No date" onPress={() => onSchedule(task, null)} />
+          </Row>
+
+          <Text style={typography.tiny}>Start (hides it until then)</Text>
+          <Row style={{ flexWrap: 'wrap' }} gap={spacing.xs}>
+            <Chip label="Tomorrow" onPress={() => onDefer(task, 1)} />
+            <Chip label="Next week" onPress={() => onDefer(task, 7)} />
+            <Chip label="Next month" onPress={() => onDefer(task, 30)} />
+            <Chip label="Someday" onPress={() => onDefer(task, 120)} />
+            <Chip label="Now" onPress={() => onDefer(task, null)} />
+          </Row>
         </View>
       ) : null}
-    </ScrollView>
+    </Card>
   );
 }
 

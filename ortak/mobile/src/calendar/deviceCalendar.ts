@@ -45,12 +45,27 @@ export interface CalendarSettings {
   autoMirror: boolean;
   /** Minutes before the start for the alarm, or null for none. */
   defaultReminderMinutes: number | null;
+  /**
+   * Native calendars whose events are published as busy time, so the other
+   * person can see when you are free. Empty means sharing nothing.
+   */
+  availabilityCalendarIds: string[];
+  /**
+   * Share event titles as well as times. Off by default — the household needs
+   * to know *when* you are busy far more often than with what.
+   */
+  shareBusyTitles: boolean;
+  /** Native reminders list that shared to-dos are copied into, on iOS. */
+  reminderListId: string | null;
 }
 
 const DEFAULT_SETTINGS: CalendarSettings = {
   calendarId: null,
   autoMirror: true,
   defaultReminderMinutes: 30,
+  availabilityCalendarIds: [],
+  shareBusyTitles: false,
+  reminderListId: null,
 };
 
 export async function loadCalendarSettings(): Promise<CalendarSettings> {
@@ -287,4 +302,254 @@ export async function openInDeviceCalendar(externalEventId: string): Promise<voi
   } catch {
     // Not fatal — the event is still in their calendar.
   }
+}
+
+// ---------------------------------------------------------------------------
+// Reading the device calendars — the other half of two-way sync
+// ---------------------------------------------------------------------------
+
+export interface DeviceBusyBlock {
+  startsAt: number;
+  endsAt: number;
+  allDay: boolean;
+  label: string | null;
+  sourceCalendarId: string;
+  externalId: string;
+}
+
+/**
+ * Read a window of this phone's own calendars as busy time.
+ *
+ * Only the calendars the member picked in settings are read, and titles are
+ * left out unless they opted in — the app should be able to say "Tugce is busy
+ * Tuesday afternoon" without shipping her whole work diary to the server.
+ *
+ * All-day entries are reported but flagged, because a birthday is not a reason
+ * to call someone unavailable all evening.
+ */
+export async function readDeviceBusy(
+  settings: CalendarSettings,
+  from: number,
+  to: number,
+): Promise<DeviceBusyBlock[]> {
+  if (settings.availabilityCalendarIds.length === 0) return [];
+  if (!(await ensureCalendarPermission())) return [];
+
+  // A calendar that has since been deleted or un-shared would throw.
+  const available = new Set((await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT)).map((c) => c.id));
+  const ids = settings.availabilityCalendarIds.filter((id) => available.has(id));
+  if (ids.length === 0) return [];
+
+  let events: Calendar.Event[];
+  try {
+    events = await Calendar.getEventsAsync(ids, new Date(from), new Date(to));
+  } catch {
+    return [];
+  }
+
+  const blocks: DeviceBusyBlock[] = [];
+  for (const event of events) {
+    const startsAt = new Date(event.startDate as string | Date).getTime();
+    const endsAt = new Date(event.endDate as string | Date).getTime();
+    if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt) || endsAt <= startsAt) continue;
+
+    // Declining a meeting does not make you busy.
+    const status = String((event as { status?: unknown }).status ?? '').toLowerCase();
+    if (status === 'canceled' || status === 'cancelled') continue;
+
+    // An event marked "free" in the calendar is exactly that.
+    const availability = String((event as { availability?: unknown }).availability ?? '').toLowerCase();
+    if (availability === 'free') continue;
+
+    blocks.push({
+      startsAt,
+      endsAt,
+      allDay: Boolean(event.allDay),
+      label: settings.shareBusyTitles ? (event.title ?? null) : null,
+      sourceCalendarId: String(event.calendarId ?? ''),
+      externalId: String(event.id ?? `${startsAt}-${endsAt}`),
+    });
+  }
+
+  return blocks;
+}
+
+export interface PublishReport {
+  published: number;
+  changed: number;
+  removed: number;
+  blocked: 'permission' | 'not-sharing' | null;
+}
+
+/** How far ahead availability is published. Two months covers any real planning. */
+const AVAILABILITY_WINDOW_DAYS = 60;
+
+/**
+ * Read this phone's calendars and tell the server what they say.
+ *
+ * Safe and cheap to call often: the server only records what actually changed,
+ * so a republish of an unchanged calendar does not wake the other phone.
+ */
+export async function publishAvailability(
+  api: OrtakApi,
+  settings: CalendarSettings,
+  now = Date.now(),
+): Promise<PublishReport> {
+  const report: PublishReport = { published: 0, changed: 0, removed: 0, blocked: null };
+
+  if (settings.availabilityCalendarIds.length === 0) {
+    report.blocked = 'not-sharing';
+    return report;
+  }
+  if (!(await ensureCalendarPermission())) {
+    report.blocked = 'permission';
+    return report;
+  }
+
+  // Start slightly in the past so an event running right now still counts.
+  const windowStart = now - 24 * 3600_000;
+  const windowEnd = now + AVAILABILITY_WINDOW_DAYS * 24 * 3600_000;
+
+  const blocks = await readDeviceBusy(settings, windowStart, windowEnd);
+
+  try {
+    const result = await api.publishAvailability({ windowStart, windowEnd, blocks });
+    report.published = result.published;
+    report.changed = result.changed;
+    report.removed = result.removed;
+  } catch {
+    // Offline: the next run will catch up.
+  }
+
+  return report;
+}
+
+// ---------------------------------------------------------------------------
+// Apple Reminders
+// ---------------------------------------------------------------------------
+
+/**
+ * Copying shared to-dos into Apple Reminders.
+ *
+ * The survey's recommendation, and a sound one: Apple Notes has no API, but
+ * Reminders is part of EventKit and fully writable. So the "my tasks show up in
+ * the app Apple gives me" experience is reachable — through Reminders, not Notes.
+ *
+ * iOS only. Android has no equivalent system list (Google Tasks needs OAuth and
+ * a server-side integration), so this is a no-op there.
+ */
+export function remindersSupported(): boolean {
+  return Platform.OS === 'ios';
+}
+
+export interface ReminderList {
+  id: string;
+  title: string;
+  sourceLabel: string;
+}
+
+export async function listReminderLists(): Promise<ReminderList[]> {
+  if (!remindersSupported()) return [];
+
+  const permission = await Calendar.requestRemindersPermissionsAsync();
+  if (!permission.granted) return [];
+
+  try {
+    const lists = await Calendar.getCalendarsAsync(Calendar.EntityTypes.REMINDER);
+    return lists
+      .filter((c) => c.allowsModifications)
+      .map((c) => ({ id: c.id, title: c.title, sourceLabel: describeSource(c) }));
+  } catch {
+    return [];
+  }
+}
+
+export interface MirrorableTask {
+  id: string;
+  title: string;
+  notes?: string | null;
+  dueAt?: number | null;
+  done: boolean;
+}
+
+export interface ReminderReport {
+  created: number;
+  updated: number;
+  completed: number;
+  failed: number;
+  /** Ortak task id → native reminder id, to be stored by the caller. */
+  mirrors: Record<string, string>;
+  blocked: 'unsupported' | 'permission' | 'no-list' | null;
+}
+
+/**
+ * Push shared to-dos into a Reminders list.
+ *
+ * `known` maps Ortak task ids to reminder ids from previous runs, so an edit
+ * updates the existing reminder rather than adding a second one. Ticking a task
+ * off in Ortak completes the reminder; this does not read changes back, because
+ * a two-way merge between two independent to-do stores is a much bigger promise
+ * than it looks and is not one this makes.
+ */
+export async function mirrorTasksToReminders(
+  tasks: readonly MirrorableTask[],
+  settings: CalendarSettings,
+  known: Record<string, string> = {},
+): Promise<ReminderReport> {
+  const report: ReminderReport = {
+    created: 0,
+    updated: 0,
+    completed: 0,
+    failed: 0,
+    mirrors: { ...known },
+    blocked: null,
+  };
+
+  if (!remindersSupported()) {
+    report.blocked = 'unsupported';
+    return report;
+  }
+  if (!settings.reminderListId) {
+    report.blocked = 'no-list';
+    return report;
+  }
+
+  const permission = await Calendar.requestRemindersPermissionsAsync();
+  if (!permission.granted) {
+    report.blocked = 'permission';
+    return report;
+  }
+
+  for (const task of tasks) {
+    const existingId = known[task.id];
+    const details = {
+      title: task.title,
+      notes: task.notes ?? undefined,
+      dueDate: task.dueAt ? new Date(task.dueAt) : undefined,
+      completed: task.done,
+    };
+
+    try {
+      if (existingId) {
+        await Calendar.updateReminderAsync(existingId, details);
+        if (task.done) report.completed++;
+        else report.updated++;
+        continue;
+      }
+
+      // Nothing is gained by creating a reminder for something already done.
+      if (task.done) continue;
+
+      const reminderId = await Calendar.createReminderAsync(settings.reminderListId, details);
+      report.mirrors[task.id] = reminderId;
+      report.created++;
+    } catch {
+      // A reminder deleted by hand in the Reminders app makes the update throw;
+      // drop the stale mapping so the next run recreates it.
+      if (existingId) delete report.mirrors[task.id];
+      report.failed++;
+    }
+  }
+
+  return report;
 }

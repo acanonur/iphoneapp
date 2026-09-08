@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStore, selectAll, memberName } from '../../src/store/useStore.js';
 import { newId } from '../../src/util/id.js';
+import { buildTagTree, expandedTags, plainText } from '../../../shared/src/tags.js';
 import type { LinkItem, NoteItem } from '../../../shared/src/types.js';
 import { Card, Chip, Field, Muted, Row } from '../../src/ui/components.js';
 import { colors, relativeDay, spacing, typography } from '../../src/ui/theme.js';
@@ -37,20 +38,44 @@ function NoteList() {
   const store = useStore();
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
 
   const notes = selectAll<NoteItem>(store, 'notes');
+
+  /** Every note's tags, expanded so a note under #ev/tamirat also counts as #ev. */
+  const tagsByNote = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const note of notes) {
+      map.set(note.id, expandedTags(`${note.title}\n${note.body}`));
+    }
+    return map;
+  }, [notes]);
+
+  /**
+   * Bear's nested tags: the hierarchy comes out of what people typed, and the
+   * counts roll up, so "ev" shows everything filed anywhere beneath it.
+   */
+  const tagTree = useMemo(
+    () => buildTagTree([...tagsByNote.values()]),
+    [tagsByNote],
+  );
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return notes
-      .filter(
-        (n) =>
+      .filter((n) => {
+        if (tagFilter) {
+          const tags = tagsByNote.get(n.id) ?? [];
+          if (!tags.includes(tagFilter)) return false;
+        }
+        return (
           !needle ||
           n.title.toLowerCase().includes(needle) ||
-          n.body.toLowerCase().includes(needle),
-      )
+          n.body.toLowerCase().includes(needle)
+        );
+      })
       .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt - a.updatedAt);
-  }, [notes, query]);
+  }, [notes, query, tagFilter, tagsByNote]);
 
   function create() {
     const id = newId('note');
@@ -61,6 +86,7 @@ function NoteList() {
       tags: [],
       pinned: false,
       exportedAt: null,
+      linkedEventId: null,
     });
     router.push(`/note/${id}`);
   }
@@ -79,9 +105,38 @@ function NoteList() {
         </Pressable>
       </Row>
 
+      {tagTree.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+          <Row gap={spacing.xs}>
+            <Chip label="All" selected={!tagFilter} onPress={() => setTagFilter(null)} />
+            {tagTree.flatMap((node) => [
+              <Chip
+                key={node.path}
+                label={`#${node.name} ${node.totalCount}`}
+                selected={tagFilter === node.path}
+                onPress={() => setTagFilter(tagFilter === node.path ? null : node.path)}
+              />,
+              // One level of children, which is as deep as a chip row stays useful.
+              ...node.children.map((child) => (
+                <Chip
+                  key={child.path}
+                  label={`#${node.name}/${child.name} ${child.totalCount}`}
+                  selected={tagFilter === child.path}
+                  onPress={() => setTagFilter(tagFilter === child.path ? null : child.path)}
+                />
+              )),
+            ])}
+          </Row>
+        </ScrollView>
+      ) : null}
+
       {visible.length === 0 ? (
         <Muted>
-          {query ? 'Nothing matches.' : 'No notes yet. Tap ＋ to write one — both of you can edit it.'}
+          {tagFilter
+            ? `Nothing tagged #${tagFilter}.`
+            : query
+              ? 'Nothing matches.'
+              : 'No notes yet. Tap ＋ to write one — both of you can edit it. Use #ev/tamirat to file it and [[another note]] to link.'}
         </Muted>
       ) : (
         visible.map((note) => (
@@ -95,7 +150,7 @@ function NoteList() {
             </Row>
             {note.body ? (
               <Text style={[typography.small, { marginTop: spacing.xs }]} numberOfLines={2}>
-                {note.body}
+                {plainText(note.body)}
               </Text>
             ) : null}
             <Text style={[typography.tiny, { marginTop: spacing.xs }]}>

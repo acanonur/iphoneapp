@@ -18,9 +18,11 @@ your household's data doesn't go to anyone else.
 
 | | |
 |---|---|
-| 📅 **Calendar** | Type "dinner with Tugce friday 8pm @ Trattoria" and it becomes a real event in **your own** calendar — Apple Calendar on the iPhone, Google Calendar on the Android — while staying shared between you. |
-| 📝 **Notes** | Shared notes both of you can edit, with one-tap export into Apple Notes (and a Mac script that writes into Notes automatically). |
-| ✅ **To-dos** | A shared list. Ticking something off shows up on the other phone with who did it. |
+| 📅 **Calendar** | Type "dinner with Tugce friday 8pm @ Trattoria" and it becomes a real event in **your own** calendar — Apple Calendar on the iPhone, Google Calendar on the Android — while staying shared between you. Filter by context (Ev / Work / Family). |
+| 🔎 **Find a time for us** | Reads *both* your real calendars and proposes evenings you are genuinely both free. Tap one to book it into both calendars. |
+| 📊 **Your day** | A visual timeline where the **gaps** are as clear as the bookings — including the other person's commitments, so you can see they are in the office until five. |
+| 📝 **Notes** | Shared notes both of you can edit, with nested `#ev/tamirat` tags, `[[wiki links]]` and backlinks, and notes you can attach to a calendar entry. One-tap export into Apple Notes, plus a Mac script that writes into Notes automatically. |
+| ✅ **To-dos** | Today / Upcoming / Anytime / Someday, sorted by dates rather than filed by hand, with start dates that hide work you can't begin yet. Ticking something off shows up on the other phone with who did it. Optionally mirrored into Apple Reminders. |
 | 🛒 **Shopping** | Live: while you're both in the shop, each tick appears on the other phone within a second, and you can see the other person is there. Prices, totals and a spending history per shop. |
 | 🗂️ **Chat archive** | Import a WhatsApp chat export and it becomes permanently searchable — the plumber's number from three years ago is one search away instead of gone. |
 | 🔗 **Links** | Save links from any app, with titles and previews. |
@@ -28,6 +30,35 @@ your household's data doesn't go to anyone else.
 | 🔍 **Search** | One box over all of it. Turkish and German spellings are interchangeable — "alisveris" finds "Alışveriş", "strasse" finds "Straße". |
 
 ---
+
+## Where the good ideas came from
+
+A survey of ten leading productivity apps (Fantastical, Things 3, OmniFocus,
+Structured, Craft, Ulysses, BBEdit, Agenda, GoodNotes, Bear) found that none of
+them does all three of: run on iOS *and* Android, support real shared
+collaboration, and write two-way into each person's own native calendar. That
+intersection is exactly what Ortak is.
+
+Its "best-of features worth adopting" list is implemented here:
+
+| From | Idea | Where it lives |
+|---|---|---|
+| Fantastical | Natural-language event entry | The quick-add box, in three languages |
+| Fantastical / Agenda | **Two-way** native calendar, not just display | Events written out *and* your calendars read back |
+| Fantastical | Calendar sets for context switching | The filter row on the calendar tab |
+| Fantastical | Availability / scheduling ("Openings") | **Find a time for us** |
+| Things 3 | Today / Upcoming / Anytime / Someday | The to-do tab |
+| OmniFocus | Defer dates | "Start" on any to-do — hides it until then |
+| Things 3 | Frictionless quick capture | The box at the top of every screen |
+| Structured | Visual timeline where gaps are visible | **Your day** on the home screen |
+| Craft | Backlinks between documents | `[[Wiki links]]`, with "linked from" on every note |
+| Bear | Markdown with nested tags | `#ev/tamirat` files under both `ev` and `ev/tamirat` |
+| Agenda | Notes tied to calendar entries | "Attach to a calendar entry" on any note |
+| Craft / Agenda | Real-time collaboration | The whole app |
+
+Deliberately **not** adopted, following the survey's own feature-bloat warning
+("the most-loved apps win by doing one thing beautifully"): handwriting and OCR,
+GTD perspectives, publishing, habit tracking and focus timers.
 
 ## Three honest constraints
 
@@ -54,7 +85,15 @@ Ortak remembers which native event belongs to which shared event **per person**,
 so editing an event updates the existing entry instead of leaving a duplicate,
 and deleting it removes the entry from both your calendars.
 
-### ⚠️ Apple Notes — no app can write to it
+**And it reads back.** Writing events out is only half of it. Each phone can also
+read the calendars you nominate — work, university, whatever else is on there —
+and publish them as *busy time*, so the app knows when each of you is genuinely
+free. That is what makes "find a time for us" possible, and what puts the other
+person's commitments on your timeline. By default it shares **only the times,
+not the titles**; there is a switch if you want titles too, and one to stop
+sharing entirely.
+
+### ⚠️ Apple Notes — no app can write to it (but Reminders is fine)
 
 There is **no public API for Apple Notes on iOS**. No third-party app can
 create, read or edit notes in it. That's an Apple restriction; no library or
@@ -72,6 +111,11 @@ get a copy across:
 3. **On your MacBook**, where AppleScript *is* allowed to write to Notes:
    `scripts/sync-notes-to-apple-notes.sh` pulls every shared note into a
    dedicated "Ortak" folder in Notes. Put it on a cron and it's automatic.
+
+For **to-dos** the picture is better, because Reminders *is* part of EventKit and
+fully writable. Point Ortak at a Reminders list (Settings → Apple Reminders) and
+your shared to-dos are copied into it, where Siri, your watch and the Lock Screen
+can all see them. One direction only — Ortak stays the shared original.
 
 ### ⚠️ WhatsApp — no API for reading your chats
 
@@ -257,6 +301,16 @@ back, and the next run overwrites it. Ortak stays the shared original.
 
 ## A few details worth knowing
 
+**Sharing availability is opt-in and time-only by default.** You choose which of
+your calendars Ortak may read, and titles stay private unless you turn them on.
+A phone republishes on a timer, and the server only records what actually
+changed — so an unchanged calendar doesn't wake the other phone.
+
+**Tasks sort themselves.** A to-do is in exactly one bucket, decided by its
+dates: due today or overdue → Today; dated later → Upcoming; no dates → Anytime;
+deferred a long way out → Someday. Setting a start date is how you get something
+out of your face until it matters, without losing it.
+
 **Quick-add understands three languages.** All of these work:
 
 ```
@@ -291,14 +345,16 @@ offline.
 ## Testing
 
 ```bash
-cd ortak/shared && npm test     # 100 tests — splitting, dates, WhatsApp parsing
-cd ortak/server && npm test     #  64 tests — the HTTP API end to end
+cd ortak/shared && npm test     # 186 tests — splitting, dates, WhatsApp parsing,
+                                #             availability, buckets, timeline, tags
+cd ortak/server && npm test     #  88 tests — the HTTP API end to end
 ```
 
 The domain logic is where the subtle bugs live, so that's where the tests are
 concentrated: cent-exact splitting across awkward remainders, date-order
-inference from real export samples, the Turkish/German folding, sync conflict
-resolution, and cross-household isolation.
+inference from real export samples, the Turkish/German folding, free-slot search
+across timezones and day boundaries, task bucketing at the local midnight edge,
+sync conflict resolution, and cross-household isolation.
 
 ---
 
@@ -309,6 +365,10 @@ Honest list of what a second pass would add:
 - **Push notifications** ("Tugce added milk to the list") — needs Expo push
   credentials and a token table
 - **Recurring events** — the sync engine models single events only
+- **Reading Reminders back** — the mirror is one-way; a two-way merge between
+  two independent to-do stores is a much bigger promise than it looks
+- **Widgets and App Intents** — table stakes on iOS, and the survey flags them;
+  they need native config plugins and a development build to verify
 - **Photos and receipts** on expenses — needs blob storage
 - **Live exchange rates** — foreign-currency expenses take a rate you type
 - **A true iOS share extension** — currently the Shortcut route; add

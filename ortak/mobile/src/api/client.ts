@@ -336,6 +336,61 @@ export class OrtakApi {
     return this.request(`/api/calendar/mirrors/${eventId}`, { method: 'DELETE' });
   }
 
+  // -- availability ----------------------------------------------------------
+
+  publishAvailability(input: {
+    windowStart: number;
+    windowEnd: number;
+    blocks: {
+      startsAt: number;
+      endsAt: number;
+      allDay?: boolean;
+      label?: string | null;
+      sourceCalendarId?: string | null;
+      externalId?: string | null;
+    }[];
+  }): Promise<{ published: number; changed: number; removed: number; rev: number }> {
+    // A two-month window of a busy calendar is a big body, so it gets longer
+    // than the default timeout.
+    return this.post('/api/availability/publish', input, 60_000);
+  }
+
+  stopSharingAvailability(): Promise<{ removed: number }> {
+    return this.request('/api/availability/mine', { method: 'DELETE' });
+  }
+
+  availability(
+    from: number,
+    to: number,
+  ): Promise<{
+    from: number;
+    to: number;
+    blocks: { ownerId: string; startsAt: number; endsAt: number; label: string | null }[];
+    busyMinutes: Record<string, number>;
+    sharing: string[];
+  }> {
+    return this.request(`/api/availability?from=${from}&to=${to}`);
+  }
+
+  findSlots(input: {
+    from: number;
+    to: number;
+    durationMinutes: number;
+    utcOffsetMinutes: number;
+    participants?: string[];
+    dayStartMinutes?: number;
+    dayEndMinutes?: number;
+    weekdays?: number[];
+    bufferMinutes?: number;
+    maxResults?: number;
+  }): Promise<{
+    slots: { startsAt: number; endsAt: number; availableTo: string[] }[];
+    participants: string[];
+    busyMinutes: Record<string, number>;
+  }> {
+    return this.post('/api/availability/slots', input);
+  }
+
   // -- shopping --------------------------------------------------------------
 
   completeShoppingRun(input: {
