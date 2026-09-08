@@ -12,6 +12,7 @@ import { registerArchiveRoutes } from './routes/archive.js';
 import { registerTripRoutes } from './routes/trips.js';
 import { registerShoppingRoutes } from './routes/shopping.js';
 import { registerCalendarRoutes } from './routes/calendar.js';
+import { registerAvailabilityRoutes } from './routes/availability.js';
 import { fetchLinkPreview, UnsafeUrlError } from './linkPreview.js';
 import { ENTITY_KINDS, type EntityKind } from '../../shared/src/types.js';
 
@@ -84,6 +85,7 @@ export function buildApp(config: Config): App {
   registerTripRoutes(fastify, ctx);
   registerShoppingRoutes(fastify, ctx);
   registerCalendarRoutes(fastify, ctx);
+  registerAvailabilityRoutes(fastify, ctx);
 
   return {
     fastify,

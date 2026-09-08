@@ -22,6 +22,7 @@ export interface SyncFields {
 /** Every entity kind the sync engine knows about, in dependency order. */
 export const ENTITY_KINDS = [
   'events',
+  'busyBlocks',
   'notes',
   'tasks',
   'shoppingItems',
@@ -57,6 +58,35 @@ export interface EventItem extends SyncFields {
   /** Minutes before start for an alarm, or null for none. */
   reminderMinutes: number | null;
   color: string | null;
+  /**
+   * Which context this belongs to — "Work", "Family", "Ev". Borrowed from
+   * Fantastical's calendar sets: one filter turns the shared calendar into just
+   * the part you care about right now.
+   */
+  calendarSet: string | null;
+}
+
+/**
+ * A slice of time one member is already committed to, read from their own
+ * device calendars and shared with the household.
+ *
+ * This is the half of calendar integration that a write-only mirror can't do:
+ * it lets the app answer "when are we both actually free?" instead of only
+ * "put this in my calendar". By default only the times are shared, not the
+ * titles — `label` stays null unless that member opts into showing them.
+ */
+export interface BusyBlock extends SyncFields {
+  /** The member whose calendar this came from. */
+  ownerId: string;
+  startsAt: number;
+  endsAt: number;
+  allDay: boolean;
+  /** Event title, only when this member chose to share titles. */
+  label: string | null;
+  /** Native calendar id it came from, so a calendar can be un-shared later. */
+  sourceCalendarId: string | null;
+  /** Native event id, so republishing the same event updates rather than adds. */
+  externalId: string | null;
 }
 
 /**
@@ -87,6 +117,12 @@ export interface NoteItem extends SyncFields {
   pinned: boolean;
   /** Set once the note has been pushed to Apple Notes, for the "exported" badge. */
   exportedAt: number | null;
+  /**
+   * A calendar entry this note belongs to — Agenda's idea: notes for a
+   * appointment sit with the appointment, so the prep and the decisions are
+   * found by looking at the day rather than by remembering a title.
+   */
+  linkedEventId: string | null;
 }
 
 export interface TaskItem extends SyncFields {
@@ -94,6 +130,12 @@ export interface TaskItem extends SyncFields {
   notes: string | null;
   /** Epoch ms, or null for "someday". */
   dueAt: number | null;
+  /**
+   * Not actionable until this moment. Things calls it a start date, OmniFocus a
+   * defer date; either way it is what keeps "Anytime" honest, by hiding work you
+   * cannot begin yet instead of letting it nag.
+   */
+  deferAt: number | null;
   assigneeId: string | null;
   done: boolean;
   doneAt: number | null;

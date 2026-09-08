@@ -48,6 +48,21 @@ export const ENTITY_SPECS: Record<EntityKind, EntitySpec> = {
       timezone: { column: 'timezone', type: 'text', nullable: true, maxLength: 100 },
       reminderMinutes: { column: 'reminder_minutes', type: 'int', nullable: true },
       color: { column: 'color', type: 'text', nullable: true, maxLength: 32 },
+      calendarSet: { column: 'calendar_set', type: 'text', nullable: true, maxLength: 100 },
+    },
+  },
+
+  busyBlocks: {
+    kind: 'busyBlocks',
+    table: 'busy_blocks',
+    fields: {
+      ownerId: { column: 'owner_id', type: 'text', maxLength: 64 },
+      startsAt: { column: 'starts_at', type: 'int' },
+      endsAt: { column: 'ends_at', type: 'int' },
+      allDay: { column: 'all_day', type: 'bool', fallback: false },
+      label: { column: 'label', type: 'text', nullable: true, maxLength: 500 },
+      sourceCalendarId: { column: 'source_calendar_id', type: 'text', nullable: true, maxLength: 300 },
+      externalId: { column: 'external_id', type: 'text', nullable: true, maxLength: 300 },
     },
   },
 
@@ -60,6 +75,7 @@ export const ENTITY_SPECS: Record<EntityKind, EntitySpec> = {
       tags: { column: 'tags', type: 'json', fallback: [] },
       pinned: { column: 'pinned', type: 'bool', fallback: false },
       exportedAt: { column: 'exported_at', type: 'int', nullable: true },
+      linkedEventId: { column: 'linked_event_id', type: 'text', nullable: true, maxLength: 64 },
     },
   },
 
@@ -70,6 +86,7 @@ export const ENTITY_SPECS: Record<EntityKind, EntitySpec> = {
       title: { column: 'title', type: 'text', maxLength: 500 },
       notes: { column: 'notes', type: 'text', nullable: true, maxLength: TEXT_MAX },
       dueAt: { column: 'due_at', type: 'int', nullable: true },
+      deferAt: { column: 'defer_at', type: 'int', nullable: true },
       assigneeId: { column: 'assignee_id', type: 'text', nullable: true, maxLength: 64 },
       done: { column: 'done', type: 'bool', fallback: false },
       doneAt: { column: 'done_at', type: 'int', nullable: true },

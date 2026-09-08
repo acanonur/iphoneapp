@@ -5,10 +5,34 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 import { SCHEMA_SQL, SCHEMA_VERSION } from './schema.js';
 import type { Member, Space } from '../../shared/src/types.js';
 
+/**
+ * Columns added after the first release.
+ *
+ * `CREATE TABLE IF NOT EXISTS` leaves an existing table alone, so new columns
+ * have to be added explicitly or an upgraded server would fail on a database
+ * that predates them. Every entry here is nullable or defaulted, which keeps
+ * the upgrade a no-op for existing rows.
+ */
+const ADDED_COLUMNS: { table: string; column: string; definition: string }[] = [
+  { table: 'events', column: 'calendar_set', definition: 'TEXT' },
+  { table: 'notes', column: 'linked_event_id', definition: 'TEXT' },
+  { table: 'tasks', column: 'defer_at', definition: 'INTEGER' },
+];
+
+function applyColumnMigrations(db: DatabaseSync): void {
+  for (const { table, column, definition } of ADDED_COLUMNS) {
+    const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (existing.length === 0) continue; // table itself is new; the schema made it
+    if (existing.some((c) => c.name === column)) continue;
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 export function openDatabase(path: string): DatabaseSync {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec(SCHEMA_SQL);
+  applyColumnMigrations(db);
   db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run(
     'schema_version',
     String(SCHEMA_VERSION),

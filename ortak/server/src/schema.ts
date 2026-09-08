@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS events (
   all_day          INTEGER NOT NULL DEFAULT 0,
   timezone         TEXT,
   reminder_minutes INTEGER,
-  color            TEXT
+  color            TEXT,
+  calendar_set     TEXT
 );
 CREATE INDEX IF NOT EXISTS events_space_rev ON events(space_id, rev);
 CREATE INDEX IF NOT EXISTS events_span ON events(space_id, starts_at);
@@ -93,6 +94,23 @@ CREATE TABLE IF NOT EXISTS calendar_mirrors (
   PRIMARY KEY (event_id, user_id)
 );
 
+-- Time each member is already committed to, read from their own device
+-- calendars. This is what makes the calendar two-way: without it the app can
+-- write events out but can never answer "when are we both free?".
+CREATE TABLE IF NOT EXISTS busy_blocks (
+  ${SYNC_COLUMNS},
+  owner_id           TEXT    NOT NULL,
+  starts_at          INTEGER NOT NULL,
+  ends_at            INTEGER NOT NULL,
+  all_day            INTEGER NOT NULL DEFAULT 0,
+  -- Null unless the owner opted into sharing titles as well as times.
+  label              TEXT,
+  source_calendar_id TEXT,
+  external_id        TEXT
+);
+CREATE INDEX IF NOT EXISTS busy_space_rev ON busy_blocks(space_id, rev);
+CREATE INDEX IF NOT EXISTS busy_owner_span ON busy_blocks(space_id, owner_id, starts_at);
+
 -- ---------------------------------------------------------------------------
 -- Notes, tasks, shopping, links
 -- ---------------------------------------------------------------------------
@@ -103,7 +121,8 @@ CREATE TABLE IF NOT EXISTS notes (
   body        TEXT NOT NULL DEFAULT '',
   tags        TEXT NOT NULL DEFAULT '[]',
   pinned      INTEGER NOT NULL DEFAULT 0,
-  exported_at INTEGER
+  exported_at INTEGER,
+  linked_event_id TEXT
 );
 CREATE INDEX IF NOT EXISTS notes_space_rev ON notes(space_id, rev);
 
@@ -112,6 +131,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title       TEXT    NOT NULL,
   notes       TEXT,
   due_at      INTEGER,
+  defer_at    INTEGER,
   assignee_id TEXT,
   done        INTEGER NOT NULL DEFAULT 0,
   done_at     INTEGER,

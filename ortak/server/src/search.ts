@@ -18,6 +18,7 @@
 
 import type { DatabaseSync } from 'node:sqlite';
 import type { EntityKind } from '../../shared/src/types.js';
+import { expandedTags } from '../../shared/src/tags.js';
 
 /** Characters SQLite's tokenizer will not fold for us. */
 const FOLD_MAP: Record<string, string> = {
@@ -248,14 +249,21 @@ export function documentFor(
         context: str(row.location),
         sortAt: num(row.startsAt),
       };
-    case 'notes':
+    case 'notes': {
+      // Index every level of a nested tag, so searching "ev" finds a note
+      // tagged #ev/tamirat as well as one tagged #ev.
+      const written = expandedTags(`${str(row.title)}\n${str(row.body)}`);
+      const explicit = (Array.isArray(row.tags) ? row.tags : []).flatMap((t) =>
+        expandedTags(`#${String(t)}`),
+      );
       return {
         kind,
         title: str(row.title),
         body: str(row.body),
-        context: (Array.isArray(row.tags) ? row.tags : []).join(' '),
+        context: [...new Set([...written, ...explicit])].join(' '),
         sortAt: num(row.updatedAt),
       };
+    }
     case 'tasks':
       return {
         kind,
