@@ -50,9 +50,7 @@ export type ExportOutcome = 'shared' | 'dismissed' | 'failed';
 export async function shareNote(note: ExportableNote): Promise<ExportOutcome> {
   try {
     const result = await Share.share(
-      Platform.OS === 'ios'
-        ? { message: formatNote(note), title: note.title || 'Note' }
-        : { message: formatNote(note), title: note.title || 'Note' },
+      { message: formatNote(note), title: note.title || 'Note' },
       { subject: note.title || 'Note from Ortak', dialogTitle: 'Save note to…' },
     );
     return result.action === Share.dismissedAction ? 'dismissed' : 'shared';

@@ -12,9 +12,9 @@
  * and getting that wrong would silently mis-date years of messages.
  */
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { useStore } from '../src/store/useStore.js';
@@ -25,6 +25,8 @@ import { colors, relativeDay, spacing, typography } from '../src/ui/theme.js';
 export default function ImportScreen() {
   const store = useStore();
   const router = useRouter();
+  // Set when a chat export was shared into Ortak rather than picked by hand.
+  const { fileUri, fileName } = useLocalSearchParams<{ fileUri?: string; fileName?: string }>();
 
   const [file, setFile] = useState<{ name: string; content: string } | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -32,6 +34,44 @@ export default function ImportScreen() {
   const [busy, setBusy] = useState(false);
 
   const utcOffsetMinutes = -new Date().getTimezoneOffset();
+
+  /** Read a file and show the preview — shared by the picker and the share sheet. */
+  const loadFile = useCallback(
+    async (uri: string, name: string) => {
+      setBusy(true);
+      try {
+        const content = await new File(uri).text();
+        setFile({ name, content });
+
+        const result = await store.api().previewImport({
+          content,
+          filename: name,
+          utcOffsetMinutes,
+        });
+        setPreview(result);
+        setDateOrder(result.dateOrder === 'ymd' ? null : result.dateOrder);
+      } catch (error) {
+        if (error instanceof ApiError && error.code === 'no_messages') {
+          Alert.alert('Not a chat export', error.message);
+        } else if (error instanceof ApiError && error.status === 0) {
+          Alert.alert('No connection', 'Importing needs a connection to your server.');
+        } else {
+          Alert.alert('Could not read that file', 'Make sure it is the .txt from “Export chat”.');
+        }
+        setFile(null);
+        setPreview(null);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [store, utcOffsetMinutes],
+  );
+
+  // Opened by sharing an export into Ortak: skip straight to the preview.
+  useEffect(() => {
+    if (!fileUri) return;
+    void loadFile(fileUri, fileName || 'WhatsApp Chat.txt');
+  }, [fileUri, fileName, loadFile]);
 
   async function pickFile() {
     const result = await DocumentPicker.getDocumentAsync({
@@ -49,33 +89,7 @@ export default function ImportScreen() {
       return;
     }
 
-    setBusy(true);
-    try {
-      // expo-file-system v19: the old readAsStringAsync is deprecated and
-      // throws at runtime; File#text() is the supported replacement.
-      const content = await new File(asset.uri).text();
-      setFile({ name: asset.name, content });
-
-      const result = await store.api().previewImport({
-        content,
-        filename: asset.name,
-        utcOffsetMinutes,
-      });
-      setPreview(result);
-      setDateOrder(result.dateOrder === 'ymd' ? null : result.dateOrder);
-    } catch (error) {
-      if (error instanceof ApiError && error.code === 'no_messages') {
-        Alert.alert('Not a chat export', error.message);
-      } else if (error instanceof ApiError && error.status === 0) {
-        Alert.alert('No connection', 'Importing needs a connection to your server.');
-      } else {
-        Alert.alert('Could not read that file', 'Make sure it is the .txt from “Export chat”.');
-      }
-      setFile(null);
-      setPreview(null);
-    } finally {
-      setBusy(false);
-    }
+    await loadFile(asset.uri, asset.name);
   }
 
   async function confirmImport() {

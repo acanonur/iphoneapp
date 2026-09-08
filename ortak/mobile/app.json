@@ -7,7 +7,9 @@
     "scheme": "ortak",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ortak.app",
@@ -19,22 +21,16 @@
     },
     "android": {
       "package": "com.ortak.app",
-      "adaptiveIcon": { "backgroundColor": "#151821" },
+      "adaptiveIcon": {
+        "backgroundColor": "#151821"
+      },
       "permissions": [
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR"
-      ],
-      "intentFilters": [
-        {
-          "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
-          "data": [{ "mimeType": "text/plain" }]
-        }
       ]
     },
     "plugins": [
       "expo-router",
-      "expo-localization",
       [
         "expo-calendar",
         {
@@ -43,9 +39,21 @@
       ],
       [
         "expo-document-picker",
-        { "iCloudContainerEnvironment": "Production" }
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": [
+            "text/*"
+          ]
+        }
       ]
     ],
-    "experiments": { "typedRoutes": false }
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }

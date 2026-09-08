@@ -2,9 +2,9 @@
  * The landing pad for anything shared into Ortak from another app — a WhatsApp
  * message someone forwarded, a link, an address.
  *
- * Reached by the share sheet (Android, and iOS with a development build that
- * includes expo-share-intent), by an `ortak://save?text=…` deep link from an
- * iOS Shortcut, or by opening it and pasting.
+ * Reached from the share sheet on both platforms, from an `ortak://save?text=…`
+ * deep link (what the iOS Shortcut recipe uses), or by opening it and pasting.
+ * A shared chat export skips this screen and goes straight to the importer.
  */
 
 import { useEffect, useState } from 'react';
@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { useStore } from '../src/store/useStore.js';
 import { newId } from '../src/util/id.js';
-import { classifyShare, extractUrl, useIncomingShare } from '../src/share/incoming.js';
+import { chatExportFile, classifyShare, extractUrl, useIncomingShare } from '../src/share/incoming.js';
 import { Button, Card, Chip, Field, Muted, Row, Screen } from '../src/ui/components.js';
 import { spacing, typography } from '../src/ui/theme.js';
 
@@ -31,11 +31,25 @@ export default function CaptureScreen() {
   // Prefill from whatever was shared in.
   useEffect(() => {
     if (!payload) return;
+
+    // A shared WhatsApp export is a whole conversation, not a note — hand it
+    // straight to the importer, which knows how to preview and parse it.
+    const exportFile = chatExportFile(payload);
+    if (exportFile) {
+      clear();
+      router.replace({
+        pathname: '/import',
+        params: { fileUri: exportFile.path, fileName: exportFile.fileName },
+      });
+      return;
+    }
+
     const body = [payload.text, payload.url].filter(Boolean).join('\n');
     setText(body);
-    setDestination(classifyShare(payload));
+    const guess = classifyShare(payload);
+    setDestination(guess === 'chat-import' ? 'note' : guess);
     clear();
-  }, [payload, clear]);
+  }, [payload, clear, router]);
 
   async function paste() {
     const clipboard = await Clipboard.getStringAsync();
@@ -203,8 +217,8 @@ export default function CaptureScreen() {
       <Card style={{ marginTop: spacing.lg }}>
         <Text style={[typography.small, { marginBottom: spacing.xs }]}>Getting here faster</Text>
         <Muted>
-          On Android, share straight into Ortak from any app. On iOS, the README has a two-minute
-          Shortcut recipe that puts “Save to Ortak” in the share sheet.
+          Share into Ortak from any app on either phone — long-press a WhatsApp message, tap Share,
+          pick Ortak. Sharing a whole exported chat opens the importer instead.
         </Muted>
       </Card>
     </Screen>

@@ -3,28 +3,38 @@
  *
  * This is the quick way to keep a single WhatsApp message — the plumber's
  * number, the Airbnb link, the address for Saturday — without exporting a whole
- * chat: long-press the message in WhatsApp → Share → Ortak.
+ * chat: long-press the message in WhatsApp → Share → Ortak. Sharing an exported
+ * chat `.txt` works the same way and goes straight to the import screen.
  *
- * Two mechanisms, because the platforms differ:
+ * Two mechanisms, because they cover different routes in:
  *
- *  - **Deep links** (`ortak://save?text=…&url=…`). Works everywhere with no
- *    extra native code, and is what an iOS Shortcut targets. The README has a
- *    "Save to Ortak" Shortcut recipe that puts Ortak in the iOS share sheet
- *    without a custom share extension.
+ *  - **A real share-sheet target**, via `expo-share-intent`. Its config plugin
+ *    registers an Android `ACTION_SEND` filter and an iOS share extension, so
+ *    Ortak appears in the share sheet on both platforms. It needs a development
+ *    build — the native side cannot exist in Expo Go — but the app already
+ *    needs one for calendar access, so that costs nothing extra. The native
+ *    module is loaded optionally, so a build without it still runs.
  *
- *  - **A real share-sheet target**, via the optional `expo-share-intent`
- *    package. It is loaded dynamically here: if it isn't installed the app runs
- *    exactly as before, minus the native share target. Adding it needs a
- *    development build — it cannot work in Expo Go, which has a fixed set of
- *    native modules.
+ *  - **Deep links** (`ortak://save?text=…&url=…`), which is what an iOS
+ *    Shortcut targets and what makes the "Save to Ortak" recipe in the README
+ *    work without any custom build at all.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Linking from 'expo-linking';
+import { useShareIntent as useNativeShareIntent } from 'expo-share-intent';
+
+export interface SharedFile {
+  fileName: string;
+  mimeType: string;
+  path: string;
+}
 
 export interface SharedPayload {
   text: string | null;
   url: string | null;
+  /** Files that came with the share — a WhatsApp export lands here. */
+  files: SharedFile[];
   /** Where it came from, when the sharing app tells us. */
   source: string | null;
 }
@@ -48,7 +58,7 @@ export function parseShareUrl(incoming: string): SharedPayload | null {
     const url = read('url');
     if (!text && !url) return null;
 
-    return { text, url, source: read('source') };
+    return { text, url, files: [], source: read('source') };
   } catch {
     return null;
   }
@@ -60,31 +70,27 @@ export function extractUrl(text: string): string | null {
   return match ? match[0].replace(/[.,;:)\]]+$/, '') : null;
 }
 
+/** A shared file that looks like a WhatsApp "Export chat" result. */
+export function chatExportFile(payload: SharedPayload): SharedFile | null {
+  return (
+    payload.files.find(
+      (file) =>
+        file.mimeType?.startsWith('text/') ||
+        /\.txt$/i.test(file.fileName ?? '') ||
+        /^_chat\.txt$/i.test(file.fileName ?? ''),
+    ) ?? null
+  );
+}
+
 /**
  * Guess what the user meant to save, so the capture screen opens on the right
- * tab instead of asking.
+ * thing instead of asking.
  */
-export function classifyShare(payload: SharedPayload): 'link' | 'note' {
+export function classifyShare(payload: SharedPayload): 'chat-import' | 'link' | 'note' {
+  if (chatExportFile(payload)) return 'chat-import';
   if (payload.url) return 'link';
   if (payload.text && extractUrl(payload.text) && payload.text.trim().length < 400) return 'link';
   return 'note';
-}
-
-interface ShareIntentModule {
-  getShareIntent?: () => Promise<{ text?: string; webUrl?: string } | null>;
-  addShareIntentListener?: (
-    handler: (intent: { text?: string; webUrl?: string }) => void,
-  ) => { remove: () => void };
-}
-
-/** Load expo-share-intent if this build has it, without breaking builds that don't. */
-function loadShareIntentModule(): ShareIntentModule | null {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('expo-share-intent') as ShareIntentModule;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -96,48 +102,65 @@ function loadShareIntentModule(): ShareIntentModule | null {
 export function useIncomingShare(): { payload: SharedPayload | null; clear: () => void } {
   const [payload, setPayload] = useState<SharedPayload | null>(null);
 
+  // Returns an inert default when the native module is absent (Expo Go, or a
+  // build made before the plugin was added), so this is always safe to call.
+  const { hasShareIntent, shareIntent, resetShareIntent } = useNativeShareIntent({
+    resetOnBackground: true,
+  });
+
+  // Deep links, for the Shortcut route.
   useEffect(() => {
     let cancelled = false;
 
-    // Cold start via deep link.
     void Linking.getInitialURL().then((url) => {
       if (cancelled || !url) return;
       const parsed = parseShareUrl(url);
       if (parsed) setPayload(parsed);
     });
 
-    // Warm deep links.
-    const linkSubscription = Linking.addEventListener('url', (event) => {
+    const subscription = Linking.addEventListener('url', (event) => {
       const parsed = parseShareUrl(event.url);
       if (parsed) setPayload(parsed);
     });
 
-    // Native share target, when the package is present.
-    const shareIntent = loadShareIntentModule();
-    let intentSubscription: { remove: () => void } | null = null;
-
-    if (shareIntent) {
-      void shareIntent.getShareIntent?.().then((intent) => {
-        if (cancelled || !intent) return;
-        if (intent.text || intent.webUrl) {
-          setPayload({ text: intent.text ?? null, url: intent.webUrl ?? null, source: 'share-sheet' });
-        }
-      });
-
-      intentSubscription =
-        shareIntent.addShareIntentListener?.((intent) => {
-          if (intent.text || intent.webUrl) {
-            setPayload({ text: intent.text ?? null, url: intent.webUrl ?? null, source: 'share-sheet' });
-          }
-        }) ?? null;
-    }
-
     return () => {
       cancelled = true;
-      linkSubscription.remove();
-      intentSubscription?.remove();
+      subscription.remove();
     };
   }, []);
 
-  return { payload, clear: () => setPayload(null) };
+  // The native share sheet. Depend on the primitives rather than the intent
+  // object, whose identity changes on every render of the underlying hook.
+  const text = shareIntent?.text ?? null;
+  const webUrl = shareIntent?.webUrl ?? null;
+  const files = shareIntent?.files ?? null;
+  const handled = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!hasShareIntent) return;
+
+    const shared: SharedFile[] = (files ?? []).map((file) => ({
+      fileName: file.fileName,
+      mimeType: file.mimeType,
+      path: file.path,
+    }));
+
+    if (!text && !webUrl && shared.length === 0) return;
+
+    // The same share can be reported more than once; only act on it once.
+    const fingerprint = `${text ?? ''}|${webUrl ?? ''}|${shared.map((f) => f.path).join(',')}`;
+    if (handled.current === fingerprint) return;
+    handled.current = fingerprint;
+
+    setPayload({ text, url: webUrl, files: shared, source: 'share-sheet' });
+    resetShareIntent();
+  }, [hasShareIntent, text, webUrl, files, resetShareIntent]);
+
+  return {
+    payload,
+    clear: () => {
+      handled.current = null;
+      setPayload(null);
+    },
+  };
 }

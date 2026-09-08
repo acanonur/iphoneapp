@@ -12,6 +12,13 @@ working out who owes whom after a holiday.
 It runs on **iOS and Android** from one codebase, and on **your own server** —
 your household's data doesn't go to anyone else.
 
+Both phones run the same app, built from `ortak/mobile` with `npx expo run:ios`
+and `npx expo run:android`. Nothing is iOS-first: the calendar integration uses
+EventKit on iOS and the Calendar Provider on Android through the same API, the
+share sheet works on both, and every screen is shared code. Exactly one feature
+is iOS-only — copying to-dos into Apple Reminders, because Android has no
+equivalent system list — and it is hidden on Android rather than shown broken.
+
 ---
 
 ## What it does
@@ -134,9 +141,11 @@ finding it again:
   safe and cheap: message ids are fingerprints of the content, so only genuinely
   new messages are added.
 - **Single messages, as they happen.** Long-press a message in WhatsApp → Share
-  → Ortak. On Android this works out of the box. On iOS it's a
-  [Shortcut](#ios-shortcut-recipes) (or a development build with
-  `expo-share-intent`, which adds a proper share extension).
+  → Ortak. This is a real share target on **both** platforms — an
+  `ACTION_SEND` filter on Android and a share extension on iOS, both generated
+  by the `expo-share-intent` config plugin. Sharing a whole exported chat opens
+  the importer directly instead. (A [Shortcut](#ios-shortcut-recipes) is still
+  offered as an alternative on iOS, since it needs no custom build.)
 
 The parser handles the format's real-world messiness: iOS and Android layouts,
 12- and 24-hour clocks, day-first vs month-first dates (inferred from the file,
@@ -219,12 +228,16 @@ npm install
 npx expo install --fix     # aligns native module versions with your Expo SDK
 ```
 
-Ortak uses native calendar access, so it needs a **development build** rather
-than Expo Go:
+Ortak uses native calendar access and a native share extension, so it needs a
+**development build** rather than Expo Go. Build each phone once:
 
 ```bash
-npx expo run:ios          # or: npx expo run:android
+npx expo run:ios          # Onur's iPhone
+npx expo run:android      # Tugce's Android
 ```
+
+Same codebase, same server, same invite code — the two builds differ only in
+which native calendar they talk to.
 
 On first launch:
 
@@ -245,9 +258,11 @@ calendar entries land in your own calendars automatically.
 Two small Shortcuts fill the gaps iOS leaves. Both take about two minutes in the
 Shortcuts app.
 
-### "Save to Ortak" — puts Ortak in the iOS share sheet
+### "Save to Ortak" — an alternative to the built-in share extension
 
-Lets you share a WhatsApp message, a link or anything else straight into Ortak.
+Ortak already registers a native share extension, so it appears in the iOS share
+sheet once you've made a development build. This Shortcut does the same job
+without one, which is handy while you're still testing.
 
 1. Shortcuts → **+** → name it *Save to Ortak*
 2. Tap ⓘ → turn on **Show in Share Sheet**, accept **Text** and **URLs**
@@ -371,7 +386,5 @@ Honest list of what a second pass would add:
   they need native config plugins and a development build to verify
 - **Photos and receipts** on expenses — needs blob storage
 - **Live exchange rates** — foreign-currency expenses take a rate you type
-- **A true iOS share extension** — currently the Shortcut route; add
-  `expo-share-intent` and a development build for a native one
 - **Two-way Apple Notes sync** — not possible on iOS, and on macOS it would mean
   reconciling two editable copies
