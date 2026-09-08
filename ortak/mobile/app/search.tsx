@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useStore } from '../src/store/useStore.js';
 import type { SearchHit } from '../src/api/client.js';
 import type { EntityKind } from '../../shared/src/types.js';
-import { Card, Chip, Field, Muted, Row, Screen } from '../src/ui/components.js';
+import { Card, Tag, Field, Muted, Row, Screen } from '../src/ui/components.js';
 import { colors, relativeDay, spacing, typography } from '../src/ui/theme.js';
 
 const FILTERS: { label: string; kinds: EntityKind[] | undefined }[] = [
@@ -113,7 +113,7 @@ export default function SearchScreen() {
 
       <Row style={{ flexWrap: 'wrap', marginBottom: spacing.md }} gap={spacing.xs}>
         {FILTERS.map((option, index) => (
-          <Chip
+          <Tag
             key={option.label}
             label={option.label}
             selected={filter === index}
@@ -125,7 +125,7 @@ export default function SearchScreen() {
       {loading ? <ActivityIndicator color={colors.accent} /> : null}
 
       {failed ? (
-        <Card style={{ borderColor: colors.warning }}>
+        <Card style={{ borderColor: colors.accent }}>
           <Muted>
             Search runs on your server, so it needs a connection. Your own notes and lists are still
             here offline.

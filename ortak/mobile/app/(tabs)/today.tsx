@@ -14,8 +14,9 @@ import { buildDayTimeline, largestGap, formatDuration } from '../../../shared/sr
 import { bucketTasks } from '../../../shared/src/planning.js';
 import type { EventItem, ShoppingItem, TaskItem } from '../../../shared/src/types.js';
 import { Timeline } from '../../src/ui/Timeline.js';
+import { SearchIcon, SettingsIcon } from '../../src/ui/icons.js';
 import { useAvailabilityPublisher, useTimedBusyIntervals } from '../../src/calendar/useAvailability.js';
-import { Avatar, Button, Card, Field, Muted, Row } from '../../src/ui/components.js';
+import { MemberSquare, Button, Card, Field, Muted, Row } from '../../src/ui/components.js';
 import { colors, clockTime, relativeDay, spacing, typography } from '../../src/ui/theme.js';
 
 export default function TodayScreen() {
@@ -146,16 +147,16 @@ export default function TodayScreen() {
           </View>
           <Row gap={spacing.sm}>
             <Pressable onPress={() => router.push('/search')} hitSlop={8}>
-              <Text style={{ fontSize: 22 }}>🔍</Text>
+              <SearchIcon size={20} color={colors.text} />
             </Pressable>
             <Pressable onPress={() => router.push('/settings')} hitSlop={8}>
-              <Text style={{ fontSize: 22 }}>⚙️</Text>
+              <SettingsIcon size={20} color={colors.text} />
             </Pressable>
           </Row>
         </Row>
 
         {!store.online || queued > 0 ? (
-          <Card style={{ borderColor: store.online ? colors.border : colors.warning }}>
+          <Card style={{ borderColor: store.online ? colors.divider : colors.accent }}>
             <Muted>
               {store.online
                 ? `${queued} change${queued === 1 ? '' : 's'} waiting to sync.`
@@ -165,9 +166,9 @@ export default function TodayScreen() {
         ) : null}
 
         {others.length > 0 ? (
-          <Card style={{ borderColor: colors.success }}>
+          <Card style={{ borderColor: colors.text }}>
             <Row>
-              <Avatar name={others[0]!.name} color={memberColor(store, others[0]!.userId)} size={22} />
+              <MemberSquare name={others[0]!.name} color={memberColor(store, others[0]!.userId)} size={22} />
               <Text style={typography.small}>
                 {others.map((p) => p.name).join(' and ')}{' '}
                 {others.length === 1 ? 'is' : 'are'}{' '}
@@ -234,7 +235,7 @@ export default function TodayScreen() {
                     <Text
                       style={[
                         typography.tiny,
-                        { color: task.dueAt < now ? colors.danger : colors.textMuted },
+                        { color: task.dueAt < now ? colors.accent700 : colors.textMuted },
                       ]}
                     >
                       {relativeDay(task.dueAt)}

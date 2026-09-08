@@ -19,6 +19,10 @@ share sheet works on both, and every screen is shared code. Exactly one feature
 is iOS-only — copying to-dos into Apple Reminders, because Android has no
 equivalent system list — and it is hidden on Android rather than shown broken.
 
+It is designed on the **Modernist** system — ink on warm paper, Archivo, one
+red, zero radius, and structure made from 2px rules rather than cards. See
+[`docs/design.md`](docs/design.md) for how that maps onto the code.
+
 ---
 
 ## What it does
@@ -189,6 +193,9 @@ ortak/
              natural-language date parser, the WhatsApp export parser
   server/    Fastify + SQLite: sync, search, imports, trip balances
   mobile/    Expo app (iOS + Android)
+               src/ui/theme.ts       the Modernist tokens
+               src/ui/components.tsx the components built from them
+  docs/      How the design maps onto the code
   scripts/   The macOS Apple Notes script
 ```
 

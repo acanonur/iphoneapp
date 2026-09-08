@@ -1,8 +1,10 @@
 /**
- * Shared notes, plus the saved-links shelf.
+ * Shared notes and the saved-links shelf, in Modernist.
  *
- * Both live here because they are the same instinct — "keep this so we don't
- * lose it" — and separating them meant two half-empty tabs.
+ * The filter row pairs a full-width input with a 44px square primary button —
+ * the system's icon button — and nested tags become the system's tags rather
+ * than pills. Notes are ruled rows: an 800-weight title, two lines of preview,
+ * then the meta line with the tag path in accent.
  */
 
 import { useMemo, useState } from 'react';
@@ -13,23 +15,43 @@ import { useStore, selectAll, memberName } from '../../src/store/useStore.js';
 import { newId } from '../../src/util/id.js';
 import { buildTagTree, expandedTags, plainText } from '../../../shared/src/tags.js';
 import type { LinkItem, NoteItem } from '../../../shared/src/types.js';
-import { Card, Chip, Field, Muted, Row } from '../../src/ui/components.js';
-import { colors, relativeDay, spacing, typography } from '../../src/ui/theme.js';
+import {
+  Button,
+  Field,
+  Row,
+  ScreenHeader,
+  Seg,
+  Tag,
+} from '../../src/ui/components.js';
+import { PinIcon, PlusIcon } from '../../src/ui/icons.js';
+import { colors, fonts, relativeDay, rules, spacing, typography } from '../../src/ui/theme.js';
 
-type Tab = 'notes' | 'links';
+type Half = 'notes' | 'links';
 
 export default function NotesScreen() {
-  const [tab, setTab] = useState<Tab>('notes');
+  const [half, setHalf] = useState<Half>('notes');
+  const store = useStore();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['left', 'right']}>
-      <View style={{ padding: spacing.lg, paddingBottom: 0 }}>
-        <Row>
-          <Chip label="Notes" selected={tab === 'notes'} onPress={() => setTab('notes')} />
-          <Chip label="Links" selected={tab === 'links'} onPress={() => setTab('links')} />
-        </Row>
-      </View>
-      {tab === 'notes' ? <NoteList /> : <LinkList />}
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
+      <ScreenHeader
+        title="Notes"
+        members={store.members.map((m) => ({ id: m.id, name: m.name, color: m.color }))}
+      />
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Seg
+          options={[
+            { value: 'notes', label: 'Notes' },
+            { value: 'links', label: 'Links' },
+          ]}
+          value={half}
+          onChange={setHalf}
+        />
+        {half === 'notes' ? <NoteList /> : <LinkList />}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -51,23 +73,13 @@ function NoteList() {
     return map;
   }, [notes]);
 
-  /**
-   * Bear's nested tags: the hierarchy comes out of what people typed, and the
-   * counts roll up, so "ev" shows everything filed anywhere beneath it.
-   */
-  const tagTree = useMemo(
-    () => buildTagTree([...tagsByNote.values()]),
-    [tagsByNote],
-  );
+  const tagTree = useMemo(() => buildTagTree([...tagsByNote.values()]), [tagsByNote]);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return notes
       .filter((n) => {
-        if (tagFilter) {
-          const tags = tagsByNote.get(n.id) ?? [];
-          if (!tags.includes(tagFilter)) return false;
-        }
+        if (tagFilter && !(tagsByNote.get(n.id) ?? []).includes(tagFilter)) return false;
         return (
           !needle ||
           n.title.toLowerCase().includes(needle) ||
@@ -91,80 +103,123 @@ function NoteList() {
     router.push(`/note/${id}`);
   }
 
+  /** One chip per top-level tag plus its immediate children — deeper is noise in a row. */
+  const chips = tagTree.flatMap((node) => [
+    { path: node.path, label: `#${node.name}`, count: node.totalCount },
+    ...node.children.map((child) => ({
+      path: child.path,
+      label: `#${node.name}/${child.name}`,
+      count: child.totalCount,
+    })),
+  ]);
+
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl * 2 }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Row style={{ marginBottom: spacing.md }}>
+    <View>
+      <Row style={{ marginTop: spacing.lg, alignItems: 'stretch' }} gap={spacing.sm}>
         <View style={{ flex: 1 }}>
-          <Field placeholder="Filter notes" value={query} onChangeText={setQuery} style={{ marginBottom: 0 }} />
+          <Field
+            placeholder="Filter notes"
+            value={query}
+            onChangeText={setQuery}
+            style={{ marginBottom: 0 }}
+          />
         </View>
-        <Pressable onPress={create} hitSlop={8} style={{ paddingHorizontal: spacing.sm }}>
-          <Text style={{ fontSize: 26, color: colors.accent }}>＋</Text>
+        <Pressable
+          onPress={create}
+          accessibilityLabel="New note"
+          style={({ pressed }) => [
+            {
+              width: 44,
+              height: 44,
+              backgroundColor: colors.accent,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <PlusIcon size={18} color={colors.bg} />
         </Pressable>
       </Row>
 
-      {tagTree.length > 0 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
-          <Row gap={spacing.xs}>
-            <Chip label="All" selected={!tagFilter} onPress={() => setTagFilter(null)} />
-            {tagTree.flatMap((node) => [
-              <Chip
-                key={node.path}
-                label={`#${node.name} ${node.totalCount}`}
-                selected={tagFilter === node.path}
-                onPress={() => setTagFilter(tagFilter === node.path ? null : node.path)}
-              />,
-              // One level of children, which is as deep as a chip row stays useful.
-              ...node.children.map((child) => (
-                <Chip
-                  key={child.path}
-                  label={`#${node.name}/${child.name} ${child.totalCount}`}
-                  selected={tagFilter === child.path}
-                  onPress={() => setTagFilter(tagFilter === child.path ? null : child.path)}
-                />
-              )),
-            ])}
-          </Row>
+      {chips.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginTop: spacing.md }}
+          contentContainerStyle={{ gap: 6 }}
+        >
+          {chips.map((chip) => (
+            <Tag
+              key={chip.path}
+              label={`${chip.label} ${chip.count}`}
+              selected={tagFilter === chip.path}
+              onPress={() => setTagFilter(tagFilter === chip.path ? null : chip.path)}
+            />
+          ))}
         </ScrollView>
       ) : null}
 
       {visible.length === 0 ? (
-        <Muted>
+        <Text style={[typography.small, { marginTop: spacing.xl }]}>
           {tagFilter
             ? `Nothing tagged #${tagFilter}.`
             : query
               ? 'Nothing matches.'
               : 'No notes yet. Tap ＋ to write one — both of you can edit it. Use #ev/tamirat to file it and [[another note]] to link.'}
-        </Muted>
+        </Text>
       ) : (
-        visible.map((note) => (
-          <Card key={note.id} onPress={() => router.push(`/note/${note.id}`)}>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <Text style={[typography.subheading, { flex: 1 }]} numberOfLines={1}>
-                {note.pinned ? '📌 ' : ''}
-                {note.title || 'Untitled'}
-              </Text>
-              {note.exportedAt ? <Text style={typography.tiny}>exported</Text> : null}
-            </Row>
-            {note.body ? (
-              <Text style={[typography.small, { marginTop: spacing.xs }]} numberOfLines={2}>
-                {plainText(note.body)}
-              </Text>
-            ) : null}
-            <Text style={[typography.tiny, { marginTop: spacing.xs }]}>
-              {relativeDay(note.updatedAt)} · {memberName(store, note.createdBy)}
-            </Text>
-          </Card>
-        ))
+        <View
+          style={{
+            marginTop: spacing.md,
+            borderTopWidth: rules.section,
+            borderTopColor: colors.divider,
+          }}
+        >
+          {visible.map((note) => {
+            const tags = tagsByNote.get(note.id) ?? [];
+            return (
+              <Pressable
+                key={note.id}
+                onPress={() => router.push(`/note/${note.id}`)}
+                style={styles.noteRow}
+              >
+                <Row gap={spacing.sm}>
+                  {note.pinned ? <PinIcon size={14} color={colors.accent} /> : null}
+                  <Text style={[styles.noteTitle, { flex: 1 }]} numberOfLines={1}>
+                    {note.title || 'Untitled'}
+                  </Text>
+                  {note.exportedAt ? <Tag label="exported" variant="outline" /> : null}
+                </Row>
+
+                {note.body ? (
+                  <Text style={[typography.small, { color: colors.neutral800 }]} numberOfLines={2}>
+                    {plainText(note.body)}
+                  </Text>
+                ) : null}
+
+                <Row gap={spacing.sm}>
+                  <Text style={typography.tiny}>
+                    {relativeDay(note.updatedAt)} · {memberName(store, note.createdBy)}
+                  </Text>
+                  {tags.length > 0 ? (
+                    <Text style={[typography.tiny, { color: colors.accent700 }]} numberOfLines={1}>
+                      #{tags[tags.length - 1]}
+                    </Text>
+                  ) : null}
+                </Row>
+              </Pressable>
+            );
+          })}
+        </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 function LinkList() {
   const store = useStore();
+  const api = useStore((s) => s.api());
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -193,7 +248,7 @@ function LinkList() {
     setUrl('');
 
     try {
-      const preview = await store.api().linkPreview(value);
+      const preview = await api.linkPreview(value);
       store.upsert('links', {
         id,
         url: preview.url ?? value,
@@ -213,12 +268,10 @@ function LinkList() {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl * 2 }}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View>
       <Field
-        placeholder="Paste a link"
+        label="Paste a link"
+        placeholder="https://"
         value={url}
         onChangeText={setUrl}
         onSubmitEditing={() => void save()}
@@ -227,35 +280,62 @@ function LinkList() {
         keyboardType="url"
         returnKeyType="done"
         hint={busy ? 'Fetching the title…' : undefined}
+        style={{ marginBottom: 0 }}
       />
 
       {links.length === 0 ? (
-        <Muted>
+        <Text style={[typography.small, { marginTop: spacing.xl }]}>
           Nothing saved yet. Links shared into Ortak from any app land here too, and everything is
           searchable.
-        </Muted>
+        </Text>
       ) : (
-        links.map((link) => (
-          <Card key={link.id}>
-            <Text style={typography.subheading} numberOfLines={2}>
-              {link.title || link.url}
-            </Text>
-            {link.description ? (
-              <Text style={[typography.small, { marginTop: spacing.xs }]} numberOfLines={2}>
-                {link.description}
+        <View
+          style={{
+            marginTop: spacing.lg,
+            borderTopWidth: rules.section,
+            borderTopColor: colors.divider,
+          }}
+        >
+          {links.map((link) => (
+            <View key={link.id} style={styles.noteRow}>
+              <Text style={styles.noteTitle} numberOfLines={2}>
+                {link.title || link.url}
               </Text>
-            ) : null}
-            <Row style={{ justifyContent: 'space-between', marginTop: spacing.sm }}>
-              <Text style={typography.tiny} numberOfLines={1}>
-                {link.siteName || link.url}
-              </Text>
-              <Pressable onPress={() => store.remove('links', link.id)} hitSlop={8}>
-                <Text style={{ color: colors.textFaint, fontSize: 12 }}>Remove</Text>
-              </Pressable>
-            </Row>
-          </Card>
-        ))
+              {link.description ? (
+                <Text style={[typography.small, { color: colors.neutral800 }]} numberOfLines={2}>
+                  {link.description}
+                </Text>
+              ) : null}
+              <Row style={{ justifyContent: 'space-between' }}>
+                <Text style={[typography.tiny, { flex: 1 }]} numberOfLines={1}>
+                  {link.siteName || link.url}
+                </Text>
+                <Button
+                  label="Remove"
+                  variant="ghost"
+                  onPress={() => store.remove('links', link.id)}
+                  style={{ minHeight: 28 }}
+                />
+              </Row>
+            </View>
+          ))}
+        </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
+
+const styles = {
+  noteRow: {
+    paddingVertical: spacing.md,
+    gap: 4,
+    borderBottomWidth: rules.row,
+    borderBottomColor: colors.dividerSoft,
+  },
+  noteTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 16,
+    lineHeight: 20,
+    color: colors.text,
+  },
+};

@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useStore } from '../src/store/useStore.js';
 import { ApiError, OrtakApi, normaliseServerUrl } from '../src/api/client.js';
-import { Button, Card, Field, Muted, Row, Screen, Title, Chip } from '../src/ui/components.js';
+import { Button, Card, Field, Muted, Row, Screen, Title, Tag } from '../src/ui/components.js';
 import { colors, spacing, typography } from '../src/ui/theme.js';
 
 type Mode = 'create' | 'join';
@@ -90,8 +90,8 @@ export default function Onboarding() {
       />
 
       <Row style={{ marginBottom: spacing.lg }}>
-        <Chip label="Start a new space" selected={mode === 'create'} onPress={() => setMode('create')} />
-        <Chip label="Join with a code" selected={mode === 'join'} onPress={() => setMode('join')} />
+        <Tag label="Start a new space" selected={mode === 'create'} onPress={() => setMode('create')} />
+        <Tag label="Join with a code" selected={mode === 'join'} onPress={() => setMode('join')} />
       </Row>
 
       <Field
@@ -132,8 +132,8 @@ export default function Onboarding() {
       />
 
       {error ? (
-        <Card style={{ borderColor: colors.danger }}>
-          <Text style={{ color: colors.danger, fontSize: 14 }}>{error}</Text>
+        <Card style={{ borderColor: colors.accent700 }}>
+          <Text style={{ color: colors.accent700, fontSize: 14 }}>{error}</Text>
         </Card>
       ) : null}
 

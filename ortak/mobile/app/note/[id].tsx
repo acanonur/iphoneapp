@@ -10,7 +10,7 @@ import { copyNote, noteTextUrl, openNotesApp, shareNote } from '../../src/notes/
 import { newId } from '../../src/util/id.js';
 import { parseTags, buildBacklinkIndex } from '../../../shared/src/tags.js';
 import type { EventItem, NoteItem } from '../../../shared/src/types.js';
-import { Button, Card, Chip, Field, Muted, Row } from '../../src/ui/components.js';
+import { Button, Card, Tag, Field, Muted, Row } from '../../src/ui/components.js';
 import { colors, relativeDay, clockTime, shortDateTime, spacing, typography } from '../../src/ui/theme.js';
 
 export default function NoteScreen() {
@@ -137,7 +137,7 @@ export default function NoteScreen() {
         />
 
         <Row style={{ marginBottom: spacing.md }}>
-          <Chip
+          <Tag
             label={note.pinned ? '📌 Pinned' : 'Pin'}
             selected={note.pinned}
             onPress={() => store.upsert('notes', { ...note, id: note.id, pinned: !note.pinned })}
@@ -147,7 +147,7 @@ export default function NoteScreen() {
         {tags.length > 0 ? (
           <Row style={{ flexWrap: 'wrap', marginBottom: spacing.md }} gap={spacing.xs}>
             {tags.map((tag) => (
-              <Chip key={tag.path} label={`#${tag.path}`} selected />
+              <Tag key={tag.path} label={`#${tag.path}`} selected />
             ))}
           </Row>
         ) : null}
@@ -192,7 +192,7 @@ export default function NoteScreen() {
                       padding: spacing.md,
                       borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: colors.border,
+                      borderColor: colors.divider,
                     }}
                   >
                     <Text style={typography.body}>{event.title}</Text>
@@ -272,7 +272,7 @@ export default function NoteScreen() {
                       router.push(`/note/${newNoteId}`);
                     }}
                   >
-                    <Text style={{ color: colors.warning, fontSize: 14, paddingVertical: 2 }}>
+                    <Text style={{ color: colors.accent, fontSize: 14, paddingVertical: 2 }}>
                       + {target}
                     </Text>
                   </Pressable>

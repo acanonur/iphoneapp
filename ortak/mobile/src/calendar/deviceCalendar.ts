@@ -131,7 +131,7 @@ export async function listWritableCalendars(): Promise<CalendarChoice[]> {
       id: c.id,
       title: c.title,
       sourceLabel: describeSource(c),
-      color: c.color ?? '#6C8AE4',
+      color: c.color ?? '#201e1d',
       isPrimary: Boolean((c as { isPrimary?: boolean }).isPrimary),
       allowsModifications: c.allowsModifications,
     }))

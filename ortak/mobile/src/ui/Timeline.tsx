@@ -52,7 +52,7 @@ export function Timeline({
             <View
               key={event.id}
               style={{
-                backgroundColor: colors.accentSoft,
+                backgroundColor: colors.accent100,
                 borderRadius: radius.sm,
                 paddingVertical: spacing.sm,
                 paddingHorizontal: spacing.md,
@@ -120,7 +120,7 @@ function Block({
           borderRadius: radius.sm,
           borderWidth: 1,
           borderStyle: 'dashed',
-          borderColor: colors.border,
+          borderColor: colors.divider,
           justifyContent: 'center',
           paddingHorizontal: spacing.md,
           opacity: pressed ? 0.7 : 1,
@@ -166,9 +166,10 @@ function Block({
       style={({ pressed }) => ({
         height,
         borderRadius: radius.sm,
-        backgroundColor: block.overlapping ? '#3A2730' : colors.accentSoft,
+        // A clash is the same red, turned up — Modernist has no second hue.
+        backgroundColor: block.overlapping ? colors.accent200 : colors.accent100,
         borderLeftWidth: 4,
-        borderLeftColor: block.overlapping ? colors.danger : (block.color ?? colors.accent),
+        borderLeftColor: block.overlapping ? colors.accent700 : (block.color ?? colors.accent),
         justifyContent: 'center',
         paddingHorizontal: spacing.md,
         opacity: pressed ? 0.85 : 1,

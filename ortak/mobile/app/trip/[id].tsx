@@ -14,7 +14,7 @@ import { newId } from '../../src/util/id.js';
 import { summarizeTrip } from '../../../shared/src/split.js';
 import { formatCents, parseAmountToCents } from '../../../shared/src/money.js';
 import type { Expense, Settlement, SplitMode, Trip, TripMember } from '../../../shared/src/types.js';
-import { Avatar, Button, Card, Chip, Field, Muted, Row } from '../../src/ui/components.js';
+import { MemberSquare, Button, Card, Tag, Field, Muted, Row } from '../../src/ui/components.js';
 import { colors, relativeDay, spacing, typography } from '../../src/ui/theme.js';
 
 export default function TripScreen() {
@@ -107,9 +107,9 @@ export default function TripScreen() {
           <Card key={`${transfer.fromMemberId}-${transfer.toMemberId}`}>
             <Row style={{ justifyContent: 'space-between' }}>
               <Row style={{ flex: 1 }}>
-                <Avatar name={nameOf(transfer.fromMemberId)} color={colorOf(transfer.fromMemberId)} size={24} />
+                <MemberSquare name={nameOf(transfer.fromMemberId)} color={colorOf(transfer.fromMemberId)} size={24} />
                 <Text style={typography.body}>→</Text>
-                <Avatar name={nameOf(transfer.toMemberId)} color={colorOf(transfer.toMemberId)} size={24} />
+                <MemberSquare name={nameOf(transfer.toMemberId)} color={colorOf(transfer.toMemberId)} size={24} />
                 <Text style={[typography.body, { flex: 1 }]} numberOfLines={1}>
                   {nameOf(transfer.fromMemberId)} pays {nameOf(transfer.toMemberId)}
                 </Text>
@@ -136,7 +136,7 @@ export default function TripScreen() {
                 )
               }
             >
-              <Text style={{ color: colors.success, fontSize: 13, fontWeight: '600' }}>
+              <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>
                 Mark as paid
               </Text>
             </Pressable>
@@ -145,7 +145,7 @@ export default function TripScreen() {
       )}
 
       {summary.problems.length > 0 ? (
-        <Card style={{ borderColor: colors.warning }}>
+        <Card style={{ borderColor: colors.accent }}>
           <Muted>
             {summary.problems.length} expense
             {summary.problems.length === 1 ? '' : 's'} couldn’t be split — someone on it is no longer
@@ -162,7 +162,7 @@ export default function TripScreen() {
         <Card key={balance.memberId}>
           <Row style={{ justifyContent: 'space-between' }}>
             <Row style={{ flex: 1 }}>
-              <Avatar name={nameOf(balance.memberId)} color={colorOf(balance.memberId)} size={26} />
+              <MemberSquare name={nameOf(balance.memberId)} color={colorOf(balance.memberId)} size={26} />
               <View>
                 <Text style={typography.body}>{nameOf(balance.memberId)}</Text>
                 <Text style={typography.tiny}>
@@ -177,9 +177,9 @@ export default function TripScreen() {
                 fontWeight: '700',
                 color:
                   balance.netCents > 0
-                    ? colors.success
+                    ? colors.text
                     : balance.netCents < 0
-                      ? colors.warning
+                      ? colors.accent
                       : colors.textMuted,
               }}
             >
@@ -338,7 +338,7 @@ function AddExpense({
       <Text style={[typography.small, { marginBottom: spacing.xs }]}>Paid by</Text>
       <Row style={{ flexWrap: 'wrap', marginBottom: spacing.md }} gap={spacing.xs}>
         {members.map((member) => (
-          <Chip
+          <Tag
             key={member.id}
             label={member.name}
             selected={paidBy === member.id}
@@ -350,7 +350,7 @@ function AddExpense({
       <Text style={[typography.small, { marginBottom: spacing.xs }]}>Split between</Text>
       <Row style={{ flexWrap: 'wrap', marginBottom: spacing.md }} gap={spacing.xs}>
         {members.map((member) => (
-          <Chip
+          <Tag
             key={member.id}
             label={member.name}
             selected={participants.includes(member.id)}
@@ -360,8 +360,8 @@ function AddExpense({
       </Row>
 
       <Row style={{ marginBottom: spacing.md }} gap={spacing.xs}>
-        <Chip label="Evenly" selected={mode === 'equal'} onPress={() => setMode('equal')} />
-        <Chip label="By shares" selected={mode === 'shares'} onPress={() => setMode('shares')} />
+        <Tag label="Evenly" selected={mode === 'equal'} onPress={() => setMode('equal')} />
+        <Tag label="By shares" selected={mode === 'shares'} onPress={() => setMode('shares')} />
       </Row>
 
       <Button label="Add expense" onPress={save} />

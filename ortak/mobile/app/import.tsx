@@ -19,7 +19,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { useStore } from '../src/store/useStore.js';
 import { ApiError, type ImportPreview } from '../src/api/client.js';
-import { Button, Card, Chip, Muted, Row } from '../src/ui/components.js';
+import { Button, Card, Tag, Muted, Row } from '../src/ui/components.js';
 import { colors, relativeDay, spacing, typography } from '../src/ui/theme.js';
 
 export default function ImportScreen() {
@@ -159,7 +159,7 @@ export default function ImportScreen() {
           </Card>
 
           {preview.dateOrderAmbiguous ? (
-            <Card style={{ borderColor: colors.warning }}>
+            <Card style={{ borderColor: colors.accent }}>
               <Text style={[typography.body, { marginBottom: spacing.sm }]}>
                 Which way round are the dates?
               </Text>
@@ -168,12 +168,12 @@ export default function ImportScreen() {
                 Check the first message below against what you remember.
               </Muted>
               <Row style={{ marginTop: spacing.md }}>
-                <Chip
+                <Tag
                   label="Day first (05.08 = 5 Aug)"
                   selected={dateOrder === 'dmy'}
                   onPress={() => setDateOrder('dmy')}
                 />
-                <Chip
+                <Tag
                   label="Month first (05/08 = 8 May)"
                   selected={dateOrder === 'mdy'}
                   onPress={() => setDateOrder('mdy')}

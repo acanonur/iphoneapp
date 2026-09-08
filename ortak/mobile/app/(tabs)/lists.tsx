@@ -1,9 +1,10 @@
 /**
- * To-dos and the shopping list.
+ * To-dos and the shopping list, in Modernist.
  *
- * The shopping half is the one that has to work while walking around a shop, so
- * it leans on presence: while this tab is open the app announces "shopping",
- * the other phone shows it, and every tick appears on both within a second.
+ * The two halves sit behind a segmented control. Inside To do, the Things-style
+ * buckets are flush-left text tabs with a 2px accent underline and a small
+ * count. Every item is a ruled row with a square tick box at the left; ticking
+ * one draws a 2px accent rule through the title rather than fading it out.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,69 +12,107 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useStore, selectAll, memberColor, memberName } from '../../src/store/useStore.js';
+import { useStore, selectAll, memberName, memberColor } from '../../src/store/useStore.js';
 import { announcePresence } from '../../src/store/socket.js';
 import { useReminderMirror } from '../../src/calendar/useReminderMirror.js';
 import { newId } from '../../src/util/id.js';
 import { parseQuickAdd } from '../../../shared/src/datetime.js';
-import { bucketTasks, bucketCounts, groupUpcomingByDay, type Bucket } from '../../../shared/src/planning.js';
 import { parseAmountToCents, formatCents } from '../../../shared/src/money.js';
+import {
+  bucketTasks,
+  bucketCounts,
+  groupUpcomingByDay,
+  type Bucket,
+} from '../../../shared/src/planning.js';
 import type { ShoppingItem, TaskItem } from '../../../shared/src/types.js';
-import { Avatar, Button, Card, CheckCircle, Chip, Field, Muted, Row } from '../../src/ui/components.js';
-import { colors, relativeDay, spacing, typography } from '../../src/ui/theme.js';
+import {
+  Button,
+  Card,
+  Field,
+  Kicker,
+  MemberSquare,
+  Muted,
+  NoticeCard,
+  Row,
+  Rule,
+  ScreenHeader,
+  Seg,
+  Tag,
+  TextTabs,
+  TickBox,
+} from '../../src/ui/components.js';
+import { ArrowRightIcon } from '../../src/ui/icons.js';
+import {
+  colors,
+  fonts,
+  relativeDay,
+  rules,
+  spacing,
+  typography,
+} from '../../src/ui/theme.js';
 
-type Tab = 'todo' | 'shopping';
+type Half = 'todo' | 'shopping';
 
 export default function ListsScreen() {
-  const [tab, setTab] = useState<Tab>('todo');
+  const [half, setHalf] = useState<Half>('todo');
   const store = useStore();
 
   // Tell the other phone we're shopping, and keep saying so while we are.
   useFocusEffect(
     useCallback(() => {
-      if (tab !== 'shopping') return undefined;
+      if (half !== 'shopping') return undefined;
       announcePresence('shopping');
       const timer = setInterval(() => announcePresence('shopping'), 30_000);
       return () => {
         clearInterval(timer);
         announcePresence('');
       };
-    }, [tab]),
-  );
-
-  const shoppers = store.presence.filter(
-    (p) => p.userId !== store.user?.id && p.context === 'shopping',
+    }, [half]),
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['left', 'right']}>
-      <View style={{ padding: spacing.lg, paddingBottom: 0 }}>
-        <Row style={{ marginBottom: spacing.md }}>
-          <Chip label="To do" selected={tab === 'todo'} onPress={() => setTab('todo')} />
-          <Chip label="Shopping" selected={tab === 'shopping'} onPress={() => setTab('shopping')} />
-        </Row>
-
-        {tab === 'shopping' && shoppers.length > 0 ? (
-          <Card style={{ borderColor: colors.success }}>
-            <Row>
-              <Avatar name={shoppers[0]!.name} color={memberColor(store, shoppers[0]!.userId)} size={22} />
-              <Text style={typography.small}>
-                {shoppers.map((s) => s.name).join(' and ')} {shoppers.length === 1 ? 'is' : 'are'} in
-                the shop too
-              </Text>
-            </Row>
-          </Card>
-        ) : null}
-      </View>
-
-      {tab === 'todo' ? <TodoList /> : <ShoppingList />}
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
+      <ScreenHeader
+        title="Lists"
+        members={store.members.map((m) => ({ id: m.id, name: m.name, color: m.color }))}
+      />
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Seg
+          options={[
+            { value: 'todo', label: 'To do' },
+            { value: 'shopping', label: 'Shopping' },
+          ]}
+          value={half}
+          onChange={setHalf}
+        />
+        {half === 'todo' ? <TodoList /> : <ShoppingList />}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 // ---------------------------------------------------------------------------
-// To-do
+// To do
 // ---------------------------------------------------------------------------
+
+const EMPTY_COPY: Record<Bucket, string> = {
+  today: 'Nothing due today. Enjoy it.',
+  upcoming: 'Nothing scheduled ahead.',
+  anytime: 'Nothing waiting to be picked up.',
+  someday: 'Nothing parked for later.',
+  logbook: 'Nothing finished yet.',
+};
+
+/** Local midnight `days` from now. */
+function startOfDayIn(days: number, now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return d.getTime();
+}
 
 function TodoList() {
   const store = useStore();
@@ -86,11 +125,6 @@ function TodoList() {
   const now = Date.now();
   const utcOffsetMinutes = -new Date().getTimezoneOffset();
 
-  /**
-   * Things' structure, which the survey calls the gold standard: a task lands in
-   * exactly one bucket, and the bucket comes from its dates rather than from
-   * filing it anywhere.
-   */
   const buckets = useMemo(
     () => bucketTasks(tasks, { now, utcOffsetMinutes }),
     [tasks, now, utcOffsetMinutes],
@@ -101,10 +135,14 @@ function TodoList() {
     [buckets.upcoming, now, utcOffsetMinutes],
   );
 
+  const preview = useMemo(
+    () => (draft.trim() ? parseQuickAdd(draft, { now, utcOffsetMinutes }) : null),
+    [draft, now, utcOffsetMinutes],
+  );
+
   function add() {
     const text = draft.trim();
     if (!text) return;
-    // A date typed inline ("call landlord tomorrow") becomes the due date.
     const parsed = parseQuickAdd(text, { now, utcOffsetMinutes });
 
     store.upsert('tasks', {
@@ -134,12 +172,8 @@ function TodoList() {
     });
   }
 
-  /** Push a task out of sight until a chosen day — the defer date in action. */
   function defer(task: TaskItem, days: number | null) {
-    store.upsert('tasks', {
-      ...task,
-      deferAt: days === null ? null : startOfDayIn(days, now),
-    });
+    store.upsert('tasks', { ...task, deferAt: days === null ? null : startOfDayIn(days, now) });
   }
 
   function schedule(task: TaskItem, days: number | null) {
@@ -149,59 +183,44 @@ function TodoList() {
     });
   }
 
-  const TABS: { key: Bucket; label: string; badge: number }[] = [
-    { key: 'today', label: 'Today', badge: counts.today },
-    { key: 'upcoming', label: 'Upcoming', badge: counts.upcoming },
-    { key: 'anytime', label: 'Anytime', badge: counts.anytime },
-    { key: 'someday', label: 'Someday', badge: counts.someday },
-    { key: 'logbook', label: 'Logbook', badge: 0 },
+  const bucketTabs = [
+    { value: 'today' as const, label: 'Today', count: counts.today },
+    { value: 'upcoming' as const, label: 'Upcoming', count: counts.upcoming },
+    { value: 'anytime' as const, label: 'Anytime', count: counts.anytime },
+    { value: 'someday' as const, label: 'Someday', count: counts.someday },
+    { value: 'logbook' as const, label: 'Logbook', count: 0 },
   ];
 
   const visible = buckets[view];
 
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, paddingBottom: spacing.xxl * 2 }}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View>
       <Field
-        placeholder="Add a to-do"
+        label="Add a to-do"
+        placeholder="call the landlord tomorrow"
         value={draft}
         onChangeText={setDraft}
         onSubmitEditing={add}
         returnKeyType="done"
+        hint={preview?.startsAt ? `Due ${relativeDay(preview.startsAt)}` : undefined}
+        style={{ marginBottom: 0 }}
       />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
-        <Row gap={spacing.xs}>
-          {TABS.map((tab) => (
-            <Chip
-              key={tab.key}
-              label={tab.badge > 0 ? `${tab.label} ${tab.badge}` : tab.label}
-              selected={view === tab.key}
-              onPress={() => setView(tab.key)}
-            />
-          ))}
-        </Row>
-      </ScrollView>
+      <TextTabs tabs={bucketTabs} value={view} onChange={setView} />
 
       {view === 'today' && counts.overdue > 0 ? (
-        <Card style={{ borderColor: colors.danger }}>
-          <Muted>
-            {counts.overdue} thing{counts.overdue === 1 ? '' : 's'} overdue — still here rather than
-            hidden.
-          </Muted>
-        </Card>
+        <NoticeCard kicker="Overdue" style={{ marginTop: spacing.lg }}>
+          {`${counts.overdue} thing${counts.overdue === 1 ? '' : 's'} past its date — still here rather than hidden.`}
+        </NoticeCard>
       ) : null}
 
       {visible.length === 0 ? (
-        <Muted>{EMPTY_COPY[view]}</Muted>
+        <Text style={[typography.small, { marginTop: spacing.xl }]}>{EMPTY_COPY[view]}</Text>
       ) : view === 'upcoming' ? (
         upcomingDays.map((day) => (
-          <View key={day.dayStart} style={{ marginTop: spacing.md }}>
-            <Text style={[typography.small, { marginBottom: spacing.xs }]}>
-              {relativeDay(day.dayStart)}
-            </Text>
+          <View key={day.dayStart} style={{ marginTop: spacing.xl }}>
+            <Kicker>{relativeDay(day.dayStart)}</Kicker>
+            <Rule style={{ marginTop: 6 }} />
             {day.tasks.map((task) => (
               <TaskRow
                 key={task.id}
@@ -215,35 +234,21 @@ function TodoList() {
           </View>
         ))
       ) : (
-        visible.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            now={now}
-            onToggle={toggle}
-            onDefer={defer}
-            onSchedule={schedule}
-          />
-        ))
+        <View style={{ marginTop: spacing.lg, borderTopWidth: rules.section, borderTopColor: colors.divider }}>
+          {visible.map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              now={now}
+              onToggle={toggle}
+              onDefer={defer}
+              onSchedule={schedule}
+            />
+          ))}
+        </View>
       )}
-    </ScrollView>
+    </View>
   );
-}
-
-const EMPTY_COPY: Record<Bucket, string> = {
-  today: 'Nothing due today. Enjoy it.',
-  upcoming: 'Nothing scheduled ahead.',
-  anytime: 'Nothing waiting to be picked up.',
-  someday: 'Nothing parked for later.',
-  logbook: 'Nothing finished yet.',
-};
-
-/** Local midnight `days` from now. */
-function startOfDayIn(days: number, now: number): number {
-  const d = new Date(now);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + days);
-  return d.getTime();
 }
 
 function TaskRow({
@@ -261,77 +266,72 @@ function TaskRow({
 }) {
   const store = useStore();
   const [open, setOpen] = useState(false);
+  const overdue = !task.done && task.dueAt !== null && task.dueAt < now;
 
   return (
-    <Card>
-      <Row style={{ alignItems: 'flex-start' }}>
-        <CheckCircle
-          checked={task.done}
-          onPress={() => onToggle(task)}
-          color={task.done ? colors.success : colors.accent}
-        />
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={() => setOpen((v) => !v)}
-          onLongPress={() =>
-            Alert.alert('Delete this to-do?', task.title, [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: () => store.remove('tasks', task.id) },
-            ])
-          }
-        >
-          <Text
-            style={[
-              typography.body,
-              task.done && { color: colors.textMuted, textDecorationLine: 'line-through' },
-            ]}
-          >
-            {task.title}
-          </Text>
-          <Row gap={spacing.sm}>
-            {task.dueAt ? (
-              <Text
-                style={[
-                  typography.tiny,
-                  { color: !task.done && task.dueAt < now ? colors.danger : colors.textMuted },
-                ]}
-              >
-                due {relativeDay(task.dueAt)}
-              </Text>
-            ) : null}
-            {task.deferAt && task.deferAt > now ? (
-              <Text style={typography.tiny}>starts {relativeDay(task.deferAt)}</Text>
-            ) : null}
-            <Text style={typography.tiny}>
-              {task.done && task.doneBy
-                ? `done by ${memberName(store, task.doneBy)}`
-                : `added by ${memberName(store, task.createdBy)}`}
-            </Text>
-          </Row>
-        </Pressable>
-      </Row>
+    <View style={styles.itemRow}>
+      <TickBox checked={task.done} onPress={() => onToggle(task)} />
 
-      {open && !task.done ? (
-        <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
-          <Text style={typography.tiny}>Due</Text>
-          <Row style={{ flexWrap: 'wrap' }} gap={spacing.xs}>
-            <Chip label="Today" onPress={() => onSchedule(task, 0)} />
-            <Chip label="Tomorrow" onPress={() => onSchedule(task, 1)} />
-            <Chip label="Next week" onPress={() => onSchedule(task, 7)} />
-            <Chip label="No date" onPress={() => onSchedule(task, null)} />
-          </Row>
-
-          <Text style={typography.tiny}>Start (hides it until then)</Text>
-          <Row style={{ flexWrap: 'wrap' }} gap={spacing.xs}>
-            <Chip label="Tomorrow" onPress={() => onDefer(task, 1)} />
-            <Chip label="Next week" onPress={() => onDefer(task, 7)} />
-            <Chip label="Next month" onPress={() => onDefer(task, 30)} />
-            <Chip label="Someday" onPress={() => onDefer(task, 120)} />
-            <Chip label="Now" onPress={() => onDefer(task, null)} />
-          </Row>
+      <Pressable
+        style={{ flex: 1, minWidth: 0, gap: 3 }}
+        onPress={() => setOpen((v) => !v)}
+        onLongPress={() =>
+          Alert.alert('Delete this to-do?', task.title, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: () => store.remove('tasks', task.id) },
+          ])
+        }
+      >
+        {/* The strike is a 2px accent rule — the system's rule weight, not a
+            text decoration, so it reads as the same mark used everywhere else. */}
+        <View style={{ alignSelf: 'flex-start' }}>
+          <Text style={[typography.body, task.done && { color: colors.textMuted }]}>{task.title}</Text>
+          {task.done ? <View style={styles.strike} /> : null}
         </View>
-      ) : null}
-    </Card>
+
+        <Row gap={10} style={{ flexWrap: 'wrap' }}>
+          {task.dueAt ? (
+            <Text
+              style={[
+                typography.tiny,
+                overdue && { color: colors.accent700, fontFamily: fonts.headingSemi },
+              ]}
+            >
+              due {relativeDay(task.dueAt)}
+            </Text>
+          ) : null}
+          {task.deferAt && task.deferAt > now ? (
+            <Text style={typography.tiny}>starts {relativeDay(task.deferAt)}</Text>
+          ) : null}
+          <Text style={typography.tiny}>
+            {task.done && task.doneBy
+              ? `done by ${memberName(store, task.doneBy)}`
+              : `added by ${memberName(store, task.createdBy)}`}
+          </Text>
+        </Row>
+
+        {open && !task.done ? (
+          <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
+            <Text style={typography.tiny}>Due</Text>
+            <Row gap={6} style={{ flexWrap: 'wrap' }}>
+              <Tag label="Today" onPress={() => onSchedule(task, 0)} />
+              <Tag label="Tomorrow" onPress={() => onSchedule(task, 1)} />
+              <Tag label="Next week" onPress={() => onSchedule(task, 7)} />
+              <Tag label="No date" onPress={() => onSchedule(task, null)} />
+            </Row>
+
+            <Text style={typography.tiny}>Start (hides it until then)</Text>
+            <Row gap={6} style={{ flexWrap: 'wrap' }}>
+              <Tag label="Tomorrow" onPress={() => onDefer(task, 1)} />
+              <Tag label="Next week" onPress={() => onDefer(task, 7)} />
+              <Tag label="Next month" onPress={() => onDefer(task, 30)} />
+              <Tag label="Someday" onPress={() => onDefer(task, 120)} />
+              <Tag label="Now" onPress={() => onDefer(task, null)} />
+            </Row>
+          </View>
+        ) : null}
+      </Pressable>
+    </View>
   );
 }
 
@@ -341,7 +341,6 @@ function TaskRow({
 
 function ShoppingList() {
   const store = useStore();
-  // Stable singleton reference; `store` itself changes identity on every edit.
   const api = useStore((s) => s.api());
   const [draft, setDraft] = useState('');
   const [suggestions, setSuggestions] = useState<{ name: string; category: string | null }[]>([]);
@@ -349,12 +348,13 @@ function ShoppingList() {
 
   const items = selectAll<ShoppingItem>(store, 'shoppingItems').filter((i) => !i.runId);
   const todo = items.filter((i) => !i.checked).sort((a, b) => a.position - b.position);
-  const got = items
-    .filter((i) => i.checked)
-    .sort((a, b) => (b.checkedAt ?? 0) - (a.checkedAt ?? 0));
+  const got = items.filter((i) => i.checked).sort((a, b) => (b.checkedAt ?? 0) - (a.checkedAt ?? 0));
 
   const spent = got.reduce((sum, i) => sum + (i.priceCents ?? 0), 0);
   const currency = store.space?.baseCurrency ?? 'EUR';
+  const shoppers = store.presence.filter(
+    (p) => p.userId !== store.user?.id && p.context === 'shopping',
+  );
 
   useEffect(() => {
     if (!store.online) return;
@@ -368,15 +368,11 @@ function ShoppingList() {
     const trimmed = name.trim();
     if (!trimmed) return;
 
-    // "2 kg tomatoes" — pull a leading quantity out so it shows in its own column.
     const match = /^([\d.,]+\s*(?:kg|g|l|ml|x|adet|stück|stk|pcs)?)\s+(.*)$/i.exec(trimmed);
-    const quantity = match ? match[1]!.trim() : null;
-    const label = match ? match[2]!.trim() : trimmed;
-
     store.upsert('shoppingItems', {
       id: newId('shop'),
-      name: label,
-      quantity,
+      name: match ? match[2]!.trim() : trimmed,
+      quantity: match ? match[1]!.trim() : null,
       category,
       store: null,
       checked: false,
@@ -400,15 +396,10 @@ function ShoppingList() {
     });
   }
 
-  function setPrice(item: ShoppingItem, text: string) {
-    const cents = parseAmountToCents(text, currency);
-    store.upsert('shoppingItems', { ...item, priceCents: cents });
-  }
-
   async function finishRun() {
     setClosing(true);
     try {
-      const result = await store.api().completeShoppingRun({});
+      const result = await api.completeShoppingRun({});
       await store.sync({ force: true });
       Alert.alert(
         'Shop finished',
@@ -417,97 +408,144 @@ function ShoppingList() {
         }.`,
       );
     } catch {
-      Alert.alert('Could not finish', 'You need a connection to close out a shop. Try again in a moment.');
+      Alert.alert('Could not finish', 'You need a connection to close out a shop.');
     } finally {
       setClosing(false);
     }
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, paddingBottom: spacing.xxl * 2 }}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View>
+      {shoppers.length > 0 ? (
+        <Card style={{ marginTop: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <MemberSquare
+            name={shoppers[0]!.name}
+            color={memberColor(store, shoppers[0]!.userId)}
+            size={20}
+          />
+          <Text style={[typography.body, { flex: 1 }]}>
+            {shoppers.map((s) => s.name).join(' and ')} {shoppers.length === 1 ? 'is' : 'are'} in the
+            shop too
+          </Text>
+          <View style={{ width: 8, height: 8, backgroundColor: colors.accent }} />
+        </Card>
+      ) : null}
+
       <Field
-        placeholder="Add to the list"
+        label="Add to the list"
+        placeholder="2 kg tomatoes"
         value={draft}
         onChangeText={setDraft}
         onSubmitEditing={() => add(draft)}
         returnKeyType="done"
+        style={{ marginBottom: 0 }}
       />
 
       {suggestions.length > 0 ? (
-        <View style={{ marginBottom: spacing.md }}>
-          <Text style={[typography.tiny, { marginBottom: spacing.xs }]}>Usual suspects</Text>
-          <Row style={{ flexWrap: 'wrap' }} gap={spacing.xs}>
+        <View style={{ marginTop: spacing.md, gap: 6 }}>
+          <Text style={typography.tiny}>Usual suspects</Text>
+          <Row gap={6} style={{ flexWrap: 'wrap' }}>
             {suggestions.map((s) => (
-              <Chip key={s.name} label={`+ ${s.name}`} onPress={() => add(s.name, s.category)} />
+              <Tag key={s.name} label={s.name} onPress={() => add(s.name, s.category)} />
             ))}
           </Row>
         </View>
       ) : null}
 
       {todo.length === 0 && got.length === 0 ? (
-        <Muted>The list is empty. Add something, and it appears on the other phone straight away.</Muted>
+        <Text style={[typography.small, { marginTop: spacing.xl }]}>
+          The list is empty. Add something, and it appears on the other phone straight away.
+        </Text>
       ) : null}
 
-      {todo.map((item) => (
-        <Card key={item.id}>
-          <Row>
-            <CheckCircle checked={false} onPress={() => toggle(item)} />
-            <Pressable
-              style={{ flex: 1 }}
-              onLongPress={() => store.remove('shoppingItems', item.id)}
-            >
-              <Row style={{ justifyContent: 'space-between' }}>
-                <Text style={typography.body}>{item.name}</Text>
-                {item.quantity ? <Text style={typography.small}>{item.quantity}</Text> : null}
-              </Row>
-              <Text style={typography.tiny}>added by {memberName(store, item.createdBy)}</Text>
-            </Pressable>
-          </Row>
-        </Card>
-      ))}
+      {todo.length > 0 ? (
+        <View style={{ marginTop: spacing.lg, borderTopWidth: rules.section, borderTopColor: colors.divider }}>
+          {todo.map((item) => (
+            <View key={item.id} style={[styles.itemRow, { alignItems: 'center' }]}>
+              <TickBox checked={false} onPress={() => toggle(item)} />
+              <Pressable
+                style={{ flex: 1, minWidth: 0, gap: 2 }}
+                onLongPress={() => store.remove('shoppingItems', item.id)}
+              >
+                <Row style={{ justifyContent: 'space-between' }}>
+                  <Text style={typography.body}>{item.name}</Text>
+                  {item.quantity ? <Text style={typography.small}>{item.quantity}</Text> : null}
+                </Row>
+                <Text style={typography.tiny}>added by {memberName(store, item.createdBy)}</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {got.length > 0 ? (
-        <View style={{ marginTop: spacing.lg }}>
-          <Row style={{ justifyContent: 'space-between', marginBottom: spacing.sm }}>
-            <Text style={typography.subheading}>In the trolley ({got.length})</Text>
-            {spent > 0 ? <Text style={typography.small}>{formatCents(spent, currency)}</Text> : null}
+        <View style={{ marginTop: spacing.xl }}>
+          <Row style={{ justifyContent: 'space-between', alignItems: 'baseline', paddingBottom: 6 }}>
+            <Kicker>{`In the trolley (${got.length})`}</Kicker>
+            {spent > 0 ? (
+              <Text style={{ fontFamily: fonts.heading, fontSize: 13, color: colors.text }}>
+                {formatCents(spent, currency)}
+              </Text>
+            ) : null}
           </Row>
+          <Rule />
 
           {got.map((item) => (
-            <Card key={item.id}>
-              <Row>
-                <CheckCircle checked onPress={() => toggle(item)} color={colors.success} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.body, { color: colors.textMuted }]}>{item.name}</Text>
-                  <Text style={typography.tiny}>
-                    {item.checkedBy ? `${memberName(store, item.checkedBy)} got this` : 'ticked off'}
-                  </Text>
-                </View>
-                <Field
-                  placeholder="0,00"
-                  keyboardType="decimal-pad"
-                  defaultValue={item.priceCents != null ? String(item.priceCents / 100) : ''}
-                  onEndEditing={(e) => setPrice(item, e.nativeEvent.text)}
-                  style={{ width: 84, paddingVertical: spacing.sm, textAlign: 'right' }}
-                />
-              </Row>
-            </Card>
+            <View key={item.id} style={[styles.itemRow, { alignItems: 'center' }]}>
+              <TickBox checked onPress={() => toggle(item)} />
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Text style={[typography.body, { color: colors.textMuted }]}>{item.name}</Text>
+                <Text style={typography.tiny}>
+                  {item.checkedBy ? `${memberName(store, item.checkedBy)} got this` : 'ticked off'}
+                </Text>
+              </View>
+              <Field
+                placeholder="0,00"
+                keyboardType="decimal-pad"
+                defaultValue={item.priceCents != null ? String(item.priceCents / 100) : ''}
+                onEndEditing={(e) =>
+                  store.upsert('shoppingItems', {
+                    ...item,
+                    priceCents: parseAmountToCents(e.nativeEvent.text, currency),
+                  })
+                }
+                style={{ width: 84, minHeight: 36, textAlign: 'right', paddingVertical: 6 }}
+              />
+            </View>
           ))}
 
           <Button
             label="Finish this shop"
-            onPress={() => void finishRun()}
+            block
             busy={closing}
-            style={{ marginTop: spacing.sm }}
+            onPress={() => void finishRun()}
+            icon={<ArrowRightIcon size={14} color={colors.bg} />}
+            style={{ marginTop: spacing.md }}
           />
           <Muted>
             Moves everything ticked into your shopping history and clears the list for next time.
           </Muted>
         </View>
       ) : null}
-    </ScrollView>
+    </View>
   );
 }
+
+const styles = {
+  itemRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: rules.row,
+    borderBottomColor: colors.dividerSoft,
+  },
+  strike: {
+    position: 'absolute' as const,
+    left: 0,
+    right: 0,
+    top: '55%' as const,
+    height: 2,
+    backgroundColor: colors.accent,
+  },
+};

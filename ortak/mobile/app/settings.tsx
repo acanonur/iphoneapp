@@ -20,7 +20,7 @@ import {
   type CalendarSettings,
   type ReminderList,
 } from '../src/calendar/deviceCalendar.js';
-import { Avatar, Button, Card, Chip, Divider, Field, Muted, Row, Screen } from '../src/ui/components.js';
+import { MemberSquare, Button, Card, Tag, Divider, Field, Muted, Row, Screen } from '../src/ui/components.js';
 import { colors, shortDateTime, spacing, typography } from '../src/ui/theme.js';
 
 export default function SettingsScreen() {
@@ -76,7 +76,7 @@ export default function SettingsScreen() {
         <Text style={[typography.small, { marginBottom: spacing.sm }]}>Members</Text>
         {store.members.map((member) => (
           <Row key={member.id} style={{ marginBottom: spacing.xs }}>
-            <Avatar name={member.name} color={member.color} size={24} />
+            <MemberSquare name={member.name} color={member.color} size={24} />
             <Text style={typography.body}>{member.name}</Text>
             {member.id === store.user?.id ? <Text style={typography.tiny}>(you)</Text> : null}
           </Row>
@@ -174,9 +174,9 @@ export default function SettingsScreen() {
                   borderRadius: 12,
                   borderWidth: 1,
                   borderColor:
-                    settings?.calendarId === calendar.id ? colors.accent : colors.border,
+                    settings?.calendarId === calendar.id ? colors.accent : colors.divider,
                   backgroundColor:
-                    settings?.calendarId === calendar.id ? colors.accentSoft : 'transparent',
+                    settings?.calendarId === calendar.id ? colors.accent100 : 'transparent',
                 }}
               >
                 <Row>
@@ -208,7 +208,7 @@ export default function SettingsScreen() {
           <Switch
             value={settings?.autoMirror ?? true}
             onValueChange={(value) => void update({ autoMirror: value })}
-            trackColor={{ true: colors.accent, false: colors.border }}
+            trackColor={{ true: colors.accent, false: colors.divider }}
           />
         </Row>
 
@@ -217,7 +217,7 @@ export default function SettingsScreen() {
         <Text style={[typography.small, { marginBottom: spacing.xs }]}>Default reminder</Text>
         <Row style={{ flexWrap: 'wrap' }} gap={spacing.xs}>
           {[null, 10, 30, 60, 1440].map((minutes) => (
-            <Chip
+            <Tag
               key={String(minutes)}
               label={
                 minutes === null
@@ -266,8 +266,8 @@ export default function SettingsScreen() {
                     padding: spacing.md,
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: sharing ? colors.success : colors.border,
-                    backgroundColor: sharing ? '#182A20' : 'transparent',
+                    borderColor: sharing ? colors.accent : colors.divider,
+                    backgroundColor: sharing ? colors.accent100 : 'transparent',
                   }}
                 >
                   <Row>
@@ -293,7 +293,7 @@ export default function SettingsScreen() {
           <Switch
             value={settings?.shareBusyTitles ?? false}
             onValueChange={(value) => void update({ shareBusyTitles: value })}
-            trackColor={{ true: colors.accent, false: colors.border }}
+            trackColor={{ true: colors.accent, false: colors.divider }}
           />
         </Row>
 
@@ -383,9 +383,9 @@ export default function SettingsScreen() {
                       padding: spacing.md,
                       borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: settings?.reminderListId === list.id ? colors.accent : colors.border,
+                      borderColor: settings?.reminderListId === list.id ? colors.accent : colors.divider,
                       backgroundColor:
-                        settings?.reminderListId === list.id ? colors.accentSoft : 'transparent',
+                        settings?.reminderListId === list.id ? colors.accent100 : 'transparent',
                     }}
                   >
                     <Text style={typography.body}>{list.title}</Text>

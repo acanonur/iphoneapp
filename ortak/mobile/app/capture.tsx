@@ -14,7 +14,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useStore } from '../src/store/useStore.js';
 import { newId } from '../src/util/id.js';
 import { chatExportFile, classifyShare, extractUrl, useIncomingShare } from '../src/share/incoming.js';
-import { Button, Card, Chip, Field, Muted, Row, Screen } from '../src/ui/components.js';
+import { Button, Card, Tag, Field, Muted, Row, Screen } from '../src/ui/components.js';
 import { spacing, typography } from '../src/ui/theme.js';
 
 type Destination = 'note' | 'link' | 'task' | 'shopping' | 'archive';
@@ -174,11 +174,11 @@ export default function CaptureScreen() {
       <Text style={[typography.heading, { marginBottom: spacing.sm }]}>Save this</Text>
 
       <Row style={{ flexWrap: 'wrap', marginBottom: spacing.md }} gap={spacing.xs}>
-        <Chip label="📝 Note" selected={destination === 'note'} onPress={() => setDestination('note')} />
-        <Chip label="🔗 Link" selected={destination === 'link'} onPress={() => setDestination('link')} />
-        <Chip label="✅ To-do" selected={destination === 'task'} onPress={() => setDestination('task')} />
-        <Chip label="🛒 Shopping" selected={destination === 'shopping'} onPress={() => setDestination('shopping')} />
-        <Chip label="💬 Keep message" selected={destination === 'archive'} onPress={() => setDestination('archive')} />
+        <Tag label="📝 Note" selected={destination === 'note'} onPress={() => setDestination('note')} />
+        <Tag label="🔗 Link" selected={destination === 'link'} onPress={() => setDestination('link')} />
+        <Tag label="✅ To-do" selected={destination === 'task'} onPress={() => setDestination('task')} />
+        <Tag label="🛒 Shopping" selected={destination === 'shopping'} onPress={() => setDestination('shopping')} />
+        <Tag label="💬 Keep message" selected={destination === 'archive'} onPress={() => setDestination('archive')} />
       </Row>
 
       <Field

@@ -388,8 +388,9 @@ export function memberName(state: StoreState, userId: string | null | undefined)
 }
 
 export function memberColor(state: StoreState, userId: string | null | undefined): string {
-  if (!userId) return '#8A90A2';
-  return state.members.find((m) => m.id === userId)?.color ?? '#8A90A2';
+  // Falls back to the system's muted ink rather than a colour of its own.
+  if (!userId) return '#605d5d';
+  return state.members.find((m) => m.id === userId)?.color ?? '#605d5d';
 }
 
 export function pendingCount(state: StoreState): number {

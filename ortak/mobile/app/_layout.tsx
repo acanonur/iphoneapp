@@ -3,11 +3,26 @@ import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  Archivo_400Regular,
+  Archivo_600SemiBold,
+  Archivo_800ExtraBold,
+} from '@expo-google-fonts/archivo';
 import { useStore } from '../src/store/useStore.js';
 import { connectSocket, disconnectSocket } from '../src/store/socket.js';
-import { colors } from '../src/ui/theme.js';
+import { colors, fonts } from '../src/ui/theme.js';
 
 export default function RootLayout() {
+  // Archivo carries the whole Modernist system — 800 for anything structural,
+  // 400 for body. Holding the splash until it loads avoids a flash of the
+  // system font in a design where the typeface *is* the identity.
+  const [fontsLoaded] = useFonts({
+    Archivo_400Regular,
+    Archivo_600SemiBold,
+    Archivo_800ExtraBold,
+  });
+
   const status = useStore((s) => s.status);
   const bootstrap = useStore((s) => s.bootstrap);
   const router = useRouter();
@@ -38,7 +53,7 @@ export default function RootLayout() {
     }
   }, [status, segments, router]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || !fontsLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={colors.accent} />
@@ -48,12 +63,13 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: '700' },
+          headerTitleStyle: { fontFamily: fonts.heading, fontSize: 17 },
+          headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.bg },
         }}
       >

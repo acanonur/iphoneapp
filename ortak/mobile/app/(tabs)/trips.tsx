@@ -119,7 +119,7 @@ export default function TripsScreen() {
                     style={{
                       fontSize: 13,
                       fontWeight: '600',
-                      color: myNet > 0 ? colors.success : colors.warning,
+                      color: myNet > 0 ? colors.text : colors.accent,
                     }}
                   >
                     {myNet > 0 ? 'you are owed ' : 'you owe '}

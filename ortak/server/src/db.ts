@@ -63,7 +63,14 @@ function newInviteCode(): string {
   return code;
 }
 
-const MEMBER_COLORS = ['#6C8AE4', '#E4796C', '#4FB477', '#C87DD6', '#E0A85C', '#5BB8C4'];
+/**
+ * Member inks, in the app's Modernist palette.
+ *
+ * The first member is ink and the second is the accent — the system is mono
+ * red, so two people are the system's two inks rather than two arbitrary hues.
+ * Anyone after that borrows from the neutral and accent ramps.
+ */
+const MEMBER_COLORS = ['#201e1d', '#ec3013', '#605d5d', '#ae1800', '#9b9797', '#7c1405'];
 
 export interface AuthenticatedUser {
   id: string;

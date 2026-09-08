@@ -1,10 +1,14 @@
 /**
- * The shared calendar, and the controls for pushing it into the phone's own
- * calendar app.
+ * The shared calendar, in Modernist.
+ *
+ * Days are ruled sections rather than cards: an uppercase day heading with the
+ * date at the right, a 2px rule, then one hairline-separated row per plan. Each
+ * row is a three-column grid — time, title, the square of whoever added it —
+ * so the times form a column you can read straight down.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useStore, selectAll, memberColor, memberName } from '../../src/store/useStore.js';
@@ -17,8 +21,35 @@ import {
   type CalendarSettings,
   type MirrorReport,
 } from '../../src/calendar/deviceCalendar.js';
-import { Avatar, Button, Card, Chip, Field, Muted, Row } from '../../src/ui/components.js';
-import { colors, clockTime, relativeDay, spacing, typography } from '../../src/ui/theme.js';
+import {
+  Button,
+  Card,
+  Field,
+  Kicker,
+  MemberSquare,
+  Muted,
+  Row,
+  Rule,
+  ScreenHeader,
+  Seg,
+  TextTabs,
+} from '../../src/ui/components.js';
+import {
+  RefreshIcon,
+  SearchIcon,
+  TrashIcon,
+  UsersIcon,
+} from '../../src/ui/icons.js';
+import {
+  colors,
+  clockTime,
+  fonts,
+  relativeDay,
+  rules,
+  shortDate,
+  spacing,
+  typography,
+} from '../../src/ui/theme.js';
 
 /** The contexts a Fantastical-style calendar set can filter to. */
 const DEFAULT_SETS = ['Ev', 'Work', 'Family'];
@@ -34,8 +65,8 @@ export default function CalendarScreen() {
   const [settings, setSettings] = useState<CalendarSettings | null>(null);
   const [mirroring, setMirroring] = useState(false);
   const [lastReport, setLastReport] = useState<MirrorReport | null>(null);
-  const [activeSet, setActiveSet] = useState<string | null>(null);
-  const [draftSet, setDraftSet] = useState<string | null>(null);
+  const [activeSet, setActiveSet] = useState<string>('all');
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const now = Date.now();
   const utcOffsetMinutes = -new Date().getTimezoneOffset();
@@ -48,10 +79,6 @@ export default function CalendarScreen() {
     }, []),
   );
 
-  /**
-   * Push new and changed events into the device calendar whenever this screen
-   * is shown and the shared calendar has moved on.
-   */
   useEffect(() => {
     if (!settings?.autoMirror || !settings.calendarId || !store.online) return;
     let cancelled = false;
@@ -69,27 +96,28 @@ export default function CalendarScreen() {
   }, [settings, store.rev, store.online, api]);
 
   /** Every context in use, so the filter row reflects reality rather than a guess. */
-  const sets = useMemo(() => {
+  const setTabs = useMemo(() => {
     const used = new Set(events.map((e) => e.calendarSet).filter((s): s is string => Boolean(s)));
-    return [...new Set([...used, ...DEFAULT_SETS])];
+    const names = [...new Set([...used, ...DEFAULT_SETS])];
+    return [{ value: 'all', label: 'Everything' }, ...names.map((n) => ({ value: n, label: n }))];
   }, [events]);
 
   const upcoming = useMemo(
     () =>
       events
         .filter((e) => e.endsAt >= now - 12 * 3600_000)
-        .filter((e) => !activeSet || e.calendarSet === activeSet)
+        .filter((e) => activeSet === 'all' || e.calendarSet === activeSet)
         .sort((a, b) => a.startsAt - b.startsAt),
     [events, now, activeSet],
   );
 
   const grouped = useMemo(() => {
-    const buckets = new Map<string, EventItem[]>();
+    const buckets = new Map<string, { date: string; events: EventItem[] }>();
     for (const event of upcoming) {
       const key = relativeDay(event.startsAt);
-      const list = buckets.get(key);
-      if (list) list.push(event);
-      else buckets.set(key, [event]);
+      const bucket = buckets.get(key);
+      if (bucket) bucket.events.push(event);
+      else buckets.set(key, { date: shortDate(event.startsAt), events: [event] });
     }
     return [...buckets.entries()];
   }, [upcoming]);
@@ -118,7 +146,7 @@ export default function CalendarScreen() {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? null,
       reminderMinutes: parsed.allDay ? null : (settings?.defaultReminderMinutes ?? 30),
       color: null,
-      calendarSet: draftSet ?? activeSet,
+      calendarSet: activeSet === 'all' ? null : activeSet,
     });
     setDraft('');
   }
@@ -129,35 +157,29 @@ export default function CalendarScreen() {
     const report = await mirrorPendingEvents(api, settings);
     setMirroring(false);
     setLastReport(report);
-
-    if (report.blocked === 'permission') {
-      Alert.alert(
-        'Calendar access needed',
-        'Ortak needs permission to write to your calendar. Turn it on in your phone’s settings, then try again.',
-      );
-    } else if (report.blocked === 'no-calendar') {
-      Alert.alert(
-        'Pick a calendar first',
-        'Choose which calendar shared plans should go into, in Settings → Calendar.',
-      );
-    } else {
-      const total = report.created + report.updated + report.removed;
-      Alert.alert(
-        'Calendar updated',
-        total === 0
-          ? 'Your calendar was already up to date.'
-          : `${report.created} added, ${report.updated} updated, ${report.removed} removed.`,
-      );
-    }
   }
 
+  const syncNote = !settings?.calendarId
+    ? 'No calendar chosen yet — Settings → Calendar.'
+    : lastReport && lastReport.created + lastReport.updated + lastReport.removed > 0
+      ? `Last run: ${lastReport.created} added, ${lastReport.updated} updated, ${lastReport.removed} removed`
+      : settings.autoMirror
+        ? 'Up to date.'
+        : 'Automatic copying is off.';
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
+      <ScreenHeader
+        title="Calendar"
+        members={store.members.map((m) => ({ id: m.id, name: m.name, color: m.color }))}
+      />
+
       <ScrollView
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}
         keyboardShouldPersistTaps="handled"
       >
         <Field
+          label="Add to the shared calendar"
           placeholder="dinner with Tugce friday 8pm @ Trattoria"
           value={draft}
           onChangeText={setDraft}
@@ -166,45 +188,53 @@ export default function CalendarScreen() {
           hint={
             preview?.startsAt
               ? `${preview.title || 'Event'} · ${relativeDay(preview.startsAt)}${
-                  preview.allDay ? ' (all day)' : ` ${clockTime(preview.startsAt)}–${clockTime(preview.endsAt ?? preview.startsAt)}`
+                  preview.allDay
+                    ? ' (all day)'
+                    : ` ${clockTime(preview.startsAt)}–${clockTime(preview.endsAt ?? preview.startsAt)}`
                 }${preview.location ? ` · ${preview.location}` : ''}`
               : 'Type it the way you’d say it — English, Türkçe or Deutsch.'
           }
+          style={{ marginBottom: 0 }}
         />
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
-          <Row gap={spacing.xs}>
-            <Chip label="Everything" selected={!activeSet} onPress={() => setActiveSet(null)} />
-            {sets.map((name) => (
-              <Chip
-                key={name}
-                label={name}
-                selected={activeSet === name}
-                onPress={() => {
-                  const next = activeSet === name ? null : name;
-                  setActiveSet(next);
-                  // Adding while a context is filtered should file it there.
-                  setDraftSet(next);
-                }}
-              />
-            ))}
-          </Row>
-        </ScrollView>
+        <TextTabs tabs={setTabs} value={activeSet} onChange={setActiveSet} />
 
         <FindATime />
 
-        <MirrorStatus settings={settings} report={lastReport} busy={mirroring} onPress={() => void mirrorNow()} />
+        <Card style={{ marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={typography.body}>Shared plans are copied into your calendar automatically.</Text>
+            <Text style={typography.tiny}>{syncNote}</Text>
+          </View>
+          <Button
+            label={mirroring ? 'Syncing' : 'Sync now'}
+            variant="ghost"
+            busy={mirroring}
+            onPress={() => void mirrorNow()}
+            icon={<RefreshIcon size={14} color={colors.accent} />}
+            style={{ minHeight: 36 }}
+          />
+        </Card>
 
         {grouped.length === 0 ? (
-          <Card>
-            <Muted>Nothing planned yet. Add something above and it lands in both your calendars.</Muted>
-          </Card>
+          <Text style={[typography.small, { marginTop: spacing.xl }]}>
+            Nothing planned yet. Add something above and it lands in both your calendars.
+          </Text>
         ) : (
-          grouped.map(([day, dayEvents]) => (
-            <View key={day} style={{ marginTop: spacing.lg }}>
-              <Text style={[typography.subheading, { marginBottom: spacing.sm }]}>{day}</Text>
-              {dayEvents.map((event) => (
-                <EventRow key={event.id} event={event} />
+          grouped.map(([day, group]) => (
+            <View key={day} style={{ marginTop: spacing.xl }}>
+              <View style={styles.dayHead}>
+                <Kicker>{day}</Kicker>
+                <Text style={typography.tiny}>{group.date}</Text>
+              </View>
+              <Rule />
+              {group.events.map((event) => (
+                <EventRow
+                  key={event.id}
+                  event={event}
+                  expanded={expanded === event.id}
+                  onToggle={() => setExpanded(expanded === event.id ? null : event.id)}
+                />
               ))}
             </View>
           ))
@@ -214,119 +244,72 @@ export default function CalendarScreen() {
   );
 }
 
-function MirrorStatus({
-  settings,
-  report,
-  busy,
-  onPress,
+function EventRow({
+  event,
+  expanded,
+  onToggle,
 }: {
-  settings: CalendarSettings | null;
-  report: MirrorReport | null;
-  busy: boolean;
-  onPress: () => void;
+  event: EventItem;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
-  if (!settings) return null;
-
-  if (!settings.calendarId) {
-    return (
-      <Card style={{ borderColor: colors.warning }}>
-        <Text style={[typography.body, { marginBottom: spacing.sm }]}>
-          Shared plans aren’t going into your phone’s calendar yet.
-        </Text>
-        <Muted>Pick a calendar in Settings → Calendar to turn that on.</Muted>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <View style={{ flex: 1 }}>
-          <Text style={typography.small}>
-            {settings.autoMirror
-              ? 'Shared plans are copied into your calendar automatically.'
-              : 'Automatic copying is off.'}
-          </Text>
-          {report && report.created + report.updated + report.removed > 0 ? (
-            <Text style={typography.tiny}>
-              Last run: {report.created} added, {report.updated} updated, {report.removed} removed
-            </Text>
-          ) : null}
-        </View>
-        <Button label={busy ? 'Syncing' : 'Sync now'} variant="ghost" onPress={onPress} busy={busy} />
-      </Row>
-    </Card>
-  );
-}
-
-function EventRow({ event }: { event: EventItem }) {
   const store = useStore();
-  const [expanded, setExpanded] = useState(false);
 
   return (
-    <Card onPress={() => setExpanded((v) => !v)}>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <View style={{ flex: 1 }}>
-          <Text style={typography.subheading} numberOfLines={expanded ? undefined : 1}>
-            {event.title}
-          </Text>
-          <Muted>
-            {event.allDay
-              ? 'All day'
-              : `${clockTime(event.startsAt)} – ${clockTime(event.endsAt)}`}
-            {event.location ? ` · ${event.location}` : ''}
-          </Muted>
-        </View>
-        <Avatar
-          name={memberName(store, event.createdBy) || '?'}
-          color={memberColor(store, event.createdBy)}
-          size={24}
-        />
-      </Row>
+    <Pressable onPress={onToggle} style={styles.eventRow}>
+      <View style={{ width: 56 }}>
+        {event.allDay ? (
+          <Text style={styles.timeStart}>All day</Text>
+        ) : (
+          <>
+            <Text style={styles.timeStart}>{clockTime(event.startsAt)}</Text>
+            <Text style={typography.tiny}>{clockTime(event.endsAt)}</Text>
+          </>
+        )}
+      </View>
 
-      {expanded ? (
-        <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
-          {event.notes ? <Text style={typography.body}>{event.notes}</Text> : null}
-          <Row>
-            <Pressable
-              onPress={() =>
-                Alert.alert('Remove from the shared calendar?', event.title, [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Remove',
-                    style: 'destructive',
-                    // The tombstone also tells both phones to delete the copy
-                    // they put in their own calendars.
-                    onPress: () => store.remove('events', event.id),
-                  },
-                ])
-              }
-              hitSlop={8}
-            >
-              <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Remove</Text>
-            </Pressable>
-          </Row>
-        </View>
-      ) : null}
-    </Card>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <Text style={styles.eventTitle} numberOfLines={expanded ? undefined : 1}>
+          {event.title}
+        </Text>
+        {event.location ? <Text style={typography.tiny}>{event.location}</Text> : null}
+
+        {expanded ? (
+          <View style={{ marginTop: spacing.sm, gap: spacing.sm, alignItems: 'flex-start' }}>
+            {event.notes ? <Text style={typography.body}>{event.notes}</Text> : null}
+            <Button
+              label="Remove from the shared calendar"
+              variant="ghost"
+              onPress={() => store.remove('events', event.id)}
+              icon={<TrashIcon size={13} color={colors.accent700} />}
+              style={{ minHeight: 32 }}
+            />
+          </View>
+        ) : null}
+      </View>
+
+      <MemberSquare
+        name={memberName(store, event.createdBy) || '?'}
+        color={memberColor(store, event.createdBy)}
+        size={20}
+      />
+    </Pressable>
   );
 }
 
 /**
- * "When can we both do this?"
+ * "When can we both do this?" — Fantastical's Openings, read inward.
  *
- * Fantastical sells Openings as a booking link for other people; for a
- * household the useful shape is the same question asked inward — propose times
- * that work for everyone here, from what their real calendars say. The answer
- * comes from the server, which holds both people's published availability.
+ * Closed it is a single flush-left secondary button; open it is a surface panel
+ * with two segmented controls and a ruled list of proposed slots.
  */
 function FindATime() {
   const store = useStore();
   const api = useStore((s) => s.api());
 
   const [open, setOpen] = useState(false);
-  const [duration, setDuration] = useState(60);
-  const [evenings, setEvenings] = useState(true);
+  const [duration, setDuration] = useState<'30' | '60' | '90' | '120'>('60');
+  const [when, setWhen] = useState<'evenings' | 'daytime'>('evenings');
   const [slots, setSlots] = useState<{ startsAt: number; endsAt: number }[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [title, setTitle] = useState('');
@@ -338,10 +321,11 @@ function FindATime() {
     setSlots(null);
     try {
       const from = Date.now();
+      const evenings = when === 'evenings';
       const result = await api.findSlots({
         from,
         to: from + 21 * 24 * 3600_000,
-        durationMinutes: duration,
+        durationMinutes: Number(duration),
         utcOffsetMinutes,
         dayStartMinutes: evenings ? 18 * 60 : 9 * 60,
         dayEndMinutes: evenings ? 22 * 60 : 21 * 60,
@@ -379,71 +363,86 @@ function FindATime() {
       <Button
         label="Find a time for us"
         variant="secondary"
+        block
         onPress={() => setOpen(true)}
-        style={{ marginBottom: spacing.md }}
+        icon={<UsersIcon size={16} color={colors.text} />}
+        style={{ marginTop: spacing.lg }}
       />
     );
   }
 
   return (
-    <Card>
-      <Row style={{ justifyContent: 'space-between', marginBottom: spacing.sm }}>
+    <Card style={{ marginTop: spacing.lg, gap: 10 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
         <Text style={typography.subheading}>Find a time for us</Text>
-        <Pressable onPress={() => setOpen(false)} hitSlop={8}>
-          <Text style={{ color: colors.textMuted, fontSize: 13 }}>Close</Text>
-        </Pressable>
+        <Button label="Close" variant="ghost" onPress={() => setOpen(false)} style={{ minHeight: 32 }} />
       </Row>
 
-      <Muted>
+      <Text style={typography.small}>
         Looks at both your calendars over the next three weeks and suggests when you are both
         actually free.
-      </Muted>
+      </Text>
 
-      <Row style={{ flexWrap: 'wrap', marginTop: spacing.md }} gap={spacing.xs}>
-        {[30, 60, 90, 120].map((minutes) => (
-          <Chip
-            key={minutes}
-            label={minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`}
-            selected={duration === minutes}
-            onPress={() => setDuration(minutes)}
+      <Row gap={spacing.md} style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <View style={{ gap: 4 }}>
+          <Text style={typography.tiny}>How long</Text>
+          <Seg
+            options={[
+              { value: '30', label: '30m' },
+              { value: '60', label: '1h' },
+              { value: '90', label: '1.5h' },
+              { value: '120', label: '2h' },
+            ]}
+            value={duration}
+            onChange={setDuration}
           />
-        ))}
-        <Chip label="Evenings" selected={evenings} onPress={() => setEvenings(true)} />
-        <Chip label="Daytime" selected={!evenings} onPress={() => setEvenings(false)} />
+        </View>
+        <View style={{ gap: 4 }}>
+          <Text style={typography.tiny}>When</Text>
+          <Seg
+            options={[
+              { value: 'evenings', label: 'Evenings' },
+              { value: 'daytime', label: 'Daytime' },
+            ]}
+            value={when}
+            onChange={setWhen}
+          />
+        </View>
       </Row>
 
       <Button
-        label="Search"
-        onPress={() => void search()}
+        label={busy ? 'Searching…' : 'Search'}
+        block
         busy={busy}
-        style={{ marginTop: spacing.md }}
+        onPress={() => void search()}
+        icon={<SearchIcon size={14} color={colors.bg} />}
       />
 
-      {busy ? <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.md }} /> : null}
+      {busy ? <ActivityIndicator color={colors.accent} /> : null}
 
       {slots !== null ? (
         slots.length === 0 ? (
-          <Muted>
+          <Text style={typography.small}>
             No shared gaps found. Either nobody has shared a calendar yet (Settings → Calendar) or
             you are both genuinely booked.
-          </Muted>
+          </Text>
         ) : (
-          <View style={{ marginTop: spacing.md }}>
+          <View>
             <Field
               placeholder="What is it? (optional)"
               value={title}
               onChangeText={setTitle}
-              style={{ marginBottom: spacing.sm }}
+              style={{ minHeight: 40 }}
             />
             {slots.map((slot) => (
-              <Card key={slot.startsAt} onPress={() => book(slot)}>
-                <Row style={{ justifyContent: 'space-between' }}>
-                  <Text style={typography.body}>{relativeDay(slot.startsAt)}</Text>
-                  <Text style={typography.small}>
-                    {clockTime(slot.startsAt)}–{clockTime(slot.endsAt)}
-                  </Text>
-                </Row>
-              </Card>
+              <Pressable key={slot.startsAt} onPress={() => book(slot)} style={styles.slotRow}>
+                <Text style={{ fontFamily: fonts.headingSemi, fontSize: 14, color: colors.text }}>
+                  {relativeDay(slot.startsAt)}
+                </Text>
+                <Text style={typography.small}>
+                  {clockTime(slot.startsAt)}–{clockTime(slot.endsAt)}
+                </Text>
+              </Pressable>
             ))}
             <Muted>Tap one to put it in both calendars.</Muted>
           </View>
@@ -452,3 +451,40 @@ function FindATime() {
     </Card>
   );
 }
+
+const styles = {
+  dayHead: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'baseline' as const,
+    paddingBottom: 6,
+  },
+  eventRow: {
+    flexDirection: 'row' as const,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: rules.row,
+    borderBottomColor: colors.dividerSoft,
+  },
+  timeStart: {
+    fontFamily: fonts.headingSemi,
+    fontSize: 13,
+    lineHeight: 17,
+    color: colors.text,
+  },
+  eventTitle: {
+    fontFamily: fonts.headingSemi,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.text,
+  },
+  slotRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    gap: spacing.md,
+    paddingVertical: 10,
+    borderTopWidth: rules.row,
+    borderTopColor: colors.dividerSoft,
+  },
+};
