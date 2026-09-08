@@ -1,0 +1,88 @@
+# XcodeGen project definition for KnitStudio.
+#
+# KnitStudio.xcodeproj is GENERATED and is not in git, so it has to be rebuilt
+# after every pull that adds a source file — otherwise Xcode compiles the old
+# file list and reports the new types as "cannot find in scope":
+#
+#   brew install xcodegen          # 2.35 or newer
+#   cd apple && xcodegen generate && open KnitStudio.xcodeproj
+#
+# BUILDS FOR MAC, IPHONE AND IPAD. Nothing outside
+# KnitStudio/Platform/PlatformCompat.swift is platform-specific.
+#
+# The Organic redesign is drawn at 390x844 — an iPhone — so iOS is back in both
+# supportedDestinations lists. That does mean Xcode resolves an iOS provisioning
+# profile on every build. If it complains about signing, open the target's
+# Signing & Capabilities tab, tick "Automatically manage signing" and pick your
+# personal team; the bundle id below is already unique to you. Dropping iOS from
+# both lists puts the build back to Mac-only if you need it.
+name: KnitStudio
+options:
+  bundleIdPrefix: com.acanonur
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+
+targets:
+  KnitStudio:
+    type: application
+    supportedDestinations: [macOS, iOS]
+    sources:
+      - KnitStudio
+    info:
+      path: KnitStudio/Info.plist
+      properties:
+        CFBundleDisplayName: KnitStudio
+        LSApplicationCategoryType: public.app-category.lifestyle
+        # Needed on both platforms to import a picture as a colourwork chart.
+        NSPhotoLibraryUsageDescription: >-
+          Choose a picture to turn into a knitting chart. Images stay on your
+          device — nothing is uploaded.
+    entitlements:
+      path: KnitStudio/KnitStudio.entitlements
+      properties:
+        # macOS App Sandbox. The app has no network access at all; the only
+        # capability it needs is reading a pattern file the user picked.
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.acanonur.knitstudio
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "5.9"
+        # Native macOS and native iOS, not Mac Catalyst.
+        SUPPORTS_MACCATALYST: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  KnitStudioTests:
+    type: bundle.unit-test
+    supportedDestinations: [macOS, iOS]
+    sources:
+      - KnitStudioTests
+    dependencies:
+      - target: KnitStudio
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.acanonur.knitstudio.tests
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  KnitStudio:
+    build:
+      targets:
+        KnitStudio: all
+        KnitStudioTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - KnitStudioTests

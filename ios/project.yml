@@ -4,7 +4,7 @@
 name: AISecretary
 options:
   bundleIdPrefix: com.example
-  # iOS 18+ is required by the Translation framework (on-device translator tab).
+  # iOS 18+ is required by the Translation framework (on-device translator).
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
@@ -21,6 +21,15 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # The Modernist design system is a single light ground — there is no
+        # dark palette for the app to switch to.
+        UIUserInterfaceStyle: Light
+        # Archivo, the one family in the design system (SIL OFL — see
+        # AISecretary/Resources/Fonts/OFL.txt).
+        UIAppFonts:
+          - Archivo-Regular.ttf
+          - Archivo-SemiBold.ttf
+          - Archivo-ExtraBold.ttf
         # Allows plain-HTTP calls to localhost / LAN IPs during development.
         # Remove for production (use HTTPS).
         NSAppTransportSecurity:
@@ -32,6 +41,14 @@ targets:
         NSSpeechRecognitionUsageDescription: >-
           Speech recognition turns what you and your conversation partner say
           into text so it can be translated.
+        # Letters and forms: the camera photographs the document, the text is
+        # read on the device, and only that text is sent to the secretary.
+        NSCameraUsageDescription: >-
+          The camera photographs a letter or form so the secretary can read it.
+          Only the text is sent — the photograph stays on your phone.
+        NSPhotoLibraryUsageDescription: >-
+          Pick a photo of a letter or form so the secretary can read it. Only
+          the text is sent — the photograph stays on your phone.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.aisecretary

@@ -1,4 +1,4 @@
-import type { CallTask, Language } from './types.js';
+import type { SecretaryTask, Language } from './types.js';
 
 export const LANGUAGE_NAMES: Record<Language, string> = {
   de: 'German',
@@ -34,7 +34,7 @@ export function disclosureLine(language: Language, userName: string | null): str
  * In the Retell dashboard the agent prompt references these as
  * {{disclosure}}, {{goal}}, {{user_name}}, {{language_name}}.
  */
-export function buildAgentVariables(task: CallTask): Record<string, string> {
+export function buildAgentVariables(task: SecretaryTask): Record<string, string> {
   return {
     disclosure: disclosureLine(task.language, task.userName),
     goal: task.goal,
