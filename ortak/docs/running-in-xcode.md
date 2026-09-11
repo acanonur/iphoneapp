@@ -5,9 +5,17 @@ there is no `.xcodeproj` in the repository to double-click. Xcode's project is
 **generated** from `app.json` and the installed packages, and it is deliberately
 not committed — regenerating it is how config changes take effect.
 
-> **Careful:** this repository holds more than one app. `ios/` at the top level
-> is the **AI Secretary**, a different SwiftUI app. Ortak lives in
-> `ortak/mobile/`. Everything below happens there.
+> **Careful, two things are easy to get wrong:**
+>
+> 1. The repository's **default branch does not contain Ortak.** The app lives on
+>    the branch `claude/daily-life-collab-app-5g3p5p`. A plain `git clone` checks
+>    out the other branch and you will not find `ortak/` anywhere.
+> 2. This repository holds more than one app. `ios/` at the top level is the
+>    **AI Secretary**, a different SwiftUI project. Ortak lives in
+>    `ortak/mobile/`. Everything below happens there.
+
+Every command block below is meant to be pasted whole. Copy the block, paste it,
+press Return. There are no comments inside the blocks to strip out.
 
 ---
 
@@ -17,21 +25,51 @@ On the Mac:
 
 - **Xcode** from the App Store. Open it once and let it install the command-line
   components, then `sudo xcode-select --install` if `git`/`clang` are missing.
-- **Node 22 or newer** — `node -v` to check.
+- **Node 22 or newer** — run `node -v` to check.
 - **CocoaPods** — `sudo gem install cocoapods`, or `brew install cocoapods`.
 
 ---
 
-## The short way — no Xcode window needed
+## Step 1 — get the code onto the Mac
+
+Only needed once. Note the `--branch` flag; without it you get the wrong branch.
 
 ```bash
+cd ~
+git clone --branch claude/daily-life-collab-app-5g3p5p https://github.com/acanonur/iphoneapp.git
+cd iphoneapp/ortak/mobile
+```
+
+If you cloned it before, update it instead:
+
+```bash
+cd ~/iphoneapp
+git checkout claude/daily-life-collab-app-5g3p5p
+git pull origin claude/daily-life-collab-app-5g3p5p
 cd ortak/mobile
+```
+
+Confirm you are in the right place before going on. This must print a path
+ending in `ortak/mobile`, and must list `app.json`:
+
+```bash
+pwd
+ls app.json
+```
+
+---
+
+## Step 2, the short way — no Xcode window needed
+
+From `ortak/mobile`:
+
+```bash
 npm ci
 npx expo run:ios
 ```
 
 That generates the native project, installs the pods, builds, and launches the
-simulator. For a **physical iPhone**, plug it in and:
+simulator. For a **physical iPhone**, plug it in and run:
 
 ```bash
 npx expo run:ios --device
@@ -42,14 +80,18 @@ fastest path, and the one to try first.
 
 ---
 
-## Opening it in Xcode properly
+## Step 2, the other way — opening it in Xcode properly
+
+From `ortak/mobile`:
 
 ```bash
-cd ortak/mobile
 npm ci
-npx expo prebuild --platform ios     # writes ios/ and runs pod install
+npx expo prebuild --platform ios
 open ios/Ortak.xcworkspace
 ```
+
+`prebuild` is what writes the `ios/` folder and runs `pod install`; it takes a
+few minutes the first time.
 
 **Open the `.xcworkspace`, not the `.xcodeproj`.** CocoaPods builds the
 dependencies into the workspace; the bare project will not link.
@@ -104,31 +146,62 @@ share sheet** either way.
 
 ## Running it against the server
 
-The app needs its server. On the same Mac:
+The app needs its server. In a **second terminal window**, from the repository:
 
 ```bash
-cd ortak/server
+cd ~/iphoneapp/ortak/server
 npm install
-npm run dev          # http://localhost:8788
+npm run dev
 ```
 
-- **Simulator** — enter `http://localhost:8788` on the first screen.
+That serves `http://localhost:8788`. Leave it running.
+
+- **Simulator** — enter `http://localhost:8788` on the app's first screen.
 - **Physical iPhone** — `localhost` is the phone, not the Mac. Use the Mac's
-  address on your network, which `ipconfig getifaddr en0` will print:
-  `http://192.168.1.x:8788`. Both devices must be on the same Wi-Fi.
+  address on your network, which this prints:
+
+  ```bash
+  ipconfig getifaddr en0
+  ```
+
+  Then enter `http://192.168.1.x:8788` with that address. Both devices must be
+  on the same Wi-Fi.
 
 ---
 
 ## When something goes wrong
 
-**Pods fail to install.** `cd ios && pod install --repo-update`.
+**`Invalid project root`, or `The files ... do not exist`.** Two causes, both
+common:
+
+- You are not in `ortak/mobile`. Run `pwd`; if it does not end in
+  `ortak/mobile`, go back to Step 1.
+- You pasted a command together with a comment after it. Anything after a `#` on
+  a command line is a comment to you, but the shell passes the words as
+  filenames, which is what produces that error. Paste only the command.
+
+**`no such file or directory: ortak/mobile`, or `ortak` not found.** You are on
+the wrong branch. Run `git branch --show-current` in the repository; it must say
+`claude/daily-life-collab-app-5g3p5p`.
+
+**Pods fail to install.**
+
+```bash
+cd ios
+pod install --repo-update
+```
 
 **A stale native project after changing `app.json` or adding a package.**
-`npx expo prebuild --platform ios --clean` rebuilds `ios/` from scratch. It is
-safe: nothing in there is hand-edited, which is why it is not committed.
 
-**"No bundle URL present" at launch.** The Metro bundler is not running —
-`npx expo start` in another terminal, or just use `npx expo run:ios`.
+```bash
+npx expo prebuild --platform ios --clean
+```
+
+That rebuilds `ios/` from scratch. It is safe: nothing in there is hand-edited,
+which is why it is not committed.
+
+**"No bundle URL present" at launch.** The Metro bundler is not running. Either
+run `npx expo start` in another terminal, or just use `npx expo run:ios`.
 
 **Build succeeds, screen is blank.** Almost always Metro again; check the
 terminal running it for a red error.

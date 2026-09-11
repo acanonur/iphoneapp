@@ -203,6 +203,16 @@ ortak/
 
 ## Setting it up
 
+### 0. Get the code
+
+Ortak lives on the branch `claude/daily-life-collab-app-5g3p5p`, not on the
+repository's default branch, so the clone needs `--branch`:
+
+```bash
+git clone --branch claude/daily-life-collab-app-5g3p5p https://github.com/acanonur/iphoneapp.git
+cd iphoneapp
+```
+
 ### 1. The server
 
 Needs Node.js 22.5+. It can live on a small VPS, a Raspberry Pi at home, or any
@@ -211,9 +221,12 @@ machine both phones can reach.
 ```bash
 cd ortak/server
 npm install
-cp .env.example .env       # every value has a working default
-npm run dev                # http://localhost:8788
+cp .env.example .env
+npm run dev
 ```
+
+`.env.example` has a working default for every value, and `npm run dev` serves
+`http://localhost:8788`.
 
 For a real deployment, put it behind HTTPS (Caddy or nginx) and set
 `SIGNUP_SECRET` in `.env` so a stranger who guesses an invite code can't walk
@@ -223,7 +236,7 @@ Everything lives in one SQLite file (`DB_PATH`, default `./data/ortak.db`).
 **Back that file up** — it is all of your household's data.
 
 ```bash
-npm test          # 64 API tests
+npm test
 npm run typecheck
 ```
 
@@ -232,15 +245,24 @@ npm run typecheck
 ```bash
 cd ortak/mobile
 npm install
-npx expo install --fix     # aligns native module versions with your Expo SDK
+npx expo install --fix
 ```
+
+`expo install --fix` aligns the native module versions with your Expo SDK.
 
 Ortak uses native calendar access and a native share extension, so it needs a
 **development build** rather than Expo Go. Build each phone once:
 
+On the iPhone:
+
 ```bash
-npx expo run:ios          # Onur's iPhone
-npx expo run:android      # Tugce's Android
+npx expo run:ios
+```
+
+On the Android phone:
+
+```bash
+npx expo run:android
 ```
 
 There is no `.xcodeproj` in the repository — Expo generates it. For opening the
@@ -306,8 +328,8 @@ On macOS, AppleScript *can* write to Notes, so this needs no share sheet at all:
 ```bash
 export ORTAK_URL=https://ortak.example.com
 export ORTAK_TOKEN=your-token
-./ortak/scripts/sync-notes-to-apple-notes.sh          # → "Ortak" folder in Notes
-./ortak/scripts/sync-notes-to-apple-notes.sh Family   # → a folder you name
+./ortak/scripts/sync-notes-to-apple-notes.sh
+./ortak/scripts/sync-notes-to-apple-notes.sh Family
 ```
 
 Every shared note appears in Notes on the Mac, and therefore on the iPhone too,
@@ -371,10 +393,13 @@ offline.
 ## Testing
 
 ```bash
-cd ortak/shared && npm test     # 186 tests — splitting, dates, WhatsApp parsing,
-                                #             availability, buckets, timeline, tags
-cd ortak/server && npm test     #  88 tests — the HTTP API end to end
+cd ortak/shared && npm test
+cd ortak/server && npm test
 ```
+
+274 tests in total: 186 in `shared` covering splitting, dates, WhatsApp parsing,
+availability, buckets, timeline and tags, and 88 in `server` covering the HTTP
+API end to end.
 
 The domain logic is where the subtle bugs live, so that's where the tests are
 concentrated: cent-exact splitting across awkward remainders, date-order
