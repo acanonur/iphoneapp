@@ -40,12 +40,27 @@ git clone --branch claude/daily-life-collab-app-5g3p5p https://github.com/acanon
 cd iphoneapp/ortak/mobile
 ```
 
-If you cloned it before, update it instead:
+If git answers `destination path 'iphoneapp' already exists and is not an empty
+directory`, a clone from an earlier attempt is in the way — and it is almost
+certainly on the default branch, which has no `ortak/` in it. Nothing after the
+failed clone will work, because the `cd` fails too and every later command then
+runs in your home folder.
+
+The simplest way out is to clone into a different folder and leave the old one
+alone:
+
+```bash
+cd ~
+git clone --branch claude/daily-life-collab-app-5g3p5p https://github.com/acanonur/iphoneapp.git ortak-app
+cd ortak-app/ortak/mobile
+```
+
+Or, to reuse the clone you already have:
 
 ```bash
 cd ~/iphoneapp
-git checkout claude/daily-life-collab-app-5g3p5p
-git pull origin claude/daily-life-collab-app-5g3p5p
+git fetch origin claude/daily-life-collab-app-5g3p5p
+git checkout -B claude/daily-life-collab-app-5g3p5p FETCH_HEAD
 cd ortak/mobile
 ```
 
@@ -56,6 +71,11 @@ ending in `ortak/mobile`, and must list `app.json`:
 pwd
 ls app.json
 ```
+
+If `ls` says `No such file or directory`, stop — the clone or the `cd` did not
+do what you think, and running `npm ci` or `expo` from here will install into
+your home folder and fail confusingly. `npm ci` in `ortak/mobile` installs
+around 837 packages; a much smaller number is a sign you are somewhere else.
 
 ---
 
@@ -179,6 +199,13 @@ common:
 - You pasted a command together with a comment after it. Anything after a `#` on
   a command line is a comment to you, but the shell passes the words as
   filenames, which is what produces that error. Paste only the command.
+
+**`destination path 'iphoneapp' already exists`.** An earlier clone is in the
+way; see Step 1. Everything after that failure ran in your home folder rather
+than in the project, so start again from a working `cd`.
+
+**`Xcode project not found in project: /Users/you`.** `expo` was run outside
+`ortak/mobile`. Run `pwd` and go back to Step 1.
 
 **`no such file or directory: ortak/mobile`, or `ortak` not found.** You are on
 the wrong branch. Run `git branch --show-current` in the repository; it must say
