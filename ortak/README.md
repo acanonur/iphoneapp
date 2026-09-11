@@ -243,6 +243,10 @@ npx expo run:ios          # Onur's iPhone
 npx expo run:android      # Tugce's Android
 ```
 
+There is no `.xcodeproj` in the repository — Expo generates it. For opening the
+project in Xcode, signing both targets, and the App Group the share extension
+needs, see [`docs/running-in-xcode.md`](docs/running-in-xcode.md).
+
 Same codebase, same server, same invite code — the two builds differ only in
 which native calendar they talk to.
 
