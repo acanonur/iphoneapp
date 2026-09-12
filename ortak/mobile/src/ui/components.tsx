@@ -121,14 +121,27 @@ export function Card({
   onPress?: () => void;
   style?: ViewStyle;
 }) {
+  // Cards in this system are flat fields of surface colour with no outline, so
+  // a caller's `borderColor` had nothing to colour and was silently dropped —
+  // the offline warning, the error notice and the accented summaries all looked
+  // exactly like ordinary cards. A heavy left rule is how this design system
+  // marks something out, so that is what a colour now buys.
+  const marked: ViewStyle | null =
+    style?.borderColor !== undefined && style.borderWidth === undefined
+      ? { borderLeftWidth: 3, borderLeftColor: style.borderColor }
+      : null;
+
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed, style]}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed, style, marked]}
+      >
         {children}
       </Pressable>
     );
   }
-  return <View style={[styles.card, style]}>{children}</View>;
+  return <View style={[styles.card, style, marked]}>{children}</View>;
 }
 
 /** A notice with an accent kicker above it — the system's card-kicker pattern. */
@@ -192,14 +205,20 @@ export function Button({
         style,
       ]}
     >
+      {/*
+        The label stays while busy. Swapping it out for a bare spinner threw
+        away the one thing that says what is happening — several callers pass a
+        label like "Searching…" precisely for this moment — and left the button
+        jumping between two widths. The spinner takes the icon's place instead.
+      */}
+      <Text style={[styles.buttonLabel, { color: palette.fg }]}>{label}</Text>
       {busy ? (
-        <ActivityIndicator color={palette.fg} />
-      ) : (
-        <>
-          <Text style={[styles.buttonLabel, { color: palette.fg }]}>{label}</Text>
-          {icon ? <View style={{ marginLeft: block ? 'auto' : 6 }}>{icon}</View> : null}
-        </>
-      )}
+        <View style={{ marginLeft: block ? 'auto' : 6 }}>
+          <ActivityIndicator color={palette.fg} size="small" />
+        </View>
+      ) : icon ? (
+        <View style={{ marginLeft: block ? 'auto' : 6 }}>{icon}</View>
+      ) : null}
     </Pressable>
   );
 }
@@ -207,10 +226,15 @@ export function Button({
 export function Field({
   label,
   hint,
+  containerStyle,
   ...props
-}: TextInputProps & { label?: string; hint?: string }) {
+}: TextInputProps & { label?: string; hint?: string; containerStyle?: ViewStyle }) {
+  // `style` belongs to the input itself; layout that positions the field as a
+  // whole — margins, flex inside a row — has to reach the wrapper, which is why
+  // `containerStyle` exists. Callers passing `{ marginBottom: 0 }` as `style`
+  // were changing nothing, because the margin lives out here.
   return (
-    <View style={{ marginBottom: spacing.md }}>
+    <View style={[{ marginBottom: spacing.md }, containerStyle]}>
       {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
       <TextInput
         placeholderTextColor={colors.neutral500}

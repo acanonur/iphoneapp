@@ -121,7 +121,7 @@ function NoteList() {
             placeholder="Filter notes"
             value={query}
             onChangeText={setQuery}
-            style={{ marginBottom: 0 }}
+            containerStyle={{ marginBottom: 0 }}
           />
         </View>
         <Pressable
@@ -280,7 +280,7 @@ function LinkList() {
         keyboardType="url"
         returnKeyType="done"
         hint={busy ? 'Fetching the title…' : undefined}
-        style={{ marginBottom: 0 }}
+        containerStyle={{ marginBottom: 0 }}
       />
 
       {links.length === 0 ? (

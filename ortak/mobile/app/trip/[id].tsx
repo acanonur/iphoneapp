@@ -199,7 +199,7 @@ export default function TripScreen() {
             onChangeText={setNewMember}
             onSubmitEditing={addMember}
             returnKeyType="done"
-            style={{ marginBottom: 0 }}
+            containerStyle={{ marginBottom: 0 }}
           />
         </View>
       </Row>

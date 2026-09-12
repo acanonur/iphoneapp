@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useStore, selectAll, memberColor, memberName } from '../../src/store/useStore.js';
@@ -417,8 +417,6 @@ function FindATime() {
         onPress={() => void search()}
         icon={<SearchIcon size={14} color={colors.bg} />}
       />
-
-      {busy ? <ActivityIndicator color={colors.accent} /> : null}
 
       {slots !== null ? (
         slots.length === 0 ? (

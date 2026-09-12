@@ -80,7 +80,7 @@ export default function TripsScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
       <View style={{ flex: 1, padding: spacing.lg }}>
         <Field
           placeholder="New trip — “Antalya with the gang”"

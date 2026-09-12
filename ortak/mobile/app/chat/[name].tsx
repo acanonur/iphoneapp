@@ -16,8 +16,11 @@ import { colors, clockTime, relativeDay, spacing, typography } from '../../src/u
 const PAGE_SIZE = 80;
 
 export default function ChatScreen() {
+  // expo-router has already percent-decoded the segment. Decoding it a second
+  // time throws URIError on any name containing a literal '%' — and mangles a
+  // name that legitimately contains something like '%20'.
   const { name } = useLocalSearchParams<{ name: string }>();
-  const chatName = typeof name === 'string' ? decodeURIComponent(name) : '';
+  const chatName = typeof name === 'string' ? name : '';
   const navigation = useNavigation();
   const api = useStore((s) => s.api());
 

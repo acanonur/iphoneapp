@@ -10,6 +10,7 @@ import {
   Archivo_800ExtraBold,
 } from '@expo-google-fonts/archivo';
 import { useStore } from '../src/store/useStore.js';
+import { useShareIntake, useSharedPayload } from '../src/share/incoming.js';
 import { connectSocket, disconnectSocket } from '../src/store/socket.js';
 import { colors, fonts } from '../src/ui/theme.js';
 
@@ -52,6 +53,19 @@ export default function RootLayout() {
       router.replace('/(tabs)/today');
     }
   }, [status, segments, router]);
+
+  // Drain incoming shares here, at the one place that is always mounted. The
+  // native module holds the payload until something asks for it, and the share
+  // extension's callback URL matches no route of its own, so nothing below this
+  // layout can be relied on to be listening when a share arrives.
+  useShareIntake();
+  const { payload: sharedPayload } = useSharedPayload();
+
+  useEffect(() => {
+    if (!sharedPayload || status !== 'ready') return;
+    if (segments[0] === 'capture' || segments[0] === 'import') return;
+    router.push('/capture');
+  }, [sharedPayload, status, segments, router]);
 
   if (status === 'loading' || !fontsLoaded) {
     return (

@@ -46,8 +46,12 @@ async function saveMirrors(mirrors: Record<string, string>): Promise<void> {
 }
 
 export function useReminderMirror(): { lastReport: ReminderReport | null; mirrorNow: () => Promise<void> } {
-  const store = useStore();
-  const tasks = selectAll<TaskItem>(store, 'tasks');
+  // Subscribe to the two values that should drive a run, not to the whole
+  // store. `useStore()` re-renders on every state change, and `selectAll`
+  // returns a fresh array each time, so `run` was a new function on every
+  // render and the effect below re-fired on every render with it.
+  const status = useStore((s) => s.status);
+  const rev = useStore((s) => s.rev);
   const [lastReport, setLastReport] = useState<ReminderReport | null>(null);
   const lastRunAt = useRef(0);
   const running = useRef(false);
@@ -57,15 +61,23 @@ export function useReminderMirror(): { lastReport: ReminderReport | null; mirror
       if (!remindersSupported() || running.current) return;
       if (!force && Date.now() - lastRunAt.current < MIN_INTERVAL_MS) return;
 
-      const settings = await loadCalendarSettings();
-      if (!settings.reminderListId) return;
-
+      // Claim the slot *before* the first await. Setting it afterwards let two
+      // callers past the guard together, and two concurrent passes over the
+      // same task list write the same reminder twice.
       running.current = true;
-      lastRunAt.current = Date.now();
 
       try {
+        const settings = await loadCalendarSettings();
+        if (!settings.reminderListId) return;
+
+        // Stamped once there is real work to do, so a run that stops here does
+        // not put the next one on a minute's cooldown.
+        lastRunAt.current = Date.now();
+
         const known = await loadMirrors();
-        const live = tasks.filter((t) => !t.deleted);
+        // Read the tasks when the run actually happens rather than closing over
+        // the array this render produced.
+        const live = selectAll<TaskItem>(useStore.getState(), 'tasks').filter((t) => !t.deleted);
 
         const report = await mirrorTasksToReminders(
           live.map((t) => ({
@@ -88,13 +100,13 @@ export function useReminderMirror(): { lastReport: ReminderReport | null; mirror
         running.current = false;
       }
     },
-    [tasks],
+    [],
   );
 
   useEffect(() => {
-    if (store.status !== 'ready') return;
+    if (status !== 'ready') return;
     void run();
-  }, [run, store.status, store.rev]);
+  }, [run, status, rev]);
 
   return { lastReport, mirrorNow: () => run(true) };
 }

@@ -161,14 +161,21 @@ export class OrtakApi {
     const timer = setTimeout(() => controller.abort(), init.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
     try {
+      // Only declare a JSON body when there is one. Fastify rejects a request
+      // that announces `content-type: application/json` and then sends nothing
+      // with "Body cannot be empty", which turned every DELETE in this client —
+      // removing an import, a calendar mirror, published availability — into a
+      // silent 400.
+      const headers: Record<string, string> = {
+        ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(this.token ? { authorization: `Bearer ${this.token}` } : {}),
+        ...((init.headers as Record<string, string> | undefined) ?? {}),
+      };
+
       const response = await fetch(`${this.baseUrl}${path}`, {
         ...init,
         signal: controller.signal,
-        headers: {
-          'content-type': 'application/json',
-          ...(this.token ? { authorization: `Bearer ${this.token}` } : {}),
-          ...init.headers,
-        },
+        headers,
       });
 
       const text = await response.text();
@@ -284,6 +291,23 @@ export class OrtakApi {
     dateOrder?: 'dmy' | 'mdy' | 'ymd';
   }): Promise<ImportResult> {
     return this.post('/api/archive/import', input, IMPORT_TIMEOUT_MS);
+  }
+
+  /**
+   * Keep one forwarded message.
+   *
+   * Goes straight to the server rather than through the offline queue: the
+   * archive is not in the synced set, so a queued archive row would never be
+   * pushed anywhere.
+   */
+  saveArchiveMessage(input: {
+    body: string;
+    chatName?: string;
+    author?: string;
+    sentAt?: number;
+    starred?: boolean;
+  }): Promise<{ id: string; chatName: string; sentAt: number; rev: number }> {
+    return this.post('/api/archive/messages', input);
   }
 
   archiveChats(): Promise<{ chats: ArchiveChat[] }> {

@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { useStore } from '../src/store/useStore.js';
 import { newId } from '../src/util/id.js';
-import { chatExportFile, classifyShare, extractUrl, useIncomingShare } from '../src/share/incoming.js';
+import { chatExportFile, classifyShare, extractUrl, useSharedPayload } from '../src/share/incoming.js';
 import { Button, Card, Tag, Field, Muted, Row, Screen } from '../src/ui/components.js';
 import { spacing, typography } from '../src/ui/theme.js';
 
@@ -22,7 +22,7 @@ type Destination = 'note' | 'link' | 'task' | 'shopping' | 'archive';
 export default function CaptureScreen() {
   const store = useStore();
   const router = useRouter();
-  const { payload, clear } = useIncomingShare();
+  const { payload, clear } = useSharedPayload();
 
   const [text, setText] = useState('');
   const [title, setTitle] = useState('');
@@ -59,7 +59,7 @@ export default function CaptureScreen() {
     }
   }
 
-  function save() {
+  async function save() {
     const body = text.trim();
     if (!body) return;
 
@@ -148,19 +148,25 @@ export default function CaptureScreen() {
       case 'archive':
         // A single forwarded message, kept in the archive alongside imported
         // chats so one search covers both.
-        store.upsert('archiveMessages', {
-          id: newId('msg'),
-          chatName: title.trim() || 'Saved messages',
-          author: null,
-          sentAt: Date.now(),
-          body,
-          kind: 'message',
-          mediaName: null,
-          source: 'share',
-          importId: null,
-          starred: true,
-          tags: [],
-        });
+        //
+        // Posted straight to the server. The archive is deliberately left out
+        // of the synced set — a five-year group chat would make every sync slow
+        // — so an `upsert` here would queue a row that nothing ever pushes: the
+        // message would sit on this phone alone while the alert below claimed
+        // both of you could see it.
+        try {
+          await store.api().saveArchiveMessage({
+            body,
+            chatName: title.trim() || undefined,
+            starred: true,
+          });
+        } catch {
+          Alert.alert(
+            'Could not save it',
+            'The archive lives on the server, so this one needs a connection. Try again when you have one.',
+          );
+          return;
+        }
         break;
     }
 

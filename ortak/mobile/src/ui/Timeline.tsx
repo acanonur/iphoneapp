@@ -36,7 +36,13 @@ export function Timeline({
   onPressEvent?: (eventId: string) => void;
   onPressGap?: (block: TimelineBlock) => void;
 }) {
-  if (timeline.blocks.length === 0) {
+  // A day with nothing in it is not an empty block list: the free-time pass
+  // fills the whole 7am–11pm window with one gap, which drew a single 634pt
+  // dashed box and made this empty state unreachable. Gaps are only meaningful
+  // next to something they are a gap *between*.
+  const hasCommitments = timeline.blocks.some((block) => block.kind !== 'gap');
+
+  if (!hasCommitments) {
     return (
       <View style={{ padding: spacing.lg, alignItems: 'center' }}>
         <Text style={typography.small}>Nothing scheduled.</Text>

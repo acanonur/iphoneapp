@@ -16,13 +16,15 @@
       "infoPlist": {
         "NSCalendarsFullAccessUsageDescription": "Ortak writes your shared plans into the calendar you choose, so they show up in Apple Calendar and any Google account on this phone.",
         "NSCalendarsUsageDescription": "Ortak writes your shared plans into the calendar you choose.",
-        "NSRemindersFullAccessUsageDescription": "Ortak can add shared to-dos to Reminders."
+        "NSRemindersFullAccessUsageDescription": "Ortak can add shared to-dos to Reminders.",
+        "NSRemindersUsageDescription": "Ortak can add shared to-dos to Reminders."
       }
     },
     "android": {
       "package": "com.ortak.app",
       "adaptiveIcon": {
-        "backgroundColor": "#151821"
+        "backgroundColor": "#f3f2f2",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "permissions": [
         "android.permission.READ_CALENDAR",
@@ -46,14 +48,30 @@
       [
         "expo-share-intent",
         {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsText": true,
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+            "NSExtensionActivationSupportsFileWithMaxCount": 1
+          },
           "androidIntentFilters": [
-            "text/*"
+            "text/*",
+            "*/*"
           ]
         }
       ]
     ],
     "experiments": {
       "typedRoutes": false
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f3f2f2"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }

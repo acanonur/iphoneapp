@@ -255,10 +255,19 @@ export const useStore = create<StoreState>((set, get) => ({
     if (!state.token || state.status !== 'ready') return;
     if (syncInFlight && !options.force) return syncInFlight;
 
-    syncInFlight = runSync(set, get).finally(() => {
-      syncInFlight = null;
-    });
-    return syncInFlight;
+    // `force` means "make sure a cycle runs after this moment", not "run a
+    // second cycle right now". Starting one concurrently interleaved two
+    // push/pull phases — and overwrote the handle to the first, so the guard
+    // stopped protecting anything — which is a reliable way to lose an edit.
+    const previous = syncInFlight;
+    const next: Promise<void> = (previous ? previous.catch(() => undefined) : Promise.resolve())
+      .then(() => runSync(set, get))
+      .finally(() => {
+        if (syncInFlight === next) syncInFlight = null;
+      });
+
+    syncInFlight = next;
+    return next;
   },
 
   async refreshMembers() {
@@ -310,23 +319,45 @@ async function runSync(
     }
 
     if (outgoingCount > 0) {
+      // What each row looked like at the moment it was handed to the server.
+      // `upsert` stamps a fresh `updatedAt` on every edit, so this doubles as a
+      // version marker.
+      const sent = new Map<string, number>();
+      for (const kind of SYNCED_KINDS) {
+        for (const row of outgoing[kind] ?? []) sent.set(`${kind}:${row.id}`, row.updatedAt);
+      }
+
       const result = await api.push(outgoing);
       const pending = { ...get().pending };
 
-      for (const kind of SYNCED_KINDS) {
-        const settled = [...(result.applied[kind] ?? []), ...(result.stale[kind] ?? [])];
-        if (settled.length === 0) continue;
+      /**
+       * Clear a row from the queue only if it has not been edited again since
+       * we sent it.
+       *
+       * The push is a network round trip, and the person can carry on typing
+       * during it. Dropping the row by id alone discarded that newer edit, and
+       * the pull immediately afterwards then wrote the server's older copy back
+       * over it — the edit vanished from the screen without ever being sent.
+       */
+      const settle = (kind: EntityKind, id: string): void => {
+        const queued = pending[kind]?.[id];
+        if (!queued) return;
+        if (queued.updatedAt !== sent.get(`${kind}:${id}`)) return;
         const next = { ...pending[kind] };
-        for (const id of settled) delete next[id];
+        delete next[id];
         pending[kind] = next;
+      };
+
+      for (const kind of SYNCED_KINDS) {
+        for (const id of [...(result.applied[kind] ?? []), ...(result.stale[kind] ?? [])]) {
+          settle(kind, id);
+        }
       }
 
       // A row the server rejected outright would otherwise retry forever.
       for (const failure of result.errors) {
         if (!failure.id) continue;
-        const next = { ...pending[failure.kind] };
-        delete next[failure.id];
-        pending[failure.kind] = next;
+        settle(failure.kind, failure.id);
       }
 
       set({ pending });

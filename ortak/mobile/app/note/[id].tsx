@@ -2,7 +2,7 @@
  * A single shared note, and the ways to get a copy of it into Apple Notes.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useStore, selectAll, memberName } from '../../src/store/useStore.js';
@@ -28,6 +28,43 @@ export default function NoteScreen() {
   const [body, setBody] = useState(note?.body ?? '');
   const [exporting, setExporting] = useState(false);
   const [linking, setLinking] = useState(false);
+
+  /**
+   * The text the editor and the store last agreed on.
+   *
+   * The two `useState` calls above only run on the first render, which used to
+   * lose data twice over. Opening this screen before the note had synced seeded
+   * the editor with empty strings, and the moment the note arrived the debounce
+   * effect below saw a difference and pushed those empty strings over it. And
+   * while the screen sat open, an edit arriving from the other phone was pushed
+   * straight back out, reverting it.
+   *
+   * Holding the agreed text separately tells the two cases apart: an incoming
+   * change is adopted when the user has not typed since, and the user's own
+   * edits win when they have.
+   */
+  const agreed = useRef<{ title: string; body: string } | null>(null);
+
+  useEffect(() => {
+    if (!note) return;
+    const base = agreed.current;
+
+    if (base === null) {
+      agreed.current = { title: note.title, body: note.body };
+      setTitle(note.title);
+      setBody(note.body);
+      return;
+    }
+
+    if (note.title === base.title && note.body === base.body) return;
+
+    const untouched = title === base.title && body === base.body;
+    agreed.current = { title: note.title, body: note.body };
+    if (untouched) {
+      setTitle(note.title);
+      setBody(note.body);
+    }
+  }, [note, title, body]);
 
   const allNotes = selectAll<NoteItem>(store, 'notes');
   const events = selectAll<EventItem>(store, 'events');

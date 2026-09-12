@@ -207,7 +207,46 @@ export interface MirrorReport {
  * the native ids back. Safe to run often: the server only returns events whose
  * revision is ahead of what was last mirrored.
  */
-export async function mirrorPendingEvents(
+let mirrorInFlight: Promise<MirrorReport> | null = null;
+let mirrorQueued: Promise<MirrorReport> | null = null;
+
+/**
+ * Mirror shared events into the device calendar, one pass at a time.
+ *
+ * A pass writes mirror records back to the server, which bumps the space
+ * revision, which re-fires the effect that called it — so without a guard a
+ * second pass started while the first was still working, both read the same
+ * list of pending work, and both created the native entry. The duplicate could
+ * never be cleaned up either: only one of the two ids gets stored as the
+ * mirror, so the other is orphaned in the person's real calendar forever.
+ *
+ * Overlapping callers are collapsed into at most one queued follow-up pass,
+ * which is enough: the follow-up re-reads the pending work, so it picks up
+ * anything that appeared while the first pass ran.
+ */
+export function mirrorPendingEvents(
+  api: OrtakApi,
+  settings: CalendarSettings,
+): Promise<MirrorReport> {
+  if (!mirrorInFlight) {
+    mirrorInFlight = runMirrorPass(api, settings).finally(() => {
+      mirrorInFlight = null;
+    });
+    return mirrorInFlight;
+  }
+
+  if (!mirrorQueued) {
+    mirrorQueued = mirrorInFlight
+      .catch(() => undefined)
+      .then(() => {
+        mirrorQueued = null;
+        return mirrorPendingEvents(api, settings);
+      });
+  }
+  return mirrorQueued;
+}
+
+async function runMirrorPass(
   api: OrtakApi,
   settings: CalendarSettings,
 ): Promise<MirrorReport> {
