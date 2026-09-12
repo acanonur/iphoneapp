@@ -12,7 +12,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ortak.app",
+      "bundleIdentifier": "com.canonur.ortak",
       "infoPlist": {
         "NSCalendarsFullAccessUsageDescription": "Ortak writes your shared plans into the calendar you choose, so they show up in Apple Calendar and any Google account on this phone.",
         "NSCalendarsUsageDescription": "Ortak writes your shared plans into the calendar you choose.",
@@ -21,7 +21,7 @@
       }
     },
     "android": {
-      "package": "com.ortak.app",
+      "package": "com.canonur.ortak",
       "adaptiveIcon": {
         "backgroundColor": "#f3f2f2",
         "foregroundImage": "./assets/adaptive-icon.png"
@@ -39,12 +39,7 @@
           "calendarPermission": "Ortak writes your shared plans into the calendar you choose."
         }
       ],
-      [
-        "expo-document-picker",
-        {
-          "iCloudContainerEnvironment": "Production"
-        }
-      ],
+      "expo-document-picker",
       [
         "expo-share-intent",
         {
@@ -57,7 +52,8 @@
           "androidIntentFilters": [
             "text/*",
             "*/*"
-          ]
+          ],
+          "disableIOS": true
         }
       ]
     ],

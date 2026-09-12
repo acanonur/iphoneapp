@@ -152,34 +152,55 @@ Settings → General → VPN & Device Management → trust your certificate.
 
 ---
 
-## The thing most likely to stop you: App Groups
+## App Groups and the iOS share extension
 
-The share extension — what puts Ortak in the iOS share sheet so you can send a
-WhatsApp message straight into it — needs an **App Group**
+The share extension — what would put Ortak in the iOS share sheet, so you could
+send a WhatsApp message straight into it — needs an **App Group**
 (`group.com.ortak.app`) shared between the app and the extension.
 
 **A free Apple ID cannot create App Groups.** They need a paid Apple Developer
-account ($99/yr). With a free account the build fails at the signing step with a
-provisioning error mentioning the group.
+account ($99/yr). With a free "Personal Team", Xcode shows the group in red
+under Signing & Capabilities and the build fails.
 
-If you do not have a paid account, or just want to see the app running first,
-turn the extension off — everything else works without it:
+**So the extension is off by default.** `app.json` carries
+`"disableIOS": true` on the `expo-share-intent` plugin, which means a prebuilt
+project has no second target, an empty entitlements file, and signs cleanly with
+a free account.
 
-In `ortak/mobile/app.json`, change the plugin entry:
+What that costs, and what it does not:
 
-```json
-["expo-share-intent", { "androidIntentFilters": ["text/*"], "disableIOS": true }]
-```
+- **Android is unaffected.** Tugce keeps the full share sheet either way; the
+  `disableIOS` flag is iOS-only.
+- **Sharing into Ortak on iOS still works** through the Shortcut recipe in the
+  main README. The `ortak://` scheme is still registered, so
+  `ortak://save?text=…` opens the capture screen exactly as before.
+- You lose only Ortak's own row in the iOS share sheet.
 
-Then regenerate:
+**With a paid account**, turn it back on by removing `"disableIOS": true` from
+the `expo-share-intent` entry in `app.json` and running
+`npx expo prebuild --platform ios --clean`. Then sign the **ShareExtension**
+target as well as the app.
+
+---
+
+## Bundle identifiers
+
+`com.canonur.ortak` is the identifier in `app.json`. Bundle identifiers are
+global across all of Apple's developers, so if Xcode says
+
+> Failed Registering Bundle Identifier — the app identifier "…" cannot be
+> registered to your development team because it is not available
+
+then somebody else has already claimed that string. Pick another one in
+`app.json` under `expo.ios.bundleIdentifier` — anything unlikely to collide,
+such as a reversed domain or your own name — and run
 
 ```bash
 npx expo prebuild --platform ios --clean
 ```
 
-You lose only the iOS share-sheet target. Sharing into Ortak on iOS still works
-through the Shortcut recipe in the main README, and **Android keeps its full
-share sheet** either way.
+**Change it in `app.json`, not in Xcode.** The Xcode project is generated, so
+the next prebuild overwrites anything edited there.
 
 ---
 
