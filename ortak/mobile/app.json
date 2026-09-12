@@ -1,0 +1,77 @@
+{
+  "expo": {
+    "name": "Ortak",
+    "slug": "ortak",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "ortak",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ortak.app",
+      "infoPlist": {
+        "NSCalendarsFullAccessUsageDescription": "Ortak writes your shared plans into the calendar you choose, so they show up in Apple Calendar and any Google account on this phone.",
+        "NSCalendarsUsageDescription": "Ortak writes your shared plans into the calendar you choose.",
+        "NSRemindersFullAccessUsageDescription": "Ortak can add shared to-dos to Reminders.",
+        "NSRemindersUsageDescription": "Ortak can add shared to-dos to Reminders."
+      }
+    },
+    "android": {
+      "package": "com.ortak.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#f3f2f2",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Ortak writes your shared plans into the calendar you choose."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsText": true,
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+            "NSExtensionActivationSupportsFileWithMaxCount": 1
+          },
+          "androidIntentFilters": [
+            "text/*",
+            "*/*"
+          ]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f3f2f2"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

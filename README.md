@@ -1,8 +1,9 @@
-> **This repository holds two independent apps.**
+> **This repository holds three independent apps.**
 >
 > | App | Folder | What it is |
 > |---|---|---|
 > | **AI Secretary** 📞 | [`ios/`](ios/) + [`backend/`](backend/) | Described below: an AI that makes phone calls for you and reports back in your language. |
+> | **Ortak** 🏠 | [`ortak/`](ortak/README.md) | A shared daily-life app for two people on two different phones: one calendar that writes into **both** your real calendars, collaborative to-do and shopping lists, notes, a searchable WhatsApp archive and holiday expense splitting. Runs on **iOS and Android** from one Expo codebase, against your own server. See the [Ortak README](ortak/README.md). |
 > | **KnitStudio** 🧶 | [`ios-knitstudio/`](ios-knitstudio/) (Apple)<br>[`android/`](android/) (Android) | A knitting technique guide, pattern calculator, chart tool and yarn shopping list. Runs on **iPhone, iPad, Mac and Android**; fully on-device. The knitting engine exists twice — Swift and Kotlin — and both are tested against the same verified numbers. See [**how to run it on a Mac**](docs/running-on-your-mac.md), the [Apple README](ios-knitstudio/README.md), the [Android README](android/README.md), [how the numbers work](docs/knitstudio.md), and [how to release it](docs/platforms-and-release.md). |
 
 ---
@@ -100,7 +101,31 @@ ios/       SwiftUI app (XcodeGen project definition + sources)
              AISecretary/DesignSystem/  the Modernist system in SwiftUI
              AISecretary/Views/         the redesigned screens
 docs/      Retell agent prompt & setup guide, and how the design maps onto the code
+ortak/     A separate app — see the table at the top
 ```
+
+---
+
+## Also in this repo: Ortak 🏠
+
+[`ortak/`](ortak/README.md) is an independent app that shares nothing with the
+secretary above except the repository: **a shared daily-life app for two people
+on two different phones**, running on iOS *and* Android from one Expo codebase,
+against your own server.
+
+Shared calendar that writes into each person's **own** calendar (Apple Calendar
+on one phone, Google Calendar on the other), shared notes with Apple Notes
+export, collaborative to-do and shopping lists that update live while you are
+both in the shop, a searchable archive of imported WhatsApp conversations, saved
+links, and Splitwise-style expense splitting for holidays.
+
+```bash
+cd ortak/server && npm install && npm run dev
+cd ortak/mobile && npm install && npx expo run:ios   # or run:android
+```
+
+Full setup, and an honest account of what the phone platforms do and don't
+allow, is in [`ortak/README.md`](ortak/README.md).
 
 ## Quickstart — backend (no keys needed)
 

@@ -5,6 +5,12 @@ node_modules/
 # Env & data
 .env
 backend/data/
+ortak/server/data/
+
+# Expo
+ortak/mobile/.expo/
+ortak/mobile/android/
+ortak/mobile/ios/
 
 # Build output
 dist/
