@@ -2,7 +2,7 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import type { Config } from './config.js';
-import { Store, openDatabase } from './db.js';
+import { Store, openDatabaseWithStatus } from './db.js';
 import { SyncEngine } from './sync.js';
 import { SearchIndex } from './search.js';
 import { Hub } from './hub.js';
@@ -34,12 +34,16 @@ function bearerToken(request: FastifyRequest): string | undefined {
 }
 
 export function buildApp(config: Config): App {
-  const db = openDatabase(config.dbPath);
+  const { db, needsReindex } = openDatabaseWithStatus(config.dbPath);
   const store = new Store(db);
   const sync = new SyncEngine(db);
   const search = new SearchIndex(db);
   const hub = new Hub();
   const ctx: Ctx = { config, db, store, sync, search, hub };
+
+  // A schema change can force the FTS table to be recreated empty; refill it
+  // from the entity tables before the first request arrives.
+  if (needsReindex) sync.reindexAll();
 
   const fastify = Fastify({
     logger: process.env.NODE_ENV === 'test' ? false : { level: process.env.LOG_LEVEL ?? 'info' },
@@ -50,6 +54,31 @@ export function buildApp(config: Config): App {
     origin: config.corsOrigins.includes('*') ? true : config.corsOrigins,
   });
   fastify.register(websocket);
+
+  /**
+   * Treat an empty JSON body as an absent one.
+   *
+   * Fastify's default JSON parser fails a request that announces
+   * `content-type: application/json` and then sends no bytes. That is a
+   * perfectly ordinary thing for an HTTP client to do on a DELETE, and it made
+   * all three DELETE endpoints answer 400 to our own app. The client no longer
+   * sends the header without a body, but the server should not be brittle about
+   * it either.
+   */
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_request, body: string, done) => {
+      if (body === '') return done(null, undefined);
+      try {
+        done(null, JSON.parse(body));
+      } catch (error) {
+        const failure = error as Error & { statusCode?: number };
+        failure.statusCode = 400;
+        done(failure, undefined);
+      }
+    },
+  );
 
   fastify.setErrorHandler((error, request, reply) => {
     if (error instanceof ValidationError) {
@@ -320,40 +349,59 @@ function registerCoreRoutes(app: FastifyInstance, ctx: Ctx): void {
    *
    * Authenticates from a query parameter because browser and React Native
    * WebSocket clients cannot set an Authorization header on the handshake.
+   *
+   * It lives inside its own `register` on purpose. @fastify/websocket works by
+   * installing an onRoute hook that rewrites routes carrying `websocket: true`,
+   * and an onRoute hook only sees routes declared *after* the plugin has
+   * finished loading. Plugin loading is deferred to boot, so a route declared
+   * straight onto the root instance — as this one was — is built before the
+   * hook exists and stays an ordinary GET: the handshake then answered 500 and
+   * every live update in the app silently stopped working. Wrapping it in a
+   * register puts it behind the plugin in avvio's boot order.
    */
-  app.get<{ Querystring: { token?: string } }>(
-    '/api/ws',
-    { websocket: true },
-    (socket, request) => {
-      const user = store.authenticate(request.query.token);
-      if (!user) {
-        socket.send(JSON.stringify({ type: 'error', error: 'unauthorized' }));
-        socket.close();
-        return;
-      }
-
-      const client = hub.add(socket, user.spaceId, user.id, user.name);
-      socket.send(JSON.stringify({ type: 'hello', rev: sync.currentRev(user.spaceId), userId: user.id }));
-
-      socket.on('message', (raw: Buffer | string) => {
-        let message: { type?: string; context?: string };
-        try {
-          message = JSON.parse(String(raw)) as { type?: string; context?: string };
-        } catch {
+  app.register(async function realtimeRoutes(scoped) {
+    scoped.get<{ Querystring: { token?: string } }>(
+      '/api/ws',
+      { websocket: true },
+      (socket, request) => {
+        const user = store.authenticate(request.query.token);
+        if (!user) {
+          socket.send(JSON.stringify({ type: 'error', error: 'unauthorized' }));
+          socket.close();
           return;
         }
 
-        if (message.type === 'presence' && typeof message.context === 'string') {
-          hub.setPresence(user.spaceId, user.id, user.name, message.context.slice(0, 100));
-        } else if (message.type === 'ping') {
-          socket.send(JSON.stringify({ type: 'pong', rev: sync.currentRev(user.spaceId) }));
-        }
-      });
+        const client = hub.add(socket, user.spaceId, user.id, user.name);
+        socket.send(JSON.stringify({ type: 'hello', rev: sync.currentRev(user.spaceId), userId: user.id }));
 
-      socket.on('close', () => hub.remove(client));
-      socket.on('error', () => hub.remove(client));
-    },
-  );
+        socket.on('message', (raw: Buffer | string) => {
+          let message: { type?: string; context?: string };
+          try {
+            message = JSON.parse(String(raw)) as { type?: string; context?: string };
+          } catch {
+            return;
+          }
+
+          if (message.type === 'presence' && typeof message.context === 'string') {
+            // An empty context means "I've stopped looking at that", the same
+            // as the HTTP endpoint treats it. Storing it verbatim left the
+            // other phone showing a blank presence chip forever.
+            const context = message.context.slice(0, 100).trim();
+            if (context) {
+              hub.setPresence(user.spaceId, user.id, user.name, context);
+            } else {
+              hub.clearPresence(user.spaceId, user.id);
+            }
+          } else if (message.type === 'ping') {
+            socket.send(JSON.stringify({ type: 'pong', rev: sync.currentRev(user.spaceId) }));
+          }
+        });
+
+        socket.on('close', () => hub.remove(client));
+        socket.on('error', () => hub.remove(client));
+      },
+    );
+  });
 
   // -------------------------------------------------------------------------
   // Link previews

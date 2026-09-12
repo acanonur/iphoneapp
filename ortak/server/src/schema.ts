@@ -13,7 +13,7 @@
  * why the Turkish dotless ı forces that.
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Columns shared by every syncable entity. */
 export const SYNC_COLUMNS = `
@@ -289,10 +289,22 @@ CREATE TABLE IF NOT EXISTS search_docs (
   entity_id TEXT NOT NULL UNIQUE
 );
 
+-- The three searchable columns hold *folded* text: lowercased, with the
+-- characters SQLite's tokenizer will not fold for us (Turkish dotless i, German
+-- eszett) mapped by hand. That is what makes "tesisatci" find "tesisatçı".
+--
+-- The display_ columns hold the same fields unfolded. Results used to be
+-- rendered straight from the indexed columns, which showed every hit
+-- lowercased and de-accented — and worse, the archive screen navigated to
+-- /chat/<folded name>, which matched no chat, so every message hit opened an
+-- empty screen.
 CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
   title,
   body,
   context,               -- author / chat / category, searchable but lower weight
+  display_title   UNINDEXED,
+  display_body    UNINDEXED,
+  display_context UNINDEXED,
   entity_id  UNINDEXED,
   space_id   UNINDEXED,
   kind       UNINDEXED,

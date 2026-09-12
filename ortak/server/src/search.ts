@@ -29,10 +29,72 @@ const FOLD_MAP: Record<string, string> = {
 };
 
 export function foldSearchText(input: string): string {
-  let out = '';
-  for (const ch of input) out += FOLD_MAP[ch] ?? ch;
-  // Lowercasing after the map avoids JS turning 'İ' into 'i' + U+0307.
-  return out.toLowerCase();
+  return foldWithOffsets(input).folded;
+}
+
+/**
+ * Fold, and record where each folded character came from.
+ *
+ * `offsets[i]` is the index in `input` that produced folded character `i`, so a
+ * match found in the folded text can be sliced out of the original. The mapping
+ * is not the identity: 'ß' folds to two characters, and astral characters such
+ * as an emoji occupy two UTF-16 units in the source.
+ */
+export function foldWithOffsets(input: string): { folded: string; offsets: number[] } {
+  let folded = '';
+  const offsets: number[] = [];
+  let index = 0;
+
+  for (const ch of input) {
+    // Lowercasing per character, after the map, avoids JS turning 'İ' into
+    // 'i' + U+0307 and keeps the offsets aligned.
+    const mapped = (FOLD_MAP[ch] ?? ch).toLowerCase();
+    for (let i = 0; i < mapped.length; i++) offsets.push(index);
+    folded += mapped;
+    index += ch.length;
+  }
+
+  return { folded, offsets };
+}
+
+/** Bare words from whatever the user typed, folded, longest first. */
+function queryTerms(raw: string): string[] {
+  return [...new Set(raw.match(/[^\s"*()]+/gu) ?? [])]
+    .map((term) => foldSearchText(term))
+    .filter((term) => term.length > 0)
+    .sort((a, b) => b.length - a.length);
+}
+
+const SNIPPET_RADIUS = 90;
+
+/**
+ * A readable excerpt of `display`, centred on the first query term that occurs
+ * in it.
+ *
+ * SQLite's own `snippet()` can only excerpt an indexed column, which means
+ * folded text — results read back lowercased and stripped of their Turkish and
+ * German characters. Locating the match in the folded copy and slicing the
+ * *original* gives the same excerpt with the writing intact.
+ */
+export function snippetFor(display: string, terms: string[]): string {
+  if (!display) return '';
+  const { folded, offsets } = foldWithOffsets(display);
+
+  let at = -1;
+  for (const term of terms) {
+    at = folded.indexOf(term);
+    if (at >= 0) break;
+  }
+  if (at < 0) {
+    return display.length <= SNIPPET_RADIUS * 2
+      ? display
+      : `${display.slice(0, SNIPPET_RADIUS * 2).trimEnd()}…`;
+  }
+
+  const origin = offsets[at] ?? 0;
+  const start = Math.max(0, origin - SNIPPET_RADIUS);
+  const end = Math.min(display.length, origin + SNIPPET_RADIUS);
+  return `${start > 0 ? '…' : ''}${display.slice(start, end).trim()}${end < display.length ? '…' : ''}`;
 }
 
 /**
@@ -105,14 +167,20 @@ export class SearchIndex {
     this.db.prepare('DELETE FROM search_index WHERE rowid = ?').run(docId);
     this.db
       .prepare(
-        `INSERT INTO search_index (rowid, title, body, context, entity_id, space_id, kind, sort_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO search_index
+           (rowid, title, body, context,
+            display_title, display_body, display_context,
+            entity_id, space_id, kind, sort_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         docId,
         foldSearchText(doc.title),
         foldSearchText(doc.body),
         foldSearchText(doc.context),
+        doc.title,
+        doc.body,
+        doc.context,
         doc.entityId,
         doc.spaceId,
         doc.kind,
@@ -171,9 +239,8 @@ export class SearchIndex {
         : 'bm25(search_index, 10.0, 3.0, 1.0) ASC, sort_at DESC';
 
     const sql = `
-      SELECT entity_id, kind, title, context, sort_at,
-             bm25(search_index, 10.0, 3.0, 1.0) AS score,
-             snippet(search_index, 1, '⟦', '⟧', '…', 24) AS snip
+      SELECT entity_id, kind, display_title, display_body, display_context, sort_at,
+             bm25(search_index, 10.0, 3.0, 1.0) AS score
       FROM search_index
       WHERE ${where.join(' AND ')}
       ORDER BY ${order}
@@ -182,19 +249,21 @@ export class SearchIndex {
     const rows = this.db.prepare(sql).all(...(params as never[]), limit, offset) as {
       entity_id: string;
       kind: string;
-      title: string;
-      context: string;
+      display_title: string;
+      display_body: string;
+      display_context: string;
       sort_at: number;
       score: number;
-      snip: string;
     }[];
+
+    const terms = queryTerms(query);
 
     return rows.map((r) => ({
       entityId: r.entity_id,
       kind: r.kind as EntityKind,
-      title: r.title,
-      snippet: r.snip,
-      context: r.context,
+      title: r.display_title,
+      snippet: snippetFor(r.display_body, terms),
+      context: r.display_context,
       sortAt: r.sort_at,
       score: -r.score,
     }));

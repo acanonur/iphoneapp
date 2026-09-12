@@ -48,6 +48,29 @@ const IMPORT_SCHEMA = {
   },
 } as const;
 
+interface SaveMessageBody {
+  body: string;
+  chatName?: string;
+  author?: string;
+  sentAt?: number;
+  starred?: boolean;
+}
+
+const SAVE_MESSAGE_SCHEMA = {
+  body: {
+    type: 'object',
+    required: ['body'],
+    additionalProperties: false,
+    properties: {
+      body: { type: 'string', minLength: 1, maxLength: 20000 },
+      chatName: { type: 'string', maxLength: 300 },
+      author: { type: 'string', maxLength: 200 },
+      sentAt: { type: 'number' },
+      starred: { type: 'boolean' },
+    },
+  },
+} as const;
+
 export function registerArchiveRoutes(app: FastifyInstance, ctx: Ctx): void {
   /**
    * Import an exported chat.
@@ -178,6 +201,47 @@ export function registerArchiveRoutes(app: FastifyInstance, ctx: Ctx): void {
       rev,
     };
   });
+
+  /**
+   * Keep a single forwarded message.
+   *
+   * The archive is deliberately not part of the sync set — a five-year group
+   * chat is tens of thousands of rows and mirroring it onto both phones would
+   * make every sync slow. That meant the capture screen's "Keep message" had
+   * nowhere to go: it wrote into the local archive map, which the client never
+   * pushes, so the message sat on one phone forever while the screen claimed
+   * both of you could see it. This is the way in for one message at a time.
+   */
+  app.post<{ Body: SaveMessageBody }>(
+    '/api/archive/messages',
+    { schema: SAVE_MESSAGE_SCHEMA },
+    async (request) => {
+      const { spaceId, id: userId } = request.user;
+      const body = request.body;
+      const now = Date.now();
+
+      const row = {
+        id: newId(),
+        updatedAt: now,
+        deleted: false,
+        chatName: body.chatName?.trim() || 'Saved messages',
+        author: body.author?.trim() || null,
+        sentAt: body.sentAt ?? now,
+        body: body.body,
+        kind: 'message' as const,
+        mediaName: null,
+        source: 'share' as const,
+        importId: null,
+        starred: body.starred ?? true,
+        tags: [],
+      };
+
+      const { rev } = ctx.sync.writeRows(spaceId, userId, 'archiveMessages', [row]);
+      ctx.hub.publishRev(spaceId, rev);
+
+      return { id: row.id, chatName: row.chatName, sentAt: row.sentAt, rev };
+    },
+  );
 
   /** The chats we hold, with sizes and date ranges — the archive's front page. */
   app.get('/api/archive/chats', async (request) => {

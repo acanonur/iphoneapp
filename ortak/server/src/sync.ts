@@ -76,6 +76,35 @@ export class SyncEngine {
     this.search.upsert({ ...doc, entityId: id, spaceId });
   }
 
+  /**
+   * Rebuild the whole search index from the entity tables.
+   *
+   * Only needed after a schema change forces the FTS table to be recreated:
+   * the index is derived data, so it is cheaper to throw away and rebuild than
+   * to migrate. Runs across every space, since the index is shared.
+   */
+  reindexAll(): number {
+    let indexed = 0;
+    for (const kind of ENTITY_KINDS) {
+      const spec = ENTITY_SPECS[kind];
+      const rows = this.db
+        .prepare(`SELECT * FROM ${spec.table} WHERE deleted = 0`)
+        .all() as Record<string, unknown>[];
+
+      for (const stored of rows) {
+        const doc = documentFor(kind, fromRow(spec, stored));
+        if (!doc) continue;
+        this.search.upsert({
+          ...doc,
+          entityId: String(stored.id),
+          spaceId: String(stored.space_id),
+        });
+        indexed++;
+      }
+    }
+    return indexed;
+  }
+
   /** Current revision of a space. Clients treat it as an opaque cursor. */
   currentRev(spaceId: string): number {
     const row = this.db.prepare('SELECT rev FROM spaces WHERE id = ?').get(spaceId) as

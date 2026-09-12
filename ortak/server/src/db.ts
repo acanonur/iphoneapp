@@ -28,16 +28,48 @@ function applyColumnMigrations(db: DatabaseSync): void {
   }
 }
 
+/**
+ * Bring an existing search index up to the current column list.
+ *
+ * FTS5 tables cannot be ALTERed, and `CREATE VIRTUAL TABLE IF NOT EXISTS`
+ * leaves an existing one alone — so a database written before the display_
+ * columns existed keeps a table the current INSERT does not fit. The index is
+ * derived data, so the repair is to drop it and rebuild from the entity tables.
+ *
+ * Returns true when the caller needs to reindex.
+ */
+function migrateSearchIndex(db: DatabaseSync): boolean {
+  const columns = db.prepare('PRAGMA table_info(search_index)').all() as { name: string }[];
+  if (columns.length === 0) return false; // brand new; SCHEMA_SQL just made it
+  if (columns.some((c) => c.name === 'display_title')) return false;
+
+  db.exec('DROP TABLE search_index');
+  db.exec('DELETE FROM search_docs');
+  db.exec(SCHEMA_SQL);
+  return true;
+}
+
+export interface OpenedDatabase {
+  db: DatabaseSync;
+  /** The search index was rebuilt empty and needs repopulating. */
+  needsReindex: boolean;
+}
+
 export function openDatabase(path: string): DatabaseSync {
+  return openDatabaseWithStatus(path).db;
+}
+
+export function openDatabaseWithStatus(path: string): OpenedDatabase {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new DatabaseSync(path);
   db.exec(SCHEMA_SQL);
   applyColumnMigrations(db);
+  const needsReindex = migrateSearchIndex(db);
   db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run(
     'schema_version',
     String(SCHEMA_VERSION),
   );
-  return db;
+  return { db, needsReindex };
 }
 
 export function newId(): string {
