@@ -116,6 +116,25 @@ few minutes the first time.
 **Open the `.xcworkspace`, not the `.xcodeproj`.** CocoaPods builds the
 dependencies into the workspace; the bare project will not link.
 
+### Start Metro first — Xcode will not do it for you
+
+A debug build does not contain any JavaScript. It asks the Metro bundler for it
+at launch, and **nothing in the Xcode project starts Metro**: the "Start
+Packager" build phase that older React Native templates carried is not in
+Expo's. `npx expo run:ios` starts Metro itself, which is why that route needs no
+second window — pressing ▶ in Xcode does not.
+
+So before pressing ▶, in a **separate terminal window**:
+
+```bash
+cd ~/ortak-app/ortak/mobile
+npx expo start
+```
+
+Leave it running for as long as you are working in Xcode. Skipping it gives a
+red screen reading `No script URL provided` and `unsanitizedScriptURLString =
+(null)`.
+
 Then in Xcode:
 
 1. Select the **Ortak** project in the navigator.
@@ -211,6 +230,12 @@ than in the project, so start again from a working `cd`.
 the wrong branch. Run `git branch --show-current` in the repository; it must say
 `claude/daily-life-collab-app-5g3p5p`.
 
+**A wall of `npm warn deprecated` lines, and an `npm audit` count.** Expected,
+and not worth acting on: they come from the React Native build toolchain's own
+dependencies, which run on your Mac at build time and ship nothing into the app.
+Do not run `npm audit fix --force` — it will move packages off the versions this
+Expo SDK expects and break the build.
+
 **Pods fail to install.**
 
 ```bash
@@ -227,8 +252,12 @@ npx expo prebuild --platform ios --clean
 That rebuilds `ios/` from scratch. It is safe: nothing in there is hand-edited,
 which is why it is not committed.
 
-**"No bundle URL present" at launch.** The Metro bundler is not running. Either
-run `npx expo start` in another terminal, or just use `npx expo run:ios`.
+**`No script URL provided`, `unsanitizedScriptURLString = (null)`, or "No
+bundle URL present" at launch.** The Metro bundler is not running. A debug build
+holds no JavaScript of its own and fetches it from Metro, and Xcode does not
+start Metro when you press ▶. Run `npx expo start` from `ortak/mobile` in
+another window and press ▶ again — or use `npx expo run:ios`, which starts it
+for you.
 
 **Build succeeds, screen is blank.** Almost always Metro again; check the
 terminal running it for a red error.
