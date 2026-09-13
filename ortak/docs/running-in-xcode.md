@@ -116,6 +116,34 @@ few minutes the first time.
 **Open the `.xcworkspace`, not the `.xcodeproj`.** CocoaPods builds the
 dependencies into the workspace; the bare project will not link.
 
+### Start Metro first — Xcode will not do it for you
+
+A debug build does not contain any JavaScript. It asks the Metro bundler for it
+at launch, and **nothing in the Xcode project starts Metro**: the "Start
+Packager" build phase that older React Native templates carried is not in
+Expo's. `npx expo run:ios` starts Metro itself, which is why that route needs no
+second window — pressing ▶ in Xcode does not.
+
+So before pressing ▶, in a **separate terminal window**:
+
+```bash
+cd ~/ortak-app/ortak/mobile
+npx expo start
+```
+
+Leave it running for as long as you are working in Xcode.
+
+If you forget, the build now stops with
+
+> error: Metro is not running on port 8081, and a Debug build has no JavaScript
+> of its own.
+
+rather than building happily and dying at launch on a red screen reading
+`No script URL provided` / `unsanitizedScriptURLString = (null)`, which names
+nothing you could act on. The check is a build phase added by
+`plugins/withMetroCheck.js`; it runs the same probe the app itself runs, and
+Release builds skip it because they embed the bundle.
+
 Then in Xcode:
 
 1. Select the **Ortak** project in the navigator.
@@ -133,34 +161,55 @@ Settings → General → VPN & Device Management → trust your certificate.
 
 ---
 
-## The thing most likely to stop you: App Groups
+## App Groups and the iOS share extension
 
-The share extension — what puts Ortak in the iOS share sheet so you can send a
-WhatsApp message straight into it — needs an **App Group**
+The share extension — what would put Ortak in the iOS share sheet, so you could
+send a WhatsApp message straight into it — needs an **App Group**
 (`group.com.ortak.app`) shared between the app and the extension.
 
 **A free Apple ID cannot create App Groups.** They need a paid Apple Developer
-account ($99/yr). With a free account the build fails at the signing step with a
-provisioning error mentioning the group.
+account ($99/yr). With a free "Personal Team", Xcode shows the group in red
+under Signing & Capabilities and the build fails.
 
-If you do not have a paid account, or just want to see the app running first,
-turn the extension off — everything else works without it:
+**So the extension is off by default.** `app.json` carries
+`"disableIOS": true` on the `expo-share-intent` plugin, which means a prebuilt
+project has no second target, an empty entitlements file, and signs cleanly with
+a free account.
 
-In `ortak/mobile/app.json`, change the plugin entry:
+What that costs, and what it does not:
 
-```json
-["expo-share-intent", { "androidIntentFilters": ["text/*"], "disableIOS": true }]
-```
+- **Android is unaffected.** Tugce keeps the full share sheet either way; the
+  `disableIOS` flag is iOS-only.
+- **Sharing into Ortak on iOS still works** through the Shortcut recipe in the
+  main README. The `ortak://` scheme is still registered, so
+  `ortak://save?text=…` opens the capture screen exactly as before.
+- You lose only Ortak's own row in the iOS share sheet.
 
-Then regenerate:
+**With a paid account**, turn it back on by removing `"disableIOS": true` from
+the `expo-share-intent` entry in `app.json` and running
+`npx expo prebuild --platform ios --clean`. Then sign the **ShareExtension**
+target as well as the app.
+
+---
+
+## Bundle identifiers
+
+`com.canonur.ortak` is the identifier in `app.json`. Bundle identifiers are
+global across all of Apple's developers, so if Xcode says
+
+> Failed Registering Bundle Identifier — the app identifier "…" cannot be
+> registered to your development team because it is not available
+
+then somebody else has already claimed that string. Pick another one in
+`app.json` under `expo.ios.bundleIdentifier` — anything unlikely to collide,
+such as a reversed domain or your own name — and run
 
 ```bash
 npx expo prebuild --platform ios --clean
 ```
 
-You lose only the iOS share-sheet target. Sharing into Ortak on iOS still works
-through the Shortcut recipe in the main README, and **Android keeps its full
-share sheet** either way.
+**Change it in `app.json`, not in Xcode.** The Xcode project is generated, so
+the next prebuild overwrites anything edited there.
 
 ---
 
@@ -211,6 +260,12 @@ than in the project, so start again from a working `cd`.
 the wrong branch. Run `git branch --show-current` in the repository; it must say
 `claude/daily-life-collab-app-5g3p5p`.
 
+**A wall of `npm warn deprecated` lines, and an `npm audit` count.** Expected,
+and not worth acting on: they come from the React Native build toolchain's own
+dependencies, which run on your Mac at build time and ship nothing into the app.
+Do not run `npm audit fix --force` — it will move packages off the versions this
+Expo SDK expects and break the build.
+
 **Pods fail to install.**
 
 ```bash
@@ -227,8 +282,26 @@ npx expo prebuild --platform ios --clean
 That rebuilds `ios/` from scratch. It is safe: nothing in there is hand-edited,
 which is why it is not committed.
 
-**"No bundle URL present" at launch.** The Metro bundler is not running. Either
-run `npx expo start` in another terminal, or just use `npx expo run:ios`.
+**`No script URL provided`, `unsanitizedScriptURLString = (null)`, or "No
+bundle URL present" at launch.** Exactly two things cause it.
+
+1. **Metro is not running**, in a Debug build. React Native finds the bundler by
+   probing `http://localhost:8081/status`; when that fails it has no URL at all,
+   which is why the message says `(null)` rather than naming an address it could
+   not reach. Check it yourself on the Mac:
+
+   ```bash
+   curl -s http://localhost:8081/status
+   ```
+
+   That must print `packager-status:running`. If it prints nothing, start Metro
+   with `npx expo start` from `ortak/mobile`. If Metro *is* running but chose a
+   different port because 8081 was busy, quit it, free 8081, and start it again
+   — the app only looks at 8081 unless `RCT_METRO_PORT` says otherwise.
+
+2. **The scheme is building Release**, which looks for an embedded
+   `main.jsbundle` instead of asking Metro. Product → Scheme → Edit Scheme →
+   Run → Build Configuration must say **Debug**.
 
 **Build succeeds, screen is blank.** Almost always Metro again; check the
 terminal running it for a red error.
