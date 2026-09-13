@@ -131,9 +131,18 @@ cd ~/ortak-app/ortak/mobile
 npx expo start
 ```
 
-Leave it running for as long as you are working in Xcode. Skipping it gives a
-red screen reading `No script URL provided` and `unsanitizedScriptURLString =
-(null)`.
+Leave it running for as long as you are working in Xcode.
+
+If you forget, the build now stops with
+
+> error: Metro is not running on port 8081, and a Debug build has no JavaScript
+> of its own.
+
+rather than building happily and dying at launch on a red screen reading
+`No script URL provided` / `unsanitizedScriptURLString = (null)`, which names
+nothing you could act on. The check is a build phase added by
+`plugins/withMetroCheck.js`; it runs the same probe the app itself runs, and
+Release builds skip it because they embed the bundle.
 
 Then in Xcode:
 
@@ -274,11 +283,25 @@ That rebuilds `ios/` from scratch. It is safe: nothing in there is hand-edited,
 which is why it is not committed.
 
 **`No script URL provided`, `unsanitizedScriptURLString = (null)`, or "No
-bundle URL present" at launch.** The Metro bundler is not running. A debug build
-holds no JavaScript of its own and fetches it from Metro, and Xcode does not
-start Metro when you press ▶. Run `npx expo start` from `ortak/mobile` in
-another window and press ▶ again — or use `npx expo run:ios`, which starts it
-for you.
+bundle URL present" at launch.** Exactly two things cause it.
+
+1. **Metro is not running**, in a Debug build. React Native finds the bundler by
+   probing `http://localhost:8081/status`; when that fails it has no URL at all,
+   which is why the message says `(null)` rather than naming an address it could
+   not reach. Check it yourself on the Mac:
+
+   ```bash
+   curl -s http://localhost:8081/status
+   ```
+
+   That must print `packager-status:running`. If it prints nothing, start Metro
+   with `npx expo start` from `ortak/mobile`. If Metro *is* running but chose a
+   different port because 8081 was busy, quit it, free 8081, and start it again
+   — the app only looks at 8081 unless `RCT_METRO_PORT` says otherwise.
+
+2. **The scheme is building Release**, which looks for an embedded
+   `main.jsbundle` instead of asking Metro. Product → Scheme → Edit Scheme →
+   Run → Build Configuration must say **Debug**.
 
 **Build succeeds, screen is blank.** Almost always Metro again; check the
 terminal running it for a red error.

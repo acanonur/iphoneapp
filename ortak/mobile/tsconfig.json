@@ -5,10 +5,20 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["../shared/src/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@shared/*": [
+        "../shared/src/*"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "../shared/src/**/*.ts", ".expo/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../shared/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
