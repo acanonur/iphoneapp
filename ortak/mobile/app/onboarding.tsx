@@ -46,9 +46,12 @@ export default function Onboarding() {
 
   // Only ever shown when we do not already know the answer.
   const [serverUrl, setServerUrl] = useState(builtInServer);
-  // Shown only when there is no other way to learn the address: no build-time
-  // default, and starting rather than joining.
-  const [showServer, setShowServer] = useState(!builtInServer && mode === 'create');
+  // Never shown up front, in any configuration. If there turns out to be no
+  // address — no build-time default and none in the invite — the attempt fails
+  // and the field appears then, with an error explaining why it is being asked.
+  // A first screen should not open with a question about infrastructure just
+  // because the build might not have answered it.
+  const [showServer, setShowServer] = useState(false);
   const [secret, setSecret] = useState('');
   const [showSecret, setShowSecret] = useState(false);
 
@@ -160,8 +163,6 @@ export default function Onboarding() {
         onPress={() => {
           setMode('create');
           setError(null);
-          // Starting a project is the one case with nothing else to go on.
-          setShowServer(!builtInServer);
         }}
       />
       <Choice
@@ -171,8 +172,6 @@ export default function Onboarding() {
         onPress={() => {
           setMode('join');
           setError(null);
-          // The invite carries the address; asking would be asking twice.
-          setShowServer(false);
         }}
       />
 
