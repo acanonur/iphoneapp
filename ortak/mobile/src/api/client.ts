@@ -7,6 +7,7 @@
  */
 
 import type { EntityKind, Member, PresenceEntry } from '../../../shared/src/types.js';
+import { normaliseServerUrl as normaliseServerUrlShared } from '../../../shared/src/invite.js';
 
 export class ApiError extends Error {
   constructor(
@@ -120,12 +121,15 @@ export interface PendingCalendarWork {
   remove: { eventId: string; calendarId: string; externalEventId: string }[];
 }
 
-/** Normalise whatever the user typed into a base URL we can build paths on. */
+/**
+ * The shared normaliser, adapted to this module's "empty string means none"
+ * convention. The rules live in shared/ because the invite parser has to agree
+ * with this exactly — an address that round-trips through an invite link must
+ * come back as the same string the client already stored, or the app would
+ * treat a rejoin as a different server.
+ */
 export function normaliseServerUrl(input: string): string {
-  let url = input.trim();
-  if (!url) return '';
-  if (!/^https?:\/\//i.test(url)) url = `http://${url}`;
-  return url.replace(/\/+$/, '');
+  return normaliseServerUrlShared(input) ?? '';
 }
 
 export class OrtakApi {

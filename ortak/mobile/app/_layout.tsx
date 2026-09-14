@@ -47,7 +47,7 @@ export default function RootLayout() {
     if (status === 'loading') return;
     const onOnboarding = segments[0] === 'onboarding';
 
-    if (status === 'unconfigured' && !onOnboarding) {
+    if (status === 'unconfigured' && !onOnboarding && segments[0] !== 'join') {
       router.replace('/onboarding');
     } else if (status === 'ready' && onOnboarding) {
       router.replace('/(tabs)/today');
@@ -89,6 +89,7 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="join" options={{ headerShown: false }} />
         <Stack.Screen name="search" options={{ title: 'Search' }} />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         <Stack.Screen name="import" options={{ title: 'Import chat' }} />

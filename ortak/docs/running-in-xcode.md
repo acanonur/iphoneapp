@@ -225,16 +225,22 @@ npm run dev
 
 That serves `http://localhost:8788`. Leave it running.
 
-- **Simulator** — enter `http://localhost:8788` on the app's first screen.
-- **Physical iPhone** — `localhost` is the phone, not the Mac. Use the Mac's
-  address on your network, which this prints:
+The app no longer asks for that address on its first screen. Bake it in when you
+build instead:
 
-  ```bash
-  ipconfig getifaddr en0
-  ```
+```bash
+ORTAK_SERVER_URL=http://192.168.2.56:8788 npx expo run:ios
+```
 
-  Then enter `http://192.168.1.x:8788` with that address. Both devices must be
-  on the same Wi-Fi.
+- **Physical iPhone** — use the Mac's address on your network, which
+  `ipconfig getifaddr en0` prints. Both devices must be on the same Wi-Fi.
+  `localhost` would mean the phone itself.
+- **Simulator** — `http://localhost:8788` works, since it shares the Mac's
+  network.
+
+Building from Xcode rather than the command line? Xcode does not see that
+variable, so either run once from the terminal with it set, or fill it in on the
+first screen under "Where this is kept" — it is remembered after that.
 
 ---
 
