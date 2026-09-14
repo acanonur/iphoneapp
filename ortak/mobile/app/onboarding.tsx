@@ -46,7 +46,9 @@ export default function Onboarding() {
 
   // Only ever shown when we do not already know the answer.
   const [serverUrl, setServerUrl] = useState(builtInServer);
-  const [showServer, setShowServer] = useState(false);
+  // Shown only when there is no other way to learn the address: no build-time
+  // default, and starting rather than joining.
+  const [showServer, setShowServer] = useState(!builtInServer && mode === 'create');
   const [secret, setSecret] = useState('');
   const [showSecret, setShowSecret] = useState(false);
 
@@ -127,6 +129,7 @@ export default function Onboarding() {
       await signIn(session, url);
     } catch (e) {
       if (e instanceof ApiError) {
+        if (e.code === 'forbidden') setShowSecret(true);
         setError(
           e.status === 0
             ? `Could not reach ${url}. Check that the server is running and that both phones are on the same network.`
@@ -139,8 +142,6 @@ export default function Onboarding() {
       setBusy(false);
     }
   }
-
-  const serverKnown = Boolean(resolveServer());
 
   return (
     <Screen scroll>
@@ -159,6 +160,8 @@ export default function Onboarding() {
         onPress={() => {
           setMode('create');
           setError(null);
+          // Starting a project is the one case with nothing else to go on.
+          setShowServer(!builtInServer);
         }}
       />
       <Choice
@@ -168,6 +171,8 @@ export default function Onboarding() {
         onPress={() => {
           setMode('join');
           setError(null);
+          // The invite carries the address; asking would be asking twice.
+          setShowServer(false);
         }}
       />
 
@@ -229,43 +234,42 @@ export default function Onboarding() {
         style={{ marginTop: spacing.sm }}
       />
 
-      <Rule weight="row" style={{ marginTop: spacing.xl, marginBottom: spacing.md }} />
-
       {/*
-        The address, and the optional sign-up secret, are kept out of the way.
-        Neither is a question a household should be asked to start, and the join
-        side normally never needs either.
+        Neither of these is on the screen unless it has to be.
+
+        The address appears only when the app was built without one *and* we are
+        starting a project — a join usually gets it from the invite, so asking up
+        front would be asking for something the person has already been given.
+        The sign-up secret appears only after a server has actually rejected us
+        for want of one, which is the only moment it means anything.
       */}
       {showServer ? (
-        <Field
-          label="Where this is kept"
-          placeholder="http://192.168.2.56:8788"
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          value={serverUrl}
-          onChangeText={setServerUrl}
-          hint="The address of your Ortak server. Both phones talk to the same one."
-        />
-      ) : (
-        <Disclosure
-          label={serverKnown ? 'Change where this is kept' : 'Set where this is kept'}
-          onPress={() => setShowServer(true)}
-        />
-      )}
+        <>
+          <Rule weight="row" style={{ marginTop: spacing.xl, marginBottom: spacing.md }} />
+          <Field
+            label="Where this is kept"
+            placeholder="http://192.168.2.56:8788"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            value={serverUrl}
+            onChangeText={setServerUrl}
+            hint="The address of the machine running your Ortak server. You can change this later in Settings."
+          />
+        </>
+      ) : null}
 
       {showSecret ? (
         <Field
           label="Sign-up secret"
-          placeholder="Only if your server asks for one"
+          placeholder="The one your server was started with"
           value={secret}
           onChangeText={setSecret}
           autoCapitalize="none"
           secureTextEntry
+          hint="This server was set up to require one."
         />
-      ) : (
-        <Disclosure label="My server needs a sign-up secret" onPress={() => setShowSecret(true)} />
-      )}
+      ) : null}
 
       <View style={{ marginTop: spacing.xl }}>
         <Muted>
@@ -312,15 +316,6 @@ function Choice({
       <Text style={[typography.small, { color: selected ? colors.neutral300 : colors.textMuted }]}>
         {detail}
       </Text>
-    </Pressable>
-  );
-}
-
-/** A quiet link that reveals a field most people never need. */
-function Disclosure({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={{ paddingVertical: spacing.sm }}>
-      <Text style={[typography.small, { color: colors.accent }]}>{label}</Text>
     </Pressable>
   );
 }

@@ -32,6 +32,7 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<CalendarSettings | null>(null);
   const [loadingCalendars, setLoadingCalendars] = useState(true);
   const [name, setName] = useState(store.user?.name ?? '');
+  const [serverDraft, setServerDraft] = useState(store.serverUrl);
   const [reminderLists, setReminderLists] = useState<ReminderList[]>([]);
   const [publishing, setPublishing] = useState(false);
 
@@ -434,9 +435,41 @@ export default function SettingsScreen() {
           demand. Any note has an Export button; for one-tap or automatic export, the README has a
           Shortcut recipe and a Mac script that writes straight into a Notes folder.
         </Muted>
-        <Text style={[typography.tiny, { marginTop: spacing.sm }]} selectable>
-          Server: {store.serverUrl || '—'}
-        </Text>
+      </Card>
+
+      {/* ---- Where this is kept ---- */}
+      <Text style={[typography.heading, { marginTop: spacing.lg, marginBottom: spacing.sm }]}>
+        Where this is kept
+      </Text>
+      <Card>
+        <Muted>
+          The machine running your Ortak server. It is set when the app is built, so you should
+          not need this — but a home server's address can change when the router hands out a new
+          one, and this is the way back.
+        </Muted>
+        <Field
+          label="Server address"
+          placeholder="http://192.168.2.56:8788"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          value={serverDraft}
+          onChangeText={setServerDraft}
+          containerStyle={{ marginTop: spacing.md, marginBottom: spacing.sm }}
+        />
+        <Button
+          label="Use this address"
+          variant="secondary"
+          disabled={!serverDraft.trim() || serverDraft.trim() === store.serverUrl}
+          onPress={async () => {
+            try {
+              await store.setServerUrl(serverDraft);
+              Alert.alert('Updated', 'This phone now talks to that address.');
+            } catch {
+              Alert.alert('Could not switch', 'Check the address and that the server is running.');
+            }
+          }}
+        />
       </Card>
 
       {/* ---- Archive ---- */}

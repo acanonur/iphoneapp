@@ -75,6 +75,7 @@ export interface StoreState {
   signOut: () => Promise<void>;
   upsert: (kind: EntityKind, record: Partial<SyncRecord> & { id: string }) => void;
   remove: (kind: EntityKind, id: string) => void;
+  setServerUrl: (serverUrl: string) => Promise<void>;
   sync: (options?: { force?: boolean }) => Promise<void>;
   refreshMembers: () => Promise<void>;
   setPresence: (entries: PresenceEntry[]) => void;
@@ -193,6 +194,25 @@ export const useStore = create<StoreState>((set, get) => ({
       lastError: null,
     });
 
+    await persist(get());
+    await get().sync({ force: true });
+    await get().refreshMembers();
+  },
+
+  /**
+   * Point this phone at a different address for the same project.
+   *
+   * Needed because the address is otherwise decided once, at build time or on
+   * the first screen, and a home server's IP is not a stable thing — a router
+   * reboot can hand out a new one and leave the app talking to nobody, with no
+   * way back. The token stays valid: it belongs to the space, not the hostname.
+   */
+  async setServerUrl(serverUrl) {
+    const url = normaliseServerUrl(serverUrl);
+    if (!url || url === get().serverUrl) return;
+
+    api.setBaseUrl(url);
+    set({ serverUrl: url, lastError: null, online: true });
     await persist(get());
     await get().sync({ force: true });
     await get().refreshMembers();
