@@ -4,9 +4,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, Share, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import { buildInviteMessage } from '../../shared/src/invite.js';
 import { useStore, pendingCount } from '../src/store/useStore.js';
 import {
   listWritableCalendars,
@@ -84,12 +85,12 @@ export default function SettingsScreen() {
 
         <Divider />
 
-        <Text style={[typography.small, { marginBottom: spacing.xs }]}>Invite code</Text>
+        <Text style={[typography.small, { marginBottom: spacing.xs }]}>Invite someone</Text>
         <Pressable
           onPress={async () => {
             if (store.space?.inviteCode) {
               await Clipboard.setStringAsync(store.space.inviteCode);
-              Alert.alert('Copied', 'Send it to the other phone — they enter it when setting up.');
+              Alert.alert('Copied', 'The 8-character code, for reading out or typing by hand.');
             }
           }}
         >
@@ -97,7 +98,32 @@ export default function SettingsScreen() {
             {store.space?.inviteCode ?? '—'}
           </Text>
         </Pressable>
-        <Muted>Tap to copy. Anyone with this code and your server address can join.</Muted>
+        <Muted>
+          Sending the invite is the easier way: it carries the server address with it, so the
+          other person never has to type one. The bare code only works if they already know
+          where the project is kept.
+        </Muted>
+
+        <Button
+          label="Send invite"
+          style={{ marginTop: spacing.sm }}
+          onPress={async () => {
+            const code = store.space?.inviteCode;
+            if (!code) return;
+            const message = buildInviteMessage({
+              serverUrl: store.serverUrl,
+              inviteCode: code,
+              spaceName: store.space?.name,
+              invitedBy: store.user?.name,
+            });
+            try {
+              await Share.share({ message });
+            } catch {
+              await Clipboard.setStringAsync(message);
+              Alert.alert('Copied instead', 'The share sheet would not open, so it is on your clipboard.');
+            }
+          }}
+        />
 
         <Button
           label="Rotate code"

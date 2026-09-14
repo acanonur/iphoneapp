@@ -273,14 +273,30 @@ project in Xcode, signing it, and putting it on a physical iPhone, see
 Same codebase, same server, same invite code — the two builds differ only in
 which native calendar they talk to.
 
+Build each phone with the server's address baked in, and neither of you is ever
+asked for one:
+
+```bash
+ORTAK_SERVER_URL=http://192.168.2.56:8788 npx expo run:ios
+```
+
+`ipconfig getifaddr en0` prints that address on the machine running the server.
+It is optional — without it the person *starting* the project is asked once,
+under "Where this is kept" — but the person *joining* is never asked either way.
+
 On first launch:
 
-1. Enter your server's address
-2. **First phone:** "Start a new space" → note the invite code
-3. **Second phone:** "Join with a code" → enter it
+1. **First phone:** "Start a project" → your name, a project name
+2. Settings → **Send invite**, and send it however you normally talk
+3. **Second phone:** "Join a project" → paste what you were sent
 4. On each phone: Settings → Calendar → pick which calendar shared plans go into
    (Onur picks iCloud, Tugce picks her Google calendar)
 5. Once you've both joined, Settings → Rotate code
+
+The invite carries the server address with it, so step 3 is one paste and
+nothing else — tapping the link opens the app with both fields already filled.
+There is still an 8-character code for reading down the phone, but it only works
+if the other phone already knows where the project is kept.
 
 That's it. Anything either of you adds now shows up on the other phone, and
 calendar entries land in your own calendars automatically.
