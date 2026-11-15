@@ -1,69 +1,161 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { SecretaryTask } from './types.js';
+import type { Language, Profile, SecretaryTask, TranscriptLine } from './types.js';
 
-interface TaskRow {
-  id: string;
-  device_id: string;
-  kind: string;
-  goal: string;
-  phone_number: string;
-  language: string;
-  summary_language: string;
-  user_name: string | null;
-  status: string;
-  provider_call_id: string | null;
-  document_text: string | null;
-  transcript: string | null;
-  summary: string | null;
-  result: string | null;
-  todo: string | null;
-  todo_when: string | null;
-  outcome: string | null;
-  duration_seconds: number | null;
-  error: string | null;
-  created_at: string;
-  updated_at: string;
+type SqlValue = string | number | null;
+type Row = Record<string, SqlValue>;
+
+/**
+ * One column of the `tasks` table: how it is declared, and how its value moves
+ * between the row and the task. Every statement below is generated from this
+ * list, so a column cannot be added in one place and forgotten in another.
+ */
+interface Column {
+  name: string;
+  /** SQL type and constraints, as used both in CREATE TABLE and ALTER TABLE. */
+  definition: string;
+  /** False for the columns that are set once, when the row is inserted. */
+  mutable: boolean;
+  toSql(task: SecretaryTask): SqlValue;
 }
 
-function rowToTask(row: TaskRow): SecretaryTask {
+function parseLines(value: SqlValue | undefined): TranscriptLine[] {
+  if (typeof value !== 'string' || !value) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((entry): TranscriptLine[] => {
+      if (!entry || typeof entry !== 'object') return [];
+      const { role, text } = entry as { role?: unknown; text?: unknown };
+      if ((role !== 'assistant' && role !== 'other') || typeof text !== 'string') return [];
+      return [{ role, text }];
+    });
+  } catch {
+    return [];
+  }
+}
+
+const COLUMNS: Column[] = [
+  { name: 'id', definition: 'TEXT PRIMARY KEY', mutable: false, toSql: (t) => t.id },
+  { name: 'device_id', definition: 'TEXT NOT NULL', mutable: false, toSql: (t) => t.deviceId },
+  {
+    name: 'kind',
+    definition: "TEXT NOT NULL DEFAULT 'call'",
+    mutable: false,
+    toSql: (t) => t.kind,
+  },
+  { name: 'goal', definition: 'TEXT NOT NULL', mutable: true, toSql: (t) => t.goal },
+  {
+    // NOT NULL from the first schema, so "no number" is stored as ''.
+    name: 'phone_number',
+    definition: "TEXT NOT NULL DEFAULT ''",
+    mutable: true,
+    toSql: (t) => t.phoneNumber ?? '',
+  },
+  { name: 'language', definition: 'TEXT NOT NULL', mutable: true, toSql: (t) => t.language },
+  {
+    name: 'summary_language',
+    definition: 'TEXT NOT NULL',
+    mutable: true,
+    toSql: (t) => t.summaryLanguage,
+  },
+  { name: 'user_name', definition: 'TEXT', mutable: true, toSql: (t) => t.userName },
+  { name: 'status', definition: 'TEXT NOT NULL', mutable: true, toSql: (t) => t.status },
+  {
+    name: 'direction',
+    definition: "TEXT NOT NULL DEFAULT 'outbound'",
+    mutable: false,
+    toSql: (t) => t.direction,
+  },
+  {
+    name: 'simulated',
+    definition: 'INTEGER NOT NULL DEFAULT 0',
+    mutable: true,
+    toSql: (t) => (t.simulated ? 1 : 0),
+  },
+  {
+    name: 'provider_call_id',
+    definition: 'TEXT',
+    mutable: true,
+    toSql: (t) => t.providerCallId,
+  },
+  { name: 'document_text', definition: 'TEXT', mutable: true, toSql: (t) => t.documentText },
+  {
+    name: 'lines_json',
+    definition: 'TEXT',
+    mutable: true,
+    toSql: (t) => (t.lines.length ? JSON.stringify(t.lines) : null),
+  },
+  { name: 'transcript', definition: 'TEXT', mutable: true, toSql: (t) => t.transcript },
+  { name: 'summary', definition: 'TEXT', mutable: true, toSql: (t) => t.summary },
+  { name: 'summary_source', definition: 'TEXT', mutable: true, toSql: (t) => t.summarySource },
+  { name: 'result', definition: 'TEXT', mutable: true, toSql: (t) => t.result },
+  { name: 'todo', definition: 'TEXT', mutable: true, toSql: (t) => t.todo },
+  { name: 'todo_when', definition: 'TEXT', mutable: true, toSql: (t) => t.todoWhen },
+  { name: 'outcome', definition: 'TEXT', mutable: true, toSql: (t) => t.outcome },
+  {
+    name: 'duration_seconds',
+    definition: 'INTEGER',
+    mutable: true,
+    toSql: (t) => t.durationSeconds,
+  },
+  { name: 'error', definition: 'TEXT', mutable: true, toSql: (t) => t.error },
+  { name: 'error_code', definition: 'TEXT', mutable: true, toSql: (t) => t.errorCode },
+  { name: 'created_at', definition: 'TEXT NOT NULL', mutable: false, toSql: (t) => t.createdAt },
+  { name: 'updated_at', definition: 'TEXT NOT NULL', mutable: true, toSql: (t) => t.updatedAt },
+];
+
+const MUTABLE_COLUMNS = COLUMNS.filter((c) => c.mutable);
+
+function text(row: Row, column: string): string | null {
+  const value = row[column];
+  return typeof value === 'string' ? value : null;
+}
+
+function rowToTask(row: Row): SecretaryTask {
+  const duration = row['duration_seconds'];
   return {
-    id: row.id,
-    deviceId: row.device_id,
-    kind: row.kind as SecretaryTask['kind'],
-    goal: row.goal,
-    // The column is NOT NULL from the original schema, so non-call tasks store
-    // an empty string; the API speaks in nulls.
-    phoneNumber: row.phone_number || null,
-    language: row.language as SecretaryTask['language'],
-    summaryLanguage: row.summary_language as SecretaryTask['summaryLanguage'],
-    userName: row.user_name,
-    status: row.status as SecretaryTask['status'],
-    providerCallId: row.provider_call_id,
-    documentText: row.document_text,
-    transcript: row.transcript,
-    summary: row.summary,
-    result: row.result,
-    todo: row.todo,
-    todoWhen: row.todo_when,
-    outcome: row.outcome as SecretaryTask['outcome'],
-    durationSeconds: row.duration_seconds,
-    error: row.error,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: text(row, 'id') ?? '',
+    deviceId: text(row, 'device_id') ?? '',
+    kind: (text(row, 'kind') ?? 'call') as SecretaryTask['kind'],
+    goal: text(row, 'goal') ?? '',
+    phoneNumber: text(row, 'phone_number') || null,
+    language: (text(row, 'language') ?? 'de') as Language,
+    summaryLanguage: (text(row, 'summary_language') ?? 'en') as Language,
+    userName: text(row, 'user_name'),
+    status: (text(row, 'status') ?? 'failed') as SecretaryTask['status'],
+    direction: text(row, 'direction') === 'inbound' ? 'inbound' : 'outbound',
+    simulated: row['simulated'] === 1,
+    providerCallId: text(row, 'provider_call_id'),
+    documentText: text(row, 'document_text'),
+    lines: parseLines(row['lines_json']),
+    transcript: text(row, 'transcript'),
+    summary: text(row, 'summary'),
+    summarySource: text(row, 'summary_source') as SecretaryTask['summarySource'],
+    result: text(row, 'result'),
+    todo: text(row, 'todo'),
+    todoWhen: text(row, 'todo_when'),
+    outcome: text(row, 'outcome') as SecretaryTask['outcome'],
+    durationSeconds: typeof duration === 'number' ? duration : null,
+    error: text(row, 'error'),
+    errorCode: text(row, 'error_code') as SecretaryTask['errorCode'],
+    createdAt: text(row, 'created_at') ?? '',
+    updatedAt: text(row, 'updated_at') ?? '',
   };
 }
 
-/** Columns added after the call-only first version, with their definitions. */
-const ADDED_COLUMNS: Record<string, string> = {
-  kind: "TEXT NOT NULL DEFAULT 'call'",
-  document_text: 'TEXT',
-  result: 'TEXT',
-  todo: 'TEXT',
-  todo_when: 'TEXT',
-  duration_seconds: 'INTEGER',
-};
+function rowToProfile(row: Row): Profile {
+  const language = text(row, 'language');
+  return {
+    deviceId: text(row, 'device_id') ?? '',
+    name: text(row, 'name'),
+    language: language === 'de' || language === 'tr' ? language : 'en',
+    answerCalls: row['answer_calls'] === 1,
+    answerNote: text(row, 'answer_note'),
+    updatedAt: text(row, 'updated_at') ?? '',
+  };
+}
 
 export class TaskStore {
   private db: DatabaseSync;
@@ -91,105 +183,110 @@ export class TaskStore {
       this.db.exec('ALTER TABLE calls RENAME TO tasks');
     }
 
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        device_id TEXT NOT NULL,
-        kind TEXT NOT NULL DEFAULT 'call',
-        goal TEXT NOT NULL,
-        phone_number TEXT NOT NULL DEFAULT '',
-        language TEXT NOT NULL,
-        summary_language TEXT NOT NULL,
-        user_name TEXT,
-        status TEXT NOT NULL,
-        provider_call_id TEXT,
-        document_text TEXT,
-        transcript TEXT,
-        summary TEXT,
-        result TEXT,
-        todo TEXT,
-        todo_when TEXT,
-        outcome TEXT,
-        duration_seconds INTEGER,
-        error TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-    `);
+    this.db.exec(
+      `CREATE TABLE IF NOT EXISTS tasks (${COLUMNS.map((c) => `${c.name} ${c.definition}`).join(', ')})`,
+    );
 
     const existing = new Set(
       (this.db.prepare('PRAGMA table_info(tasks)').all() as unknown as { name: string }[]).map(
         (c) => c.name,
       ),
     );
-    for (const [column, definition] of Object.entries(ADDED_COLUMNS)) {
-      if (!existing.has(column)) {
-        this.db.exec(`ALTER TABLE tasks ADD COLUMN ${column} ${definition}`);
+    for (const column of COLUMNS) {
+      if (!existing.has(column.name)) {
+        this.db.exec(`ALTER TABLE tasks ADD COLUMN ${column.name} ${column.definition}`);
       }
     }
 
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_tasks_device ON tasks(device_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_tasks_provider ON tasks(provider_call_id);
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS profiles (
+        device_id TEXT PRIMARY KEY,
+        name TEXT,
+        language TEXT NOT NULL DEFAULT 'en',
+        answer_calls INTEGER NOT NULL DEFAULT 0,
+        answer_note TEXT,
+        updated_at TEXT NOT NULL
+      );
     `);
   }
+
+  // MARK: Tasks
 
   create(task: SecretaryTask): void {
     this.db
       .prepare(
-        `INSERT INTO tasks (
-          id, device_id, kind, goal, phone_number, language, summary_language, user_name,
-          status, provider_call_id, document_text, transcript, summary, result,
-          todo, todo_when, outcome, duration_seconds, error, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO tasks (${COLUMNS.map((c) => c.name).join(', ')})
+         VALUES (${COLUMNS.map(() => '?').join(', ')})`,
       )
-      .run(
-        task.id,
-        task.deviceId,
-        task.kind,
-        task.goal,
-        task.phoneNumber ?? '',
-        task.language,
-        task.summaryLanguage,
-        task.userName,
-        task.status,
-        task.providerCallId,
-        task.documentText,
-        task.transcript,
-        task.summary,
-        task.result,
-        task.todo,
-        task.todoWhen,
-        task.outcome,
-        task.durationSeconds,
-        task.error,
-        task.createdAt,
-        task.updatedAt,
-      );
+      .run(...COLUMNS.map((c) => c.toSql(task)));
   }
 
   get(id: string): SecretaryTask | undefined {
     if (this.closed) return undefined;
-    const row = this.db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as
-      | TaskRow
-      | undefined;
+    const row = this.db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Row | undefined;
     return row ? rowToTask(row) : undefined;
   }
 
   findByProviderCallId(providerCallId: string): SecretaryTask | undefined {
+    if (this.closed) return undefined;
     const row = this.db
       .prepare('SELECT * FROM tasks WHERE provider_call_id = ?')
-      .get(providerCallId) as TaskRow | undefined;
+      .get(providerCallId) as Row | undefined;
     return row ? rowToTask(row) : undefined;
   }
 
   listByDevice(deviceId: string, limit = 100): SecretaryTask[] {
+    if (this.closed) return [];
     const rows = this.db
       .prepare(
         'SELECT * FROM tasks WHERE device_id = ? ORDER BY created_at DESC, id DESC LIMIT ?',
       )
-      .all(deviceId, limit) as unknown as TaskRow[];
+      .all(deviceId, limit) as unknown as Row[];
     return rows.map(rowToTask);
+  }
+
+  /** Calls that are still under way, oldest first — for the reconciler. */
+  listActiveCalls(): SecretaryTask[] {
+    if (this.closed) return [];
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM tasks
+         WHERE kind = 'call' AND status IN ('queued', 'dialing', 'in_progress')
+         ORDER BY created_at ASC`,
+      )
+      .all() as unknown as Row[];
+    return rows.map(rowToTask);
+  }
+
+  /** Letters, messages and forms that were accepted but never worked on. */
+  listQueuedDocuments(): SecretaryTask[] {
+    if (this.closed) return [];
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM tasks
+         WHERE status = 'queued' AND kind IN ('letter', 'message', 'form', 'followup')
+         ORDER BY created_at ASC`,
+      )
+      .all() as unknown as Row[];
+    return rows.map(rowToTask);
+  }
+
+  /** How many real outbound calls were started since `sinceIso`. */
+  countOutboundCallsSince(sinceIso: string): number {
+    if (this.closed) return 0;
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM tasks
+         WHERE kind = 'call' AND direction = 'outbound' AND simulated = 0 AND created_at >= ?`,
+      )
+      .get(sinceIso) as { n: number } | undefined;
+    return row?.n ?? 0;
   }
 
   update(id: string, patch: Partial<SecretaryTask>): SecretaryTask | undefined {
@@ -200,32 +297,94 @@ export class TaskStore {
       ...current,
       ...patch,
       id: current.id,
+      deviceId: current.deviceId,
+      kind: current.kind,
+      direction: current.direction,
+      createdAt: current.createdAt,
       updatedAt: new Date().toISOString(),
     };
     this.db
       .prepare(
-        `UPDATE tasks SET
-          status = ?, provider_call_id = ?, document_text = ?, transcript = ?,
-          summary = ?, result = ?, todo = ?, todo_when = ?, outcome = ?,
-          duration_seconds = ?, error = ?, updated_at = ?
-        WHERE id = ?`,
+        `UPDATE tasks SET ${MUTABLE_COLUMNS.map((c) => `${c.name} = ?`).join(', ')} WHERE id = ?`,
+      )
+      .run(...MUTABLE_COLUMNS.map((c) => c.toSql(next)), id);
+    return next;
+  }
+
+  // MARK: Settings
+
+  getSetting(key: string): string | undefined {
+    if (this.closed) return undefined;
+    const row = this.db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+      | { value: string }
+      | undefined;
+    return row?.value;
+  }
+
+  setSetting(key: string, value: string): void {
+    if (this.closed) return;
+    this.db
+      .prepare(
+        `INSERT INTO settings (key, value) VALUES (?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+      )
+      .run(key, value);
+  }
+
+  /** Reads a setting, creating and storing it the first time it is asked for. */
+  settingOrCreate(key: string, create: () => string): string {
+    const existing = this.getSetting(key);
+    if (existing) return existing;
+    const value = create();
+    this.setSetting(key, value);
+    return value;
+  }
+
+  // MARK: Profiles
+
+  getProfile(deviceId: string): Profile | undefined {
+    if (this.closed) return undefined;
+    const row = this.db.prepare('SELECT * FROM profiles WHERE device_id = ?').get(deviceId) as
+      | Row
+      | undefined;
+    return row ? rowToProfile(row) : undefined;
+  }
+
+  saveProfile(profile: Omit<Profile, 'updatedAt'>): Profile {
+    const saved: Profile = { ...profile, updatedAt: new Date().toISOString() };
+    if (this.closed) return saved;
+    this.db
+      .prepare(
+        `INSERT INTO profiles (device_id, name, language, answer_calls, answer_note, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(device_id) DO UPDATE SET
+           name = excluded.name,
+           language = excluded.language,
+           answer_calls = excluded.answer_calls,
+           answer_note = excluded.answer_note,
+           updated_at = excluded.updated_at`,
       )
       .run(
-        next.status,
-        next.providerCallId,
-        next.documentText,
-        next.transcript,
-        next.summary,
-        next.result,
-        next.todo,
-        next.todoWhen,
-        next.outcome,
-        next.durationSeconds,
-        next.error,
-        next.updatedAt,
-        id,
+        saved.deviceId,
+        saved.name,
+        saved.language,
+        saved.answerCalls ? 1 : 0,
+        saved.answerNote,
+        saved.updatedAt,
       );
-    return next;
+    return saved;
+  }
+
+  /**
+   * Who an answered call belongs to: the profile that most recently asked for
+   * its calls to be answered, or failing that the most recently saved one.
+   */
+  inboundOwner(): Profile | undefined {
+    if (this.closed) return undefined;
+    const row = this.db
+      .prepare('SELECT * FROM profiles ORDER BY answer_calls DESC, updated_at DESC LIMIT 1')
+      .get() as Row | undefined;
+    return row ? rowToProfile(row) : undefined;
   }
 
   close(): void {

@@ -1,0 +1,216 @@
+/**
+ * One-time setup of the phone side: creates (or updates) the two voice agents
+ * this backend uses at Retell — the one that places calls and the one that
+ * answers them — and writes their ids into backend/.env.
+ *
+ *   npm run retell:setup
+ *
+ * It needs RETELL_API_KEY in backend/.env. It never buys a phone number: that
+ * costs money every month, so it is left to a person (see docs/real-calls.md).
+ * Running it again updates the existing agents instead of making new ones.
+ */
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import Retell from 'retell-sdk';
+import { AGENT_PROMPT_TEMPLATE, INBOUND_PROMPT_TEMPLATE, greetingLine } from '../src/prompt.js';
+import { WEBHOOK_EVENTS, describeError } from '../src/providers/retell.js';
+
+const ENV_FILE = '.env';
+
+function say(message = ''): void {
+  console.log(message);
+}
+
+/** Sets KEY=value in backend/.env, replacing an existing line or adding one. */
+function saveToEnv(values: Record<string, string>): void {
+  let text = existsSync(ENV_FILE)
+    ? readFileSync(ENV_FILE, 'utf8')
+    : existsSync('.env.example')
+      ? readFileSync('.env.example', 'utf8')
+      : '';
+  for (const [key, value] of Object.entries(values)) {
+    const line = `${key}=${value}`;
+    const pattern = new RegExp(`^${key}=.*$`, 'm');
+    text = pattern.test(text) ? text.replace(pattern, line) : `${text.replace(/\n*$/, '\n')}${line}\n`;
+  }
+  writeFileSync(ENV_FILE, text);
+}
+
+const END_CALL_TOOL: Retell.LlmCreateParams.EndCallTool = {
+  type: 'end_call',
+  name: 'end_call',
+  description:
+    'End the call when the task is done and goodbyes are said, when the other side cannot help, when it is a wrong number, when a mailbox answered, or when they refuse to talk to an AI.',
+};
+
+/** What the agent that places calls is told. Per-call values replace the defaults. */
+const OUTBOUND_LLM: Retell.LlmCreateParams = {
+  general_prompt: AGENT_PROMPT_TEMPLATE,
+  start_speaker: 'agent',
+  begin_message: '{{disclosure}}',
+  general_tools: [END_CALL_TOOL],
+  default_dynamic_variables: {
+    user_name: 'the client',
+    language_name: 'English',
+    goal: 'Ask politely whether this is a good time to talk, then end the call.',
+    disclosure: 'Hello! This is an AI assistant calling on behalf of a client.',
+  },
+};
+
+/** What the agent that answers calls is told. */
+const INBOUND_LLM: Retell.LlmCreateParams = {
+  general_prompt: INBOUND_PROMPT_TEMPLATE,
+  start_speaker: 'agent',
+  begin_message: '{{greeting}}',
+  general_tools: [END_CALL_TOOL],
+  default_dynamic_variables: {
+    greeting: greetingLine('en', null),
+    owner_name: 'the person you called',
+    owner_language: 'English',
+    owner_note: 'No special instructions.',
+  },
+};
+
+type AgentSettings = Omit<Retell.AgentCreateParams, 'response_engine' | 'voice_id'>;
+
+const SHARED_AGENT: AgentSettings = {
+  timezone: 'Europe/Berlin',
+  max_call_duration_ms: 600_000,
+  end_call_after_silence_ms: 90_000,
+  // Automatic deletion as a safety net; the backend deletes each call sooner.
+  data_storage_retention_days: 1,
+  webhook_events: [...WEBHOOK_EVENTS],
+};
+
+const OUTBOUND_AGENT: AgentSettings = {
+  ...SHARED_AGENT,
+  agent_name: 'Yaver — places calls',
+  language: 'de-DE',
+  voicemail_option: { action: { type: 'hangup' } },
+};
+
+const INBOUND_AGENT: AgentSettings = {
+  ...SHARED_AGENT,
+  agent_name: 'Yaver — answers calls',
+  // Callers may speak any of the three; the agent follows the caller.
+  language: ['de-DE', 'tr-TR', 'en-US'],
+};
+
+function pickVoice(voices: Retell.VoiceListResponse, wanted: string | undefined): Retell.VoiceResponse {
+  if (wanted) {
+    const chosen = voices.find((voice) => voice.voice_id === wanted);
+    if (chosen) return chosen;
+    say(`  ! The voice "${wanted}" (RETELL_VOICE_ID) is not in this account; choosing another.`);
+  }
+  // Retell does not say which language a voice speaks. ElevenLabs and OpenAI
+  // voices are multilingual, so they are the safe choice for German and Turkish.
+  const preferred =
+    voices.find((voice) => voice.provider === 'elevenlabs') ??
+    voices.find((voice) => voice.provider === 'openai') ??
+    voices[0];
+  if (!preferred) throw new Error('This Retell account has no voices to choose from.');
+  return preferred;
+}
+
+async function upsertAgent(
+  client: Retell,
+  existingId: string | undefined,
+  llm: Retell.LlmCreateParams,
+  settings: AgentSettings,
+  voiceId: string,
+): Promise<{ agentId: string; created: boolean }> {
+  if (existingId) {
+    try {
+      const agent = await client.agent.retrieve(existingId);
+      const engine = agent.response_engine;
+      if (engine.type === 'retell-llm') {
+        await client.llm.update(engine.llm_id, llm);
+        await client.agent.update(existingId, { ...settings, voice_id: voiceId });
+        return { agentId: existingId, created: false };
+      }
+      say(`  ! Agent ${existingId} is not a single-prompt agent; creating a new one.`);
+    } catch (error) {
+      if (!(error instanceof Retell.NotFoundError)) throw error;
+      say(`  ! Agent ${existingId} no longer exists; creating a new one.`);
+    }
+  }
+  const created = await client.llm.create(llm);
+  const agent = await client.agent.create({
+    ...settings,
+    voice_id: voiceId,
+    response_engine: { type: 'retell-llm', llm_id: created.llm_id },
+  });
+  return { agentId: agent.agent_id, created: true };
+}
+
+async function main(): Promise<void> {
+  const apiKey = process.env.RETELL_API_KEY?.trim();
+  if (!apiKey) {
+    say('No RETELL_API_KEY found.');
+    say('1. Create an account at https://dashboard.retellai.com');
+    say('2. Copy an API key from Settings → API Keys');
+    say('3. Put it in backend/.env as  RETELL_API_KEY=key_...   and run this again.');
+    process.exitCode = 1;
+    return;
+  }
+  const client = new Retell({ apiKey });
+
+  say('Checking the key and listing voices…');
+  const voices = await client.voice.list();
+  const voice = pickVoice(voices, process.env.RETELL_VOICE_ID?.trim());
+  say(`  Voice: ${voice.voice_name} (${voice.provider}, id ${voice.voice_id})`);
+  if (voice.preview_audio_url) say(`  Listen: ${voice.preview_audio_url}`);
+
+  say('Setting up the agent that places calls…');
+  const outbound = await upsertAgent(
+    client,
+    process.env.RETELL_AGENT_ID?.trim(),
+    OUTBOUND_LLM,
+    OUTBOUND_AGENT,
+    voice.voice_id,
+  );
+  say(`  ${outbound.created ? 'Created' : 'Updated'} ${outbound.agentId}`);
+
+  say('Setting up the agent that answers calls…');
+  const inbound = await upsertAgent(
+    client,
+    process.env.RETELL_INBOUND_AGENT_ID?.trim(),
+    INBOUND_LLM,
+    INBOUND_AGENT,
+    voice.voice_id,
+  );
+  say(`  ${inbound.created ? 'Created' : 'Updated'} ${inbound.agentId}`);
+
+  const numbers = (await client.phoneNumber.list()).items;
+  const configured = process.env.RETELL_FROM_NUMBER?.trim();
+  const fromNumber =
+    configured || (numbers.length === 1 ? numbers[0]?.phone_number : undefined);
+
+  saveToEnv({
+    RETELL_AGENT_ID: outbound.agentId,
+    RETELL_INBOUND_AGENT_ID: inbound.agentId,
+    ...(fromNumber ? { RETELL_FROM_NUMBER: fromNumber, CALL_PROVIDER: 'retell' } : {}),
+  });
+
+  say();
+  say('Saved to backend/.env.');
+  if (fromNumber) {
+    say(`Calls will be placed from ${fromNumber}. Restart the server (npm start) to use it.`);
+  } else if (numbers.length > 1) {
+    say('This account has several phone numbers. Put the one to call from in backend/.env:');
+    for (const number of numbers) say(`  RETELL_FROM_NUMBER=${number.phone_number}`);
+    say('then set CALL_PROVIDER=retell and restart the server.');
+  } else {
+    say('One thing is still missing: a phone number.');
+    say('Real calls need a number in your Retell account — see docs/real-calls.md,');
+    say('section "A phone number". When you have one, run this script again.');
+  }
+}
+
+main().catch((error) => {
+  say();
+  say(`Setup failed: ${describeError(error)}`);
+  if (error instanceof Retell.AuthenticationError) {
+    say('The API key was not accepted. Check RETELL_API_KEY in backend/.env.');
+  }
+  process.exitCode = 1;
+});

@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { askForJson, type ClaudeSettings } from './claude.js';
 import type { CallOutcome, Language, SecretaryTask, TaskKind, TaskStatus } from './types.js';
 import { LANGUAGE_NAMES } from './prompt.js';
 
@@ -66,7 +66,7 @@ const DOCUMENT_SCHEMA = {
   },
   required: ['summary', 'result', 'todo', 'todoWhen'],
   additionalProperties: false,
-} as const;
+};
 
 interface DocumentReply {
   summary: string;
@@ -81,61 +81,44 @@ interface DocumentReply {
  * stuck in `queued`.
  */
 export async function processDocumentTask(
-  apiKey: string,
+  settings: ClaudeSettings,
   task: SecretaryTask,
 ): Promise<DocumentResult | null> {
   const instruction = INSTRUCTIONS[task.kind];
   if (!instruction) return null;
 
-  const client = new Anthropic({ apiKey });
-  try {
-    const response = await client.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 2000,
-      system:
-        'You are a personal secretary for someone living in a country whose language they do not speak well. You read their official post, draft their replies and fill in their forms. Be factual and concrete; never invent personal data (dates of birth, insurance or reference numbers, addresses) that you were not given — mark anything missing so the user can fill it in.',
-      output_config: { format: { type: 'json_schema', schema: DOCUMENT_SCHEMA } },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            `The user asked: ${task.goal}`,
-            task.documentText
-              ? `\nThe document they provided:\n${task.documentText}`
-              : '\nThey did not attach a document, so work from the request alone.',
-            '',
-            instruction,
-            '',
-            `Write "summary" in ${LANGUAGE_NAMES[task.summaryLanguage]} — this is what the user reads.`,
-            `Anything addressed to the other side ("result") goes in ${LANGUAGE_NAMES[task.language]}.`,
-            'Write "todoWhen" as a short human date or time, or null.',
-          ].join('\n'),
-        },
-      ],
-    });
+  const answer = await askForJson(settings, {
+    purpose: `${task.kind} task`,
+    effort: 'medium',
+    schema: DOCUMENT_SCHEMA,
+    system:
+      'You are a personal secretary for someone living in a country whose language they do not speak well. You read their official post, draft their replies and fill in their forms. Be factual and concrete; never invent personal data (dates of birth, insurance or reference numbers, addresses) that you were not given — mark anything missing so the user can fill it in.',
+    prompt: [
+      `The user asked: ${task.goal}`,
+      task.documentText
+        ? `\nThe document they provided:\n<document>\n${task.documentText}\n</document>`
+        : '\nThey did not attach a document, so work from the request alone.',
+      '',
+      instruction,
+      '',
+      `Write "summary" in ${LANGUAGE_NAMES[task.summaryLanguage]} — this is what the user reads.`,
+      `Anything addressed to the other side ("result") goes in ${LANGUAGE_NAMES[task.language]}.`,
+      `Write "todo" in ${LANGUAGE_NAMES[task.summaryLanguage]}, and "todoWhen" as a short human date or time, or null.`,
+    ].join('\n'),
+  });
 
-    if (response.stop_reason === 'refusal') return null;
-    const text = response.content.find((b) => b.type === 'text')?.text;
-    if (!text) return null;
-    const parsed = JSON.parse(text) as DocumentReply;
-    if (typeof parsed.summary !== 'string' || !parsed.summary.trim()) return null;
+  if (!answer || typeof answer !== 'object') return null;
+  const parsed = answer as Partial<DocumentReply>;
+  if (typeof parsed.summary !== 'string' || !parsed.summary.trim()) return null;
 
-    return {
-      status: RESULTING_STATUS[task.kind] ?? 'completed',
-      summary: parsed.summary,
-      result: parsed.result ?? null,
-      todo: parsed.todo ?? null,
-      todoWhen: parsed.todoWhen ?? null,
-      outcome: task.kind === 'letter' ? 'achieved' : null,
-    };
-  } catch (error) {
-    if (error instanceof Anthropic.APIError) {
-      console.error(`Claude document task failed (${error.status}): ${error.message}`);
-    } else {
-      console.error('Claude document task failed:', error);
-    }
-    return null;
-  }
+  return {
+    status: RESULTING_STATUS[task.kind] ?? 'completed',
+    summary: parsed.summary,
+    result: typeof parsed.result === 'string' ? parsed.result : null,
+    todo: typeof parsed.todo === 'string' ? parsed.todo : null,
+    todoWhen: typeof parsed.todoWhen === 'string' ? parsed.todoWhen : null,
+    outcome: task.kind === 'letter' ? 'achieved' : null,
+  };
 }
 
 /**

@@ -1,26 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp, type App } from '../src/app.js';
-import type { Config } from '../src/config.js';
-
-const testConfig: Config = {
-  port: 0,
-  host: '127.0.0.1',
-  dbPath: ':memory:',
-  provider: 'mock',
-  webhookSecret: 'testsecret',
-  allowedCountryPrefixes: ['+49', '+90', '+44', '+1'],
-  retell: null,
-  anthropicApiKey: null,
-};
-
-const DEVICE = { 'x-device-id': 'device-abc' };
+import { DEVICE, pause, testConfig, until } from './helpers.js';
 
 let app: App | null = null;
 
-function makeApp(): App {
-  app = buildApp(testConfig, {
-    mockDelays: { dialingMs: 10, inProgressMs: 20, completedMs: 40 },
-  });
+function makeApp(env: NodeJS.ProcessEnv = {}): App {
+  app = buildApp(testConfig(env));
   return app;
 }
 
@@ -39,102 +24,172 @@ const validBody = {
   userName: 'Ali',
 };
 
-describe('POST /api/calls', () => {
-  it('creates a call task and starts the mock call', async () => {
+async function startCall(built: App, body: Record<string, unknown> = validBody) {
+  return built.fastify.inject({ method: 'POST', url: '/api/calls', headers: DEVICE, payload: body });
+}
+
+describe('GET /health', () => {
+  it('says what kind of server this is without needing a key', async () => {
     const { fastify } = makeApp();
-    const res = await fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
-      headers: DEVICE,
-      payload: validBody,
+    const health = (await fastify.inject({ method: 'GET', url: '/health' })).json();
+    expect(health).toMatchObject({
+      ok: true,
+      service: 'yaver',
+      version: 2,
+      provider: 'mock',
+      simulated: true,
+      auth: 'none',
+      reports: 'basic',
     });
+  });
+
+  it('serves a page a phone browser can open to prove it reaches the server', async () => {
+    const { fastify } = makeApp();
+    const landing = await fastify.inject({ method: 'GET', url: '/' });
+    expect(landing.statusCode).toBe(200);
+    expect(landing.headers['content-type']).toContain('text/html');
+    const pair = await fastify.inject({ method: 'GET', url: '/pair' });
+    expect(pair.body).toContain('yaver://pair');
+  });
+});
+
+describe('POST /api/calls', () => {
+  it('creates a call task and starts the simulated call', async () => {
+    const built = makeApp();
+    const res = await startCall(built);
     expect(res.statusCode).toBe(201);
     const task = res.json();
     expect(task.status).toBe('queued');
     expect(task.providerCallId).toMatch(/^mock_/);
     expect(task.language).toBe('de');
     expect(task.summaryLanguage).toBe('tr');
+    expect(task.direction).toBe('outbound');
+    expect(task.simulated).toBe(true);
+    expect(task.lines).toEqual([]);
   });
 
-  it('runs the full mock lifecycle to completed with a report', async () => {
-    const { fastify } = makeApp();
-    const res = await fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
-      headers: DEVICE,
-      payload: validBody,
-    });
-    const { id } = res.json();
+  it('feeds the conversation in line by line while the call is going on', async () => {
+    const built = makeApp();
+    const { id } = (await startCall(built)).json();
 
-    await new Promise((r) => setTimeout(r, 150));
-
-    const detail = await fastify.inject({
-      method: 'GET',
-      url: `/api/calls/${id}`,
-      headers: DEVICE,
+    const early = await until(() => {
+      const task = built.store.get(id);
+      return task && task.lines.length >= 1 && task.lines.length < 7 ? task : null;
     });
-    const task = detail.json();
-    expect(task.status).toBe('completed');
+    expect(early.status).toBe('in_progress');
+    expect(early.transcript).toBeTruthy();
+
+    const done = await until(() => {
+      const task = built.store.get(id);
+      return task?.status === 'completed' ? task : null;
+    });
+    expect(done.lines.length).toBeGreaterThan(early.lines.length);
+    // The disclosure is the first thing the AI says.
+    const firstByAssistant = done.lines.find((line) => line.role === 'assistant');
+    expect(firstByAssistant?.text).toContain('KI-Assistent');
+    expect(firstByAssistant?.text).toContain('Ali');
+  });
+
+  it('ends a simulated call with a report in the reader’s language', async () => {
+    const built = makeApp();
+    const { id } = (await startCall(built)).json();
+    const task = await until(() => {
+      const current = built.store.get(id);
+      return current?.status === 'completed' && current.summary ? current : null;
+    });
     expect(task.transcript).toContain('KI-Assistent');
-    // No Anthropic key in tests -> Turkish fallback summary
-    expect(task.summary).toContain('Arama tamamlandı');
+    expect(task.summary).toContain('Simüle arama');
+    expect(task.summarySource).toBe('script');
+    expect(task.outcome).toBe('achieved');
+    expect(task.todo).toBeTruthy();
+    expect(task.durationSeconds).toBeGreaterThanOrEqual(0);
+    expect(task.durationSeconds).toBeLessThan(60);
   });
 
   it('rejects a request without a device id', async () => {
     const { fastify } = makeApp();
-    const res = await fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
-      payload: validBody,
-    });
+    const res = await fastify.inject({ method: 'POST', url: '/api/calls', payload: validBody });
     expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe('device_required');
   });
 
   it('rejects an invalid phone number', async () => {
-    const { fastify } = makeApp();
-    const res = await fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
-      headers: DEVICE,
-      payload: { ...validBody, phoneNumber: '030 1234' },
-    });
+    const built = makeApp();
+    const res = await startCall(built, { ...validBody, phoneNumber: '030 1234' });
     expect(res.statusCode).toBe(400);
   });
 
   it('rejects destinations outside the allowlist', async () => {
-    const { fastify } = makeApp();
-    const res = await fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
-      headers: DEVICE,
-      payload: { ...validBody, phoneNumber: '+33123456789' },
-    });
+    const built = makeApp();
+    const res = await startCall(built, { ...validBody, phoneNumber: '+33123456789' });
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toContain('not allowed');
+    expect(res.json().code).toBe('destination_not_allowed');
+  });
+});
+
+describe('POST /api/tasks/:id/cancel', () => {
+  it('hangs up a call that is under way and keeps what was said', async () => {
+    const built = makeApp();
+    const { id } = (await startCall(built)).json();
+    await until(() => (built.store.get(id)?.lines.length ?? 0) >= 3);
+
+    const res = await built.fastify.inject({
+      method: 'POST',
+      url: `/api/tasks/${id}/cancel`,
+      headers: DEVICE,
+    });
+    expect(res.statusCode).toBe(200);
+    const cancelled = res.json();
+    expect(cancelled.errorCode).toBe('cancelled');
+    expect(['completed', 'failed']).toContain(cancelled.status);
+
+    const linesAtCancel = cancelled.lines.length;
+    await pause(120);
+    const later = built.store.get(id);
+    expect(later?.lines.length).toBe(linesAtCancel);
+    expect(later?.errorCode).toBe('cancelled');
+  });
+
+  it('fails a call that is hung up before anyone answered', async () => {
+    const built = makeApp({ MOCK_PACE: '5' });
+    const { id } = (await startCall(built)).json();
+    const res = await built.fastify.inject({
+      method: 'POST',
+      url: `/api/tasks/${id}/cancel`,
+      headers: DEVICE,
+    });
+    expect(res.json()).toMatchObject({ status: 'failed', errorCode: 'cancelled' });
+  });
+
+  it('does not let another device end the call', async () => {
+    const built = makeApp();
+    const { id } = (await startCall(built)).json();
+    const res = await built.fastify.inject({
+      method: 'POST',
+      url: `/api/tasks/${id}/cancel`,
+      headers: { 'x-device-id': 'other-device' },
+    });
+    expect(res.statusCode).toBe(404);
   });
 });
 
 describe('GET /api/calls', () => {
   it('lists only the calling device tasks', async () => {
-    const { fastify } = makeApp();
-    await fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
-      headers: DEVICE,
-      payload: validBody,
-    });
+    const built = makeApp();
+    await startCall(built);
 
-    const mine = await fastify.inject({ method: 'GET', url: '/api/calls', headers: DEVICE });
+    const mine = await built.fastify.inject({ method: 'GET', url: '/api/calls', headers: DEVICE });
     expect(mine.json()).toHaveLength(1);
 
-    const theirs = await fastify.inject({
+    const theirs = await built.fastify.inject({
       method: 'GET',
       url: '/api/calls',
       headers: { 'x-device-id': 'other-device' },
     });
     expect(theirs.json()).toHaveLength(0);
 
-    const detailForOther = await fastify.inject({
+    const detailForOther = await built.fastify.inject({
       method: 'GET',
       url: `/api/calls/${mine.json()[0].id}`,
       headers: { 'x-device-id': 'other-device' },
@@ -143,86 +198,117 @@ describe('GET /api/calls', () => {
   });
 });
 
-/** Provider that never emits lifecycle events, standing in for Retell. */
-function makeAppWithInertProvider(): App {
-  let n = 0;
-  app = buildApp(testConfig, {
-    provider: {
-      name: 'inert',
-      startCall: async () => ({ providerCallId: `retell_call_${++n}` }),
-    },
-  });
-  return app;
-}
-
-describe('POST /webhooks/retell/:token', () => {
-  it('rejects a bad token', async () => {
+describe('profile and session', () => {
+  it('keeps the owner’s name and language', async () => {
     const { fastify } = makeApp();
-    const res = await fastify.inject({
-      method: 'POST',
-      url: '/webhooks/retell/wrong',
-      payload: { event: 'call_started', call: { call_id: 'c1' } },
+    const saved = await fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: DEVICE,
+      payload: { name: '  Ali Yılmaz ', language: 'tr', answerCalls: true },
     });
-    expect(res.statusCode).toBe(401);
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json()).toMatchObject({ name: 'Ali Yılmaz', language: 'tr', answerCalls: true });
+
+    const session = (
+      await fastify.inject({ method: 'GET', url: '/api/session', headers: DEVICE })
+    ).json();
+    expect(session.profile.name).toBe('Ali Yılmaz');
+    expect(session.simulated).toBe(true);
+    expect(session.canAnswerCalls).toBe(true);
+    expect(session.allowedCountryPrefixes).toContain('+49');
+    expect(Array.isArray(session.addresses)).toBe(true);
   });
 
-  it('applies call_ended transcript to the matching task', async () => {
-    const built = makeAppWithInertProvider();
-    const res = await built.fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
+  it('changes only the fields it is given', async () => {
+    const { fastify } = makeApp();
+    await fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
       headers: DEVICE,
-      payload: validBody,
+      payload: { name: 'Ali', language: 'tr' },
     });
-    const { id } = res.json();
-
-    const hook = await built.fastify.inject({
-      method: 'POST',
-      url: '/webhooks/retell/testsecret',
-      payload: {
-        event: 'call_ended',
-        call: {
-          call_id: 'retell_call_1',
-          transcript: 'Agent: Hallo. Praxis: Termin am Dienstag 10:30.',
-          metadata: { task_id: id },
-        },
-      },
+    const next = await fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: DEVICE,
+      payload: { answerNote: 'I am at work until six.' },
     });
-    expect(hook.statusCode).toBe(200);
-
-    // finalizeCall runs async; give it a tick.
-    await new Promise((r) => setTimeout(r, 20));
-    const task = built.store.get(id);
-    expect(task?.status).toBe('completed');
-    expect(task?.transcript).toContain('Dienstag 10:30');
-    expect(task?.summary).toBeTruthy();
+    expect(next.json()).toMatchObject({
+      name: 'Ali',
+      language: 'tr',
+      answerNote: 'I am at work until six.',
+    });
   });
+});
 
-  it('marks dial failures as failed', async () => {
-    const built = makeAppWithInertProvider();
-    const res = await built.fastify.inject({
-      method: 'POST',
-      url: '/api/calls',
-      headers: DEVICE,
-      payload: validBody,
-    });
-    const { id } = res.json();
-
+describe('POST /api/dev/incoming', () => {
+  it('plays a call the secretary answers and writes down who rang and why', async () => {
+    const built = makeApp();
     await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: DEVICE,
+      payload: { name: 'Ali', language: 'tr' },
+    });
+    const res = await built.fastify.inject({
       method: 'POST',
-      url: '/webhooks/retell/testsecret',
-      payload: {
-        event: 'call_ended',
-        call: {
-          call_id: 'retell_call_2',
-          disconnection_reason: 'dial_no_answer',
-          metadata: { task_id: id },
-        },
-      },
+      url: '/api/dev/incoming',
+      headers: DEVICE,
+      payload: { language: 'de' },
+    });
+    expect(res.statusCode).toBe(201);
+    const created = res.json();
+    expect(created).toMatchObject({
+      direction: 'inbound',
+      status: 'in_progress',
+      simulated: true,
+      language: 'de',
+      summaryLanguage: 'tr',
     });
 
-    const task = built.store.get(id);
-    expect(task?.status).toBe('failed');
-    expect(task?.outcome).toBe('no_answer');
+    const task = await until(() => {
+      const current = built.store.get(created.id);
+      return current?.status === 'completed' ? current : null;
+    });
+    // The AI answers and says at once that it is an AI answering for Ali.
+    expect(task.lines[0]).toMatchObject({ role: 'assistant' });
+    expect(task.lines[0]?.text).toContain('KI-Assistent von Ali');
+    expect(task.lines.some((line) => line.role === 'other')).toBe(true);
+    expect(task.transcript).toContain('Anrufer:');
+    // The subject and the report are written in the owner's language.
+    expect(task.goal).toContain('Dr. Weber');
+    expect(task.summary).toContain('Simüle arama');
+    expect(task.todo).toContain('030 1234567');
+  });
+
+  it('lists the answered call with the device’s other tasks', async () => {
+    const built = makeApp();
+    await built.fastify.inject({ method: 'POST', url: '/api/dev/incoming', headers: DEVICE });
+    const list = (
+      await built.fastify.inject({ method: 'GET', url: '/api/tasks', headers: DEVICE })
+    ).json();
+    expect(list).toHaveLength(1);
+    expect(list[0].direction).toBe('inbound');
+  });
+});
+
+describe('after a restart', () => {
+  it('closes a simulated call that lost its script', async () => {
+    const { mkdtempSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const dir = mkdtempSync(join(tmpdir(), 'yaver-test-'));
+    try {
+      const first = buildApp(testConfig({ DB_PATH: join(dir, 'a.db'), MOCK_PACE: '5' }));
+      const { id } = (await startCall(first)).json();
+      await first.fastify.close();
+
+      const second = makeApp({ DB_PATH: join(dir, 'a.db') });
+      const task = second.store.get(id);
+      expect(task).toMatchObject({ status: 'failed', errorCode: 'technical' });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

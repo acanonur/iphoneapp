@@ -1,27 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp, type App } from '../src/app.js';
-import type { Config } from '../src/config.js';
-
-const testConfig: Config = {
-  port: 0,
-  host: '127.0.0.1',
-  dbPath: ':memory:',
-  provider: 'mock',
-  webhookSecret: 'testsecret',
-  allowedCountryPrefixes: ['+49', '+90', '+44', '+1'],
-  retell: null,
-  anthropicApiKey: null,
-};
-
-const DEVICE = { 'x-device-id': 'device-abc' };
+import { DEVICE, testConfig, until } from './helpers.js';
 
 let app: App | null = null;
 
 function makeApp(): App {
-  app = buildApp(testConfig, {
-    mockDelays: { dialingMs: 10, inProgressMs: 20, completedMs: 40 },
-    documentDelayMs: 10,
-  });
+  app = buildApp(testConfig(), { documentDelayMs: 10 });
   return app;
 }
 
@@ -132,8 +116,10 @@ describe('POST /api/tasks — calls', () => {
     expect(res.statusCode).toBe(201);
     expect(res.json().providerCallId).toMatch(/^mock_/);
 
-    await new Promise((r) => setTimeout(r, 150));
-    const task = app!.store.get(res.json().id);
+    const task = await until(() => {
+      const current = app!.store.get(res.json().id);
+      return current?.status === 'completed' ? current : null;
+    });
     expect(task?.status).toBe('completed');
     expect(task?.transcript).toContain('KI-Assistent');
     // The report shows how long the call ran.

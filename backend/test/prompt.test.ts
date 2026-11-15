@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { buildAgentVariables, disclosureLine } from '../src/prompt.js';
+import { newTask } from '../src/tasks.js';
 import type { SecretaryTask } from '../src/types.js';
 
-const baseTask: SecretaryTask = {
+const baseTask: SecretaryTask = newTask({
   id: 't1',
   deviceId: 'd1',
   kind: 'call',
@@ -11,20 +12,7 @@ const baseTask: SecretaryTask = {
   language: 'de',
   summaryLanguage: 'en',
   userName: 'Ali',
-  status: 'queued',
-  providerCallId: null,
-  documentText: null,
-  transcript: null,
-  summary: null,
-  result: null,
-  todo: null,
-  todoWhen: null,
-  outcome: null,
-  durationSeconds: null,
-  error: null,
-  createdAt: new Date(0).toISOString(),
-  updatedAt: new Date(0).toISOString(),
-};
+});
 
 describe('disclosureLine', () => {
   it('identifies as AI in German and includes the user name', () => {
@@ -35,7 +23,7 @@ describe('disclosureLine', () => {
 
   it('identifies as AI in Turkish', () => {
     const line = disclosureLine('tr', 'Ali');
-    expect(line).toContain('yapay zeka');
+    expect(line).toContain('yapay zekâ');
     expect(line).toContain('Ali');
   });
 
