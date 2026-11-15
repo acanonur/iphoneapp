@@ -32,13 +32,15 @@ struct FooterBar<Content: View>: View {
     }
 }
 
-/// The wordmark in the header bar.
+/// A screen's title in the header bar.
 struct Wordmark: View {
-    var title = "Secretary"
+    let title: String
 
     var body: some View {
         Text(title)
             .typeStyle(.brand)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
     }
 }
 
@@ -69,20 +71,55 @@ struct BackButton: View {
 
 /// One turn of a transcript: an uppercase speaker column beside the line, ruled
 /// off from the next. The AI side is set in the accent.
+///
+/// When the line was spoken in a language the user does not read, its
+/// translation is set underneath, heavier than the original: the original is
+/// the record, the translation is what the user actually reads.
 struct TranscriptRow: View {
     let line: TranscriptLine
+    /// Who is speaking, already in the interface language.
+    let speaker: String
+    var translation: String?
+    /// True while a translation is on its way for this line.
+    var isTranslating = false
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 10) {
-                Text(line.speaker.uppercased())
+                Text(speaker.displayUppercased)
                     .typeStyle(.kickerRailLabel)
                     .foregroundStyle(line.isAI ? Modernist.Accent.s700 : Modernist.Neutral.s700)
                     .padding(.top, 3)
                     .frame(width: 84, alignment: .leading)
-                Text(line.text)
-                    .typeStyle(.transcript)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(line.text)
+                        .typeStyle(.transcript)
+                        .foregroundStyle(
+                            translation == nil ? Modernist.text : Modernist.Neutral.s700
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if let translation {
+                        Text(translation)
+                            .typeStyle(.transcriptTranslation)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 10)
+                            .overlay(alignment: .leading) {
+                                Rectangle().fill(Modernist.accent).frame(width: 2)
+                            }
+                            .accessibilityLabel(translation)
+                    } else if isTranslating {
+                        Text("…")
+                            .typeStyle(.transcriptTranslation)
+                            .foregroundStyle(Modernist.Neutral.s600)
+                            .padding(.leading, 10)
+                            .overlay(alignment: .leading) {
+                                Rectangle().fill(Modernist.Neutral.s400).frame(width: 2)
+                            }
+                            .accessibilityHidden(true)
+                    }
+                }
             }
             .padding(.vertical, 10)
             Hairline()
@@ -106,6 +143,45 @@ struct SectionHeading: View {
                     .foregroundStyle(Modernist.Neutral.s700)
                     .multilineTextAlignment(.trailing)
             }
+        }
+    }
+}
+
+/// A short notice set in a ruled box: something the user should know about what
+/// they are looking at — that a call was simulated, that the server is away.
+struct Notice: View {
+    let title: String
+    var message: String?
+    var tone: Tone = .neutral
+
+    enum Tone {
+        case neutral, accent
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Rectangle()
+                .fill(tone == .accent ? Modernist.accent : Modernist.text)
+                .frame(width: 10, height: 10)
+                .padding(.top, 4)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .typeStyle(TypeStyle(size: 14, weight: .extrabold, lineHeight: 1.3))
+                if let message {
+                    Text(message)
+                        .typeStyle(.smallTight)
+                        .foregroundStyle(Modernist.Neutral.s800)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(12)
+        .background(tone == .accent ? Modernist.Accent.s100 : Modernist.surface)
+        .overlay {
+            Rectangle().strokeBorder(
+                tone == .accent ? Modernist.accent : Modernist.divider,
+                lineWidth: Modernist.hairlineWidth
+            )
         }
     }
 }

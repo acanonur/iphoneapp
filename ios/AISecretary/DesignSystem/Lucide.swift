@@ -167,4 +167,37 @@ extension Lucide {
     ])
 
     static let stop = Lucide(elements: [.rect(x: 4, y: 4, w: 16, h: 16)], filled: true)
+
+    /// Settings: three sliders.
+    static let sliders = Lucide(elements: [
+        .line(x1: 21, y1: 4, x2: 14, y2: 4), .line(x1: 10, y1: 4, x2: 3, y2: 4),
+        .line(x1: 21, y1: 12, x2: 12, y2: 12), .line(x1: 8, y1: 12, x2: 3, y2: 12),
+        .line(x1: 21, y1: 20, x2: 16, y2: 20), .line(x1: 12, y1: 20, x2: 3, y2: 20),
+        .line(x1: 14, y1: 2, x2: 14, y2: 6), .line(x1: 8, y1: 10, x2: 8, y2: 14),
+        .line(x1: 16, y1: 18, x2: 16, y2: 22),
+    ])
+
+    /// A call coming in: the handset with an arrow pointing at it.
+    static let phoneIncoming = Lucide(
+        elements: phone.elements + [.path("M16 2v6h6"), .path("m22 2-6 6")]
+    )
+
+    static let wifi = Lucide(elements: [
+        .path("M12 20h.01"),
+        .path("M2 8.82a15 15 0 0 1 20 0"),
+        .path("M5 12.859a10 10 0 0 1 14 0"),
+        .path("M8.5 16.429a5 5 0 0 1 7 0"),
+    ])
+
+    static let search = Lucide(elements: [
+        .circle(cx: 11, cy: 11, r: 8),
+        .path("m21 21-4.3-4.3"),
+    ])
+
+    static let refresh = Lucide(elements: [
+        .path("M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"),
+        .path("M21 3v5h-5"),
+        .path("M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"),
+        .path("M8 16H3v5"),
+    ])
 }

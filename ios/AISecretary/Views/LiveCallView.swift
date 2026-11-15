@@ -1,16 +1,23 @@
 import SwiftUI
 
 /// The call as it happens: how far along it is, what it was asked to do, and
-/// the transcript filling in line by line. The product's key moment, so the
-/// rail, the brief and the transcript all sit on the same grid.
+/// the conversation filling in line by line — each line with its translation.
+/// The product's key moment, so the rail, the brief and the transcript all sit
+/// on the same grid.
 struct LiveCallView: View {
     @Environment(SecretaryViewModel.self) private var model
 
     let taskID: String
+    let readerLanguage: Language
     var goHome: () -> Void
     var openReport: () -> Void
 
-    private let railLabels = ["Queued", "Dialing", "On the call", "Report"]
+    @State private var confirmingHangUp = false
+    @State private var isHangingUp = false
+
+    private var railLabels: [String] {
+        [L("Queued"), L("Dialing"), L("On the call"), L("Report")]
+    }
 
     private var task: SecretaryTask? { model.task(withID: taskID) }
 
@@ -18,37 +25,68 @@ struct LiveCallView: View {
         VStack(spacing: 0) {
             HeaderBar {
                 HStack {
-                    BackButton(title: "Home", action: goHome)
+                    BackButton(title: L("Home"), action: goHome)
                     Spacer()
                     elapsedClock
                 }
             }
 
-            ScrollView {
-                if let task {
-                    VStack(alignment: .leading, spacing: 0) {
-                        statusBlock(task)
-                        briefBlock(task)
-                        transcriptBlock(task)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    if let task {
+                        VStack(alignment: .leading, spacing: 0) {
+                            statusBlock(task)
+                            if task.simulated {
+                                Notice(
+                                    title: L("Simulated call"),
+                                    message: L("No real phone call is being made. This shows what a call looks like; real calls need a phone service on your server.")
+                                )
+                                .padding(.top, 14)
+                            }
+                            briefBlock(task)
+                            transcriptBlock(task)
+                            Color.clear.frame(height: 1).id("end")
+                        }
+                        .padding(.horizontal, Modernist.gutter)
                     }
-                    .padding(.horizontal, Modernist.gutter)
+                }
+                // Keep the newest line in view while the call is live.
+                .onChange(of: task?.lines.count ?? 0) {
+                    withAnimation { proxy.scrollTo("end", anchor: .bottom) }
                 }
             }
 
             if let task {
                 FooterBar {
                     if task.status.isActive {
-                        Button(action: goHome) {
-                            ButtonLabel(title: "Continue in the background", icon: .chevronRight)
-                        }
-                        .buttonStyle(
-                            ModernistButtonStyle(
-                                variant: .secondary, block: true, height: 56, fontSize: 15
+                        HStack(spacing: Modernist.Space.s2) {
+                            Button {
+                                confirmingHangUp = true
+                            } label: {
+                                ButtonLabel(title: L("Hang up"), icon: .close, iconSize: 16)
+                            }
+                            .buttonStyle(
+                                ModernistButtonStyle(
+                                    variant: .secondary, height: 56, fontSize: 15,
+                                    foreground: Modernist.Accent.s700
+                                )
                             )
-                        )
+                            .disabled(isHangingUp)
+
+                            Button(action: goHome) {
+                                ButtonLabel(title: L("Continue in the background"), icon: .chevronRight)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
+                            }
+                            .buttonStyle(
+                                ModernistButtonStyle(
+                                    variant: .secondary, block: true, height: 56, fontSize: 15
+                                )
+                            )
+                        }
                     } else {
                         Button(action: openReport) {
-                            ButtonLabel(title: "Open the report", icon: .arrowRight)
+                            ButtonLabel(title: L("Open the report"), icon: .arrowRight)
                         }
                         .buttonStyle(
                             ModernistButtonStyle(
@@ -58,6 +96,23 @@ struct LiveCallView: View {
                     }
                 }
             }
+        }
+        .confirmationDialog(
+            L("End this call now?"),
+            isPresented: $confirmingHangUp,
+            titleVisibility: .visible
+        ) {
+            Button(L("Hang up"), role: .destructive) { hangUp() }
+            Button(L("Keep the call going"), role: .cancel) {}
+        }
+    }
+
+    private func hangUp() {
+        guard let task, !isHangingUp else { return }
+        isHangingUp = true
+        Task {
+            await model.endCall(task)
+            isHangingUp = false
         }
     }
 
@@ -79,20 +134,26 @@ struct LiveCallView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 Kicker(
-                    text: "Phone call · \(task.phoneNumber ?? "—") · \(task.language.displayName)",
+                    text: "\(task.kindLabel) · \(task.phoneNumber ?? "—")",
                     tabularNumbers: true
                 )
                 .padding(.bottom, 12)
 
                 HStack(spacing: 14) {
-                    Text(task.status.label)
+                    Text(statusWord(task))
                         .typeStyle(.displayTight)
                         .opticalHang(-0.058, size: 40)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.7)
                     if task.status.isActive { PulsingDot(size: 14) }
                 }
 
-                rail(task)
-                    .padding(.top, 22)
+                // A call that was answered for the user starts connected: there
+                // is no queue and no dialling to show.
+                if !task.isInbound {
+                    rail(task)
+                        .padding(.top, 22)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 22)
@@ -101,22 +162,28 @@ struct LiveCallView: View {
         }
     }
 
+    private func statusWord(_ task: SecretaryTask) -> String {
+        if task.status == .failed || task.status == .completed { return task.verdict }
+        if task.isInbound { return L("Answering…") }
+        return task.status.label
+    }
+
     /// Four cells, filled up to where the call has got to.
     private func rail(_ task: SecretaryTask) -> some View {
         let reached = task.status.railIndex
         return HStack(spacing: 4) {
-            ForEach(Array(railLabels.enumerated()), id: \.element) { index, label in
+            ForEach(Array(railLabels.enumerated()), id: \.offset) { index, label in
                 VStack(alignment: .leading, spacing: 7) {
                     Rectangle()
                         .fill(index <= reached ? Modernist.accent : Modernist.Neutral.s300)
                         .frame(height: 4)
-                    Text(label.uppercased())
+                    Text(label.displayUppercased)
                         .typeStyle(.kickerRailLabel)
                         .foregroundStyle(
                             index <= reached ? Modernist.text : Modernist.Neutral.s700
                         )
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.7)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -125,44 +192,44 @@ struct LiveCallView: View {
 
     // MARK: - Brief
 
+    @ViewBuilder
     private func briefBlock(_ task: SecretaryTask) -> some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Kicker(text: "Brief")
-                Text(task.goal)
-                    .typeStyle(.bodyTight)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        if !task.isInbound {
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Kicker(text: L("Brief"))
+                        Spacer()
+                        Text(task.language.displayName)
+                            .typeStyle(.captionSmall)
+                            .foregroundStyle(Modernist.Neutral.s700)
+                    }
+                    Text(task.goal)
+                        .typeStyle(.bodyTight)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.vertical, 14)
+                Hairline()
             }
-            .padding(.vertical, 14)
-            Hairline()
         }
     }
 
     // MARK: - Transcript
 
     private func transcriptBlock(_ task: SecretaryTask) -> some View {
-        let lines = task.transcriptLines
-        return VStack(alignment: .leading, spacing: 0) {
-            SectionHeading(
-                title: "Live transcript",
-                note: "Written record only. No audio is stored."
+        VStack(alignment: .leading, spacing: 0) {
+            TranscriptSection(
+                task: task,
+                readerLanguage: readerLanguage,
+                title: L("Live transcript"),
+                emptyText: waitingText(task),
+                note: L("A written record only. The audio is not kept.")
             )
-
-            if lines.isEmpty {
-                Text(task.status == .dialing ? "Ringing…" : "Waiting for the line…")
-                    .typeStyle(.transcript)
-                    .foregroundStyle(Modernist.Neutral.s700)
-                    .padding(.top, 12)
-            } else {
-                ForEach(lines) { line in
-                    TranscriptRow(line: line)
-                }
-            }
 
             Text(
                 task.status.isActive
-                    ? "Your secretary is working on it — this updates automatically."
-                    : "The call has ended. The report is ready."
+                    ? L("Yaver is working on it — this updates by itself.")
+                    : L("The call has ended.")
             )
             .typeStyle(.caption)
             .foregroundStyle(Modernist.Neutral.s700)
@@ -170,5 +237,14 @@ struct LiveCallView: View {
         }
         .padding(.top, 14)
         .padding(.bottom, 20)
+    }
+
+    private func waitingText(_ task: SecretaryTask) -> String {
+        switch task.status {
+        case .queued: return L("Getting ready…")
+        case .dialing: return L("Ringing…")
+        case .inProgress: return L("Waiting for the first words…")
+        default: return L("Nothing was said on this call.")
+        }
     }
 }

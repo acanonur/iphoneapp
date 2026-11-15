@@ -1,0 +1,9 @@
+// Build settings shared by every machine.
+//
+// Anything that belongs to one person's Mac — above all the Apple developer
+// team used for signing — goes in Local.xcconfig next to this file. That file
+// is not checked in, and generate.sh writes it for you, so regenerating the
+// Xcode project never loses the signing team you picked in Xcode.
+CODE_SIGN_STYLE = Automatic
+
+#include? "Local.xcconfig"

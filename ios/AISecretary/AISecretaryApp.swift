@@ -2,12 +2,23 @@ import SwiftUI
 
 @main
 struct AISecretaryApp: App {
-    @State private var model = SecretaryViewModel()
+    @State private var model: SecretaryViewModel
+    @State private var translator: LiveTranslator
+    private let stage: Stage?
+
+    init() {
+        // Screenshots and previews run the real screens over ready-made data.
+        let stage = Stage.requested()
+        self.stage = stage
+        _model = State(initialValue: stage?.model ?? SecretaryViewModel())
+        _translator = State(initialValue: stage?.translator ?? LiveTranslator())
+    }
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(stage: stage)
                 .environment(model)
+                .environment(translator)
                 // Modernist is a single light ground — there is no dark palette
                 // in the system, so the app does not follow the system theme.
                 .preferredColorScheme(.light)
@@ -25,24 +36,37 @@ enum Route: Equatable {
     case call(String)
     case report(String)
     case translator
+    case settings
 }
 
 struct RootView: View {
     @Environment(SecretaryViewModel.self) private var model
+    @Environment(LiveTranslator.self) private var translator
+    @Environment(\.scenePhase) private var scenePhase
+
+    let stage: Stage?
 
     @AppStorage("aisecretary.onboarded") private var hasOnboarded = false
     @AppStorage("aisecretary.userName") private var userName = ""
-    @AppStorage("aisecretary.reportLanguage") private var reportLanguageRaw = Language.en.rawValue
-    @AppStorage("aisecretary.callLanguage") private var callLanguageRaw = Language.de.rawValue
+    // Reports start in the language the iPhone is in; calls in German, or in
+    // Turkish for someone whose own language is German.
+    @AppStorage("aisecretary.reportLanguage") private var reportLanguageRaw = L10n.language.rawValue
+    @AppStorage("aisecretary.callLanguage") private var callLanguageRaw =
+        (L10n.language == .de ? Language.tr : Language.de).rawValue
 
-    /// Read straight from defaults so a first launch opens on onboarding rather
-    /// than flashing the home screen for a frame first. Same key as `hasOnboarded`.
-    @State private var route: Route =
-        UserDefaults.standard.bool(forKey: "aisecretary.onboarded") ? .home : .onboarding
+    @State private var route: Route
+
+    init(stage: Stage?) {
+        self.stage = stage
+        // Read straight from defaults so a first launch opens on onboarding
+        // rather than flashing the home screen for a frame first.
+        let onboarded = UserDefaults.standard.bool(forKey: "aisecretary.onboarded")
+        _route = State(initialValue: stage?.route ?? (onboarded ? .home : .onboarding))
+    }
 
     private var reportLanguage: Binding<Language> {
         Binding(
-            get: { Language(rawValue: reportLanguageRaw) ?? .en },
+            get: { Language(rawValue: reportLanguageRaw) ?? L10n.language },
             set: { reportLanguageRaw = $0.rawValue }
         )
     }
@@ -62,7 +86,23 @@ struct RootView: View {
         .typeStyle(.body)
         .foregroundStyle(Modernist.text)
         .tint(Modernist.accent)
+        .hostsLiveTranslation(translator)
         .task { await model.refresh() }
+        // The server needs to know who it works for — to answer calls and
+        // write notes while the app is closed.
+        .task(id: ProfileKey(name: userName, language: reportLanguageRaw, connected: model.server.isConnected)) {
+            await model.syncProfile(name: userName, language: reportLanguage.wrappedValue)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await model.refresh() } }
+        }
+        // yaver://pair?url=…&key=… — the server's pairing page opens this.
+        .onOpenURL { link in
+            Task {
+                if await model.server.pair(with: link) { await model.refresh() }
+                if hasOnboarded { route = .settings }
+            }
+        }
     }
 
     @ViewBuilder
@@ -73,6 +113,7 @@ struct RootView: View {
                 userName: $userName,
                 reportLanguage: reportLanguage,
                 callLanguage: callLanguage,
+                startAt: stage?.onboardingStep ?? 0,
                 onFinish: {
                     hasOnboarded = true
                     route = .home
@@ -84,7 +125,7 @@ struct RootView: View {
                 openBrief: { route = .brief($0) },
                 openTask: { open($0) },
                 openTranslator: { route = .translator },
-                openProfile: { route = .onboarding }
+                openSettings: { route = .settings }
             )
 
         case let .brief(kind):
@@ -106,6 +147,7 @@ struct RootView: View {
         case let .call(id):
             LiveCallView(
                 taskID: id,
+                readerLanguage: reportLanguage.wrappedValue,
                 goHome: { route = .home },
                 openReport: { route = .report(id) }
             )
@@ -118,7 +160,16 @@ struct RootView: View {
             )
 
         case .translator:
-            TranslatorView(goBack: { route = .home })
+            TranslatorView(goBack: { route = .home }, stage: stage?.translatorStage)
+
+        case .settings:
+            SettingsView(
+                userName: $userName,
+                reportLanguage: reportLanguage,
+                callLanguage: callLanguage,
+                goBack: { route = .home },
+                openTask: { open($0) }
+            )
         }
     }
 
@@ -130,4 +181,11 @@ struct RootView: View {
             route = .report(task.id)
         }
     }
+}
+
+/// Changes when the profile the server should know about changes.
+private struct ProfileKey: Equatable {
+    let name: String
+    let language: String
+    let connected: Bool
 }

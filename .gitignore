@@ -16,6 +16,8 @@ ios-knitstudio/KnitStudio.xcodeproj/
 # from ios/project.yml — never committed.
 ios/AISecretary.xcodeproj/
 ios/AISecretary/Info.plist
+# Per-machine build settings (the signing team) — written by ios/generate.sh
+ios/Config/Local.xcconfig
 DerivedData/
 *.xcuserstate
 *.xcworkspace/xcuserdata/

@@ -1,0 +1,8 @@
+/* Texts iOS shows itself: the name under the icon and the permission prompts. */
+
+"CFBundleDisplayName" = "Yaver";
+"NSLocalNetworkUsageDescription" = "Yaver, bilgisayarınızdaki sunucusunu bulmak ve ona ulaşmak için yerel ağınızı kullanır.";
+"NSMicrophoneUsageDescription" = "Canlı çevirmen, söylenenleri yazıya dökmek ve çevirmek için mikrofonu kullanır.";
+"NSSpeechRecognitionUsageDescription" = "Konuşma tanıma, sizin ve karşınızdaki kişinin söylediklerini çevrilebilmesi için metne dönüştürür.";
+"NSCameraUsageDescription" = "Kamera, Yaver’in okuyabilmesi için bir mektubun veya formun fotoğrafını çeker. Yalnızca metin gönderilir; fotoğraf telefonunuzda kalır.";
+"NSPhotoLibraryUsageDescription" = "Yaver’in okuyabilmesi için bir mektubun veya formun fotoğrafını seçin. Yalnızca metin gönderilir; fotoğraf telefonunuzda kalır.";

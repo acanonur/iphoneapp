@@ -77,6 +77,7 @@ export function advertise(
     const txt = [
       `v=${details.version}`,
       `auth=${details.auth}`,
+      `port=${port}`,
       `addrs=${published}`,
       ...(local ? [`host=${local}`] : []),
     ];

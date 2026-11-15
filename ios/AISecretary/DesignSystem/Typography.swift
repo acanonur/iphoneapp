@@ -81,7 +81,7 @@ extension View {
 // MARK: - The styles the screens actually use
 
 extension TypeStyle {
-    /// The "Secretary" wordmark in the header bar.
+    /// Screen titles in the header bar.
     static let brand = TypeStyle(size: 18, weight: .extrabold, lineHeight: 1.2, tracking: -0.01)
 
     /// Uppercase section label — `Now`, `Tasks`, `Live transcript`.
@@ -119,6 +119,8 @@ extension TypeStyle {
     static let rowTitle = TypeStyle(size: 15, weight: .semibold, lineHeight: 1.35)
     /// Transcript lines.
     static let transcript = TypeStyle(size: 14, weight: .regular, lineHeight: 1.45)
+    /// A transcript line in the reader's own language, set under the original.
+    static let transcriptTranslation = TypeStyle(size: 15, weight: .semibold, lineHeight: 1.4)
     static let small = TypeStyle(size: 13, weight: .regular, lineHeight: 1.45)
     static let smallTight = TypeStyle(size: 13, weight: .regular, lineHeight: 1.4)
     static let caption = TypeStyle(size: 12, weight: .regular, lineHeight: 1.4)

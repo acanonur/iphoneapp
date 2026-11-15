@@ -1,20 +1,42 @@
 import SwiftUI
 
-/// Three steps before the first task: what the secretary does and the promises
-/// it keeps, the two languages, and the name it says on the user's behalf.
+/// Four steps before the first task: what the secretary does and the promises
+/// it keeps, the two languages, the name it says on the user's behalf, and the
+/// server it works through.
 struct OnboardingView: View {
     @Binding var userName: String
     @Binding var reportLanguage: Language
     @Binding var callLanguage: Language
     var onFinish: () -> Void
 
-    @State private var step = 0
+    @Environment(SecretaryViewModel.self) private var model
 
-    private let promises = [
-        "Introduces itself as an AI at the start of every call.",
-        "Keeps a written transcript. Audio is never stored.",
-        "Calls only when you ask. One request, one call.",
-    ]
+    @State private var step: Int
+    @State private var isSearching = false
+
+    private static let stepCount = 4
+
+    init(
+        userName: Binding<String>,
+        reportLanguage: Binding<Language>,
+        callLanguage: Binding<Language>,
+        startAt step: Int = 0,
+        onFinish: @escaping () -> Void
+    ) {
+        _userName = userName
+        _reportLanguage = reportLanguage
+        _callLanguage = callLanguage
+        _step = State(initialValue: step)
+        self.onFinish = onFinish
+    }
+
+    private var promises: [String] {
+        [
+            L("Says it is an AI at the start of every call."),
+            L("Keeps a written transcript. The audio is not kept."),
+            L("Calls only when you ask. One request, one call."),
+        ]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,10 +56,10 @@ struct OnboardingView: View {
     private var header: some View {
         VStack(spacing: 0) {
             HStack {
-                Wordmark()
+                BrandWordmark()
                 Spacer()
                 Kicker(
-                    text: "Step \(step + 1) of 3",
+                    text: Lf("Step %1$d of %2$d", step + 1, Self.stepCount),
                     color: Modernist.Neutral.s700,
                     tabularNumbers: true
                 )
@@ -50,7 +72,7 @@ struct OnboardingView: View {
     /// One cell per step, filled as the user moves through them.
     private var progressCells: some View {
         HStack(spacing: 4) {
-            ForEach(0 ..< 3, id: \.self) { index in
+            ForEach(0 ..< Self.stepCount, id: \.self) { index in
                 Rectangle()
                     .fill(index <= step ? Modernist.accent : Modernist.Neutral.s300)
                     .frame(height: 4)
@@ -64,7 +86,8 @@ struct OnboardingView: View {
         switch step {
         case 0: welcomeStep
         case 1: languagesStep
-        default: nameStep
+        case 2: nameStep
+        default: connectStep
         }
     }
 
@@ -73,18 +96,20 @@ struct OnboardingView: View {
     private var welcomeStep: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Phone calls, made for you.")
+                BrandMark(height: 56)
+                    .padding(.bottom, 28)
+                Text(L("Phone calls, made for you."))
                     .typeStyle(.display)
                     .opticalHang(-0.058, size: 40)
                     .padding(.bottom, 20)
                 Text(
-                    "Describe what you need and give a number. Your secretary calls in German, English or Turkish, handles the conversation and reports back in your language."
+                    L("Say what you need and give a number. Yaver calls in German, English or Turkish, shows you the conversation in your language as it happens, and reports back. It can answer your calls too.")
                 )
                 .typeStyle(.bodyLarge)
                 .foregroundStyle(Modernist.Neutral.s800)
                 .frame(maxWidth: 320, alignment: .leading)
             }
-            .padding(.top, 44)
+            .padding(.top, 32)
             .padding(.bottom, 26)
 
             VStack(spacing: 0) {
@@ -110,21 +135,21 @@ struct OnboardingView: View {
 
     private var languagesStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Your languages")
+            Text(L("Your languages"))
                 .typeStyle(.title)
                 .opticalHang(-0.05, size: 32)
                 .padding(.bottom, 10)
-            Text("Both can be changed for any single task.")
+            Text(L("Both can be changed for any single task."))
                 .typeStyle(.body)
                 .foregroundStyle(Modernist.Neutral.s700)
                 .padding(.bottom, 30)
 
-            Field(label: "Reports are written in") {
+            Field(label: L("Reports are written in")) {
                 languagePicker($reportLanguage)
             }
             .padding(.bottom, 26)
 
-            Field(label: "Calls are usually in") {
+            Field(label: L("Calls are usually in")) {
                 languagePicker($callLanguage)
             }
         }
@@ -146,18 +171,18 @@ struct OnboardingView: View {
 
     private var nameStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Your name")
+            Text(L("Your name"))
                 .typeStyle(.title)
                 .opticalHang(-0.05, size: 32)
                 .padding(.bottom, 10)
             Text(
-                "Said at the start of every call, so the other side knows who the secretary represents."
+                L("Said at the start of every call, so the other side knows who Yaver is calling for.")
             )
             .typeStyle(.body)
             .foregroundStyle(Modernist.Neutral.s700)
             .padding(.bottom, 26)
 
-            Field(label: "Name") {
+            Field(label: L("Name")) {
                 DSTextField(
                     placeholder: "",
                     text: $userName,
@@ -170,12 +195,12 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Rule()
                     .padding(.bottom, 14)
-                Kicker(text: "Required disclosure")
-                Text("“\(Disclosure.line(.en, name: userName))”")
+                Kicker(text: L("Required disclosure"))
+                Text("“\(Disclosure.line(callLanguage, name: userName))”")
                     .typeStyle(.quote)
                     .padding(.vertical, 10)
                 Text(
-                    "Spoken in the call language as the first sentence of every call. This cannot be turned off."
+                    L("Spoken in the call language as the first sentence of every call. This cannot be turned off.")
                 )
                 .typeStyle(.smallTight)
                 .foregroundStyle(Modernist.Neutral.s700)
@@ -183,6 +208,106 @@ struct OnboardingView: View {
             .padding(.top, 30)
         }
         .padding(.top, 40)
+    }
+
+    // MARK: - Step 4 — the server
+
+    /// The secretary works through a small server on the user's computer. The
+    /// app looks for it by itself; nobody has to type an address.
+    private var connectStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("Your server"))
+                .typeStyle(.title)
+                .opticalHang(-0.05, size: 32)
+                .padding(.bottom, 10)
+            Text(
+                L("Yaver works through a small server that runs on your computer. The app finds it on your Wi-Fi by itself.")
+            )
+            .typeStyle(.body)
+            .foregroundStyle(Modernist.Neutral.s700)
+            .padding(.bottom, 24)
+
+            connectStatus
+
+            VStack(alignment: .leading, spacing: 0) {
+                Rule()
+                    .padding(.bottom, 14)
+                Kicker(text: L("If it is not found"))
+                    .padding(.bottom, 10)
+                ForEach(Array(connectHints.enumerated()), id: \.offset) { index, hint in
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("\(index + 1)")
+                            .typeStyle(TypeStyle(size: 14, weight: .extrabold, lineHeight: 1.4, tabularNumbers: true))
+                            .foregroundStyle(Modernist.Accent.s700)
+                            .frame(width: 14, alignment: .leading)
+                        Text(hint)
+                            .typeStyle(.smallTight)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.bottom, 8)
+                }
+                Text(L("You can also do this later, in Settings."))
+                    .typeStyle(.captionSmall)
+                    .foregroundStyle(Modernist.Neutral.s700)
+                    .padding(.top, 4)
+            }
+            .padding(.top, 26)
+        }
+        .padding(.top, 40)
+        .task { await search() }
+    }
+
+    private var connectHints: [String] {
+        [
+            L("Start the server on your computer."),
+            L("Keep the iPhone on the same Wi-Fi as the computer."),
+            L("Point the iPhone’s Camera at the code the server shows, or tap “Search again”."),
+        ]
+    }
+
+    @ViewBuilder
+    private var connectStatus: some View {
+        let server = model.server
+        if isSearching || server.status == .checking {
+            HStack(spacing: 12) {
+                PulsingDot(size: 12)
+                Text(L("Looking for your server…"))
+                    .typeStyle(TypeStyle(size: 17, weight: .extrabold, lineHeight: 1.3))
+            }
+        } else if server.isConnected {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 12) {
+                    Rectangle().fill(Modernist.accent).frame(width: 12, height: 12)
+                    Text(Lf("Connected to %@", server.serverName))
+                        .typeStyle(TypeStyle(size: 17, weight: .extrabold, lineHeight: 1.3))
+                }
+                Text(
+                    server.isSimulated
+                        ? L("Calls are simulated for now — you can try everything, and no real phone call is made.")
+                        : L("Real phone calls are switched on.")
+                )
+                .typeStyle(.smallTight)
+                .foregroundStyle(Modernist.Neutral.s800)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L("No server found yet."))
+                    .typeStyle(TypeStyle(size: 17, weight: .extrabold, lineHeight: 1.3))
+                Button {
+                    Task { await search() }
+                } label: {
+                    ButtonLabel(title: L("Search again"), icon: .search, iconSize: 16)
+                }
+                .buttonStyle(ModernistButtonStyle(variant: .secondary, block: true, height: 46))
+            }
+        }
+    }
+
+    private func search() async {
+        guard !isSearching, !model.server.isConnected else { return }
+        isSearching = true
+        await model.refresh()
+        isSearching = false
     }
 
     // MARK: - Footer
@@ -205,13 +330,16 @@ struct OnboardingView: View {
                             verticalPadding: 0
                         )
                     )
-                    .accessibilityLabel("Back")
+                    .accessibilityLabel(L("Back"))
                 }
 
                 Button {
-                    if step < 2 { step += 1 } else { onFinish() }
+                    if step < Self.stepCount - 1 { step += 1 } else { onFinish() }
                 } label: {
-                    ButtonLabel(title: step == 2 ? "Start" : "Continue", icon: .arrowRight)
+                    ButtonLabel(
+                        title: step == Self.stepCount - 1 ? L("Start") : L("Continue"),
+                        icon: .arrowRight
+                    )
                 }
                 .buttonStyle(
                     ModernistButtonStyle(variant: .primary, block: true, height: 52, fontSize: 15)

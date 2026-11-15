@@ -1,6 +1,9 @@
 # XcodeGen project definition.
-# Install XcodeGen (brew install xcodegen), then run `xcodegen generate`
-# in this directory to produce AISecretary.xcodeproj.
+# Install XcodeGen (brew install xcodegen), then run ./generate.sh in this
+# directory to produce AISecretary.xcodeproj.
+#
+# The target and bundle identifier keep the project's first name so an
+# installed copy updates in place; the app itself is called Yaver.
 name: AISecretary
 options:
   bundleIdPrefix: com.example
@@ -8,17 +11,33 @@ options:
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
+  developmentLanguage: en
 targets:
   AISecretary:
     type: application
     platform: iOS
     sources:
       - AISecretary
+    # Signing team and other per-machine settings live in Config/Local.xcconfig,
+    # which is not checked in, so regenerating the project does not lose them.
+    configFiles:
+      Debug: Config/Base.xcconfig
+      Release: Config/Base.xcconfig
     info:
       path: AISecretary/Info.plist
       properties:
-        CFBundleDisplayName: AI Secretary
-        UILaunchScreen: {}
+        CFBundleDisplayName: Yaver
+        CFBundleDevelopmentRegion: en
+        # The interface follows the iPhone's language: English, German, Turkish.
+        CFBundleLocalizations:
+          - en
+          - de
+          - tr
+        # Paper ground with the mark, until the first screen is up.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchMark
+          UIImageRespectsSafeAreaInsets: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # The Modernist design system is a single light ground — there is no
@@ -30,40 +49,52 @@ targets:
           - Archivo-Regular.ttf
           - Archivo-SemiBold.ttf
           - Archivo-ExtraBold.ttf
-        # Allows plain-HTTP calls to localhost / LAN IPs during development.
-        # Remove for production (use HTTPS).
+        # yaver://pair?url=…&key=… — opened by the server's pairing page, so
+        # the server's address never has to be typed.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.canonur.aisecretary.pair
+            CFBundleURLSchemes:
+              - yaver
+        # Allows plain-HTTP calls to localhost / LAN addresses: the server
+        # usually runs on a computer at home. Addresses on the internet still
+        # need HTTPS.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
-        # On a real device the backend is reached at the developer Mac's LAN
-        # address, and since iOS 14 that needs the user's permission. Without
-        # this string the request is refused before it is ever made.
+        # The server is found on the home network (Bonjour) and reached there.
+        # iOS asks the user's permission for both, with this sentence.
         NSLocalNetworkUsageDescription: >-
-          The app talks to the secretary backend running on your computer, so it
-          needs to reach it over your local network.
+          Yaver finds and talks to its server on your computer, so it needs to
+          use your local network.
+        NSBonjourServices:
+          - _yaver._tcp
         # Live translator permissions
         NSMicrophoneUsageDescription: >-
           The microphone is used by the live translator so what is said can be
-          transcribed and translated.
+          written down and translated.
         NSSpeechRecognitionUsageDescription: >-
-          Speech recognition turns what you and your conversation partner say
-          into text so it can be translated.
+          Speech recognition turns what you and the person you are talking to
+          say into text so it can be translated.
         # Letters and forms: the camera photographs the document, the text is
         # read on the device, and only that text is sent to the secretary.
         NSCameraUsageDescription: >-
-          The camera photographs a letter or form so the secretary can read it.
+          The camera photographs a letter or form so Yaver can read it.
           Only the text is sent — the photograph stays on your phone.
         NSPhotoLibraryUsageDescription: >-
-          Pick a photo of a letter or form so the secretary can read it. Only
+          Pick a photo of a letter or form so Yaver can read it. Only
           the text is sent — the photograph stays on your phone.
     settings:
       base:
         # Must be unique across the App Store — com.example.* is a placeholder
         # that is already claimed, and Apple will refuse to sign against it.
         PRODUCT_BUNDLE_IDENTIFIER: com.canonur.aisecretary
-        MARKETING_VERSION: 0.1.0
-        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 2
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Extract nothing automatically: the app's strings are looked up by
+        # hand (see Support/L10n.swift) and checked by scripts/check-strings.py.
+        SWIFT_EMIT_LOC_STRINGS: "NO"
 # A shared scheme, so `xcodebuild -scheme AISecretary` works from the command
 # line (CI) and Xcode shows the same one.
 schemes:

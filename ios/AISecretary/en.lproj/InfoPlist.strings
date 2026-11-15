@@ -1,0 +1,8 @@
+/* Texts iOS shows itself: the name under the icon and the permission prompts. */
+
+"CFBundleDisplayName" = "Yaver";
+"NSLocalNetworkUsageDescription" = "Yaver finds and talks to its server on your computer, so it needs to use your local network.";
+"NSMicrophoneUsageDescription" = "The microphone is used by the live translator so what is said can be written down and translated.";
+"NSSpeechRecognitionUsageDescription" = "Speech recognition turns what you and the person you are talking to say into text so it can be translated.";
+"NSCameraUsageDescription" = "The camera photographs a letter or form so Yaver can read it. Only the text is sent — the photograph stays on your phone.";
+"NSPhotoLibraryUsageDescription" = "Pick a photo of a letter or form so Yaver can read it. Only the text is sent — the photograph stays on your phone.";

@@ -24,8 +24,10 @@ struct BriefView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var showingPhotoPicker = false
 
-    private static let exampleGoal =
-        "Call my dentist and book a check-up appointment for next week, mornings preferred."
+    private static var exampleGoal: String {
+        L("Call my dentist and book a check-up appointment for next week, mornings preferred.")
+    }
+
     private static let examplePhone = "+49 30 1234567"
 
     init(
@@ -52,17 +54,39 @@ struct BriefView: View {
             return false
         }
         guard isCall else { return true }
-        let digits = phone.replacingOccurrences(of: " ", with: "")
-        return digits.hasPrefix("+") && digits.count >= 8
+        guard phoneProblem == nil else { return false }
+        return normalizedPhone.hasPrefix("+") && normalizedPhone.count >= 8
+    }
+
+    /// The number as the server wants it: international, digits only.
+    /// A number typed the national way ("030 1234567") is not guessed at —
+    /// the country it belongs to is not ours to assume.
+    private var normalizedPhone: String {
+        var digits = phone.filter { $0.isNumber || $0 == "+" }
+        if digits.hasPrefix("00") { digits = "+" + digits.dropFirst(2) }
+        return digits
+    }
+
+    /// Why the number cannot be called, if the server would refuse it.
+    private var phoneProblem: String? {
+        guard isCall, !phone.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        guard normalizedPhone.hasPrefix("+") else {
+            return L("Start with the country code, for example +49 for Germany or +90 for Türkiye.")
+        }
+        let allowed = model.server.session?.allowedCountryPrefixes ?? []
+        if !allowed.isEmpty, !allowed.contains(where: { normalizedPhone.hasPrefix($0) }) {
+            return Lf("Your server only calls numbers starting with %@.", allowed.joined(separator: ", "))
+        }
+        return nil
     }
 
     var body: some View {
         VStack(spacing: 0) {
             HeaderBar {
                 HStack(spacing: 6) {
-                    IconButton(glyph: .close, accessibilityLabel: "Cancel", action: onCancel)
+                    IconButton(glyph: .close, accessibilityLabel: L("Cancel"), action: onCancel)
                         .padding(.leading, -10)
-                    Wordmark(title: "New task")
+                    Wordmark(title: L("New task"))
                 }
             }
 
@@ -72,10 +96,18 @@ struct BriefView: View {
                     goalField
                     if isCall {
                         phoneField
+                    }
+                    if briefType != .followup {
                         callLanguageField
                     }
                     if briefType.takesDocument {
                         documentButton
+                    }
+                    if isCall, model.server.isConnected, model.server.isSimulated {
+                        Notice(
+                            title: L("Calls are simulated"),
+                            message: L("Your server is not connected to a phone service yet, so this call will be acted out, not placed.")
+                        )
                     }
                     exampleButton
                     disclosureNote
@@ -111,8 +143,14 @@ struct BriefView: View {
                 photoItem = nil
             }
         }
-        .alert("Could not send the task", isPresented: .constant(errorMessage != nil)) {
-            Button("OK") { errorMessage = nil }
+        .alert(
+            L("Could not send the task"),
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button(L("OK")) { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "")
         }
@@ -121,7 +159,7 @@ struct BriefView: View {
     // MARK: - Fields
 
     private var typeField: some View {
-        Field(label: "Type") {
+        Field(label: L("Type")) {
             SegmentedControl(
                 values: TaskKind.briefable,
                 selection: $briefType,
@@ -139,9 +177,9 @@ struct BriefView: View {
     }
 
     private var goalField: some View {
-        Field(label: "What should the secretary do?") {
+        Field(label: L("What should Yaver do?")) {
             DSTextEditor(
-                placeholder: "e.g. \(Self.exampleGoal)",
+                placeholder: Lf("e.g. %@", Self.exampleGoal),
                 text: $goal,
                 minHeight: 128,
                 fontSize: 16
@@ -150,21 +188,28 @@ struct BriefView: View {
     }
 
     private var phoneField: some View {
-        Field(label: "Who to call") {
-            DSTextField(
-                placeholder: Self.examplePhone,
-                text: $phone,
-                minHeight: 48,
-                fontSize: 17,
-                tabularNumbers: true,
-                keyboard: .phonePad,
-                textContentType: .telephoneNumber
-            )
+        VStack(alignment: .leading, spacing: 6) {
+            Field(label: L("Who to call")) {
+                DSTextField(
+                    placeholder: Self.examplePhone,
+                    text: $phone,
+                    minHeight: 48,
+                    fontSize: 17,
+                    tabularNumbers: true,
+                    keyboard: .phonePad,
+                    textContentType: .telephoneNumber
+                )
+            }
+            if let phoneProblem {
+                Text(phoneProblem)
+                    .typeStyle(.captionSmall)
+                    .foregroundStyle(Modernist.Accent.s700)
+            }
         }
     }
 
     private var callLanguageField: some View {
-        Field(label: "Call language") {
+        Field(label: isCall ? L("Call language") : L("Language to write in")) {
             SegmentedControl(
                 values: Language.allCases,
                 selection: $callLanguage,
@@ -189,7 +234,7 @@ struct BriefView: View {
             )
 
             if !documentText.isEmpty {
-                Text("Only the text is sent — the photograph stays on your phone.")
+                Text(L("Only the text is sent — the photograph stays on your phone."))
                     .typeStyle(.captionSmall)
                     .foregroundStyle(Modernist.Neutral.s700)
             }
@@ -198,8 +243,8 @@ struct BriefView: View {
 
     private var documentButtonTitle: String {
         documentText.isEmpty
-            ? "Add a photo of the document"
-            : "Document read · \(documentText.count) characters"
+            ? L("Add a photo of the document")
+            : Lf("Document read · %d characters", documentText.count)
     }
 
     private var exampleButton: some View {
@@ -208,7 +253,7 @@ struct BriefView: View {
             goal = Self.exampleGoal
             phone = Self.examplePhone
         } label: {
-            Text("Use an example brief")
+            Text(L("Use an example brief"))
         }
         .buttonStyle(ModernistButtonStyle(variant: .ghost))
         .padding(.top, -8)
@@ -221,7 +266,7 @@ struct BriefView: View {
             Rule()
                 .padding(.bottom, 12)
             Text(
-                "The secretary introduces itself as an AI calling on your behalf. This disclosure is legally required and cannot be turned off."
+                L("Yaver says at once that it is an AI calling on your behalf. This disclosure is required by law and cannot be turned off.")
             )
             .typeStyle(.smallTight)
             .foregroundStyle(Modernist.Neutral.s700)
@@ -231,7 +276,7 @@ struct BriefView: View {
     // MARK: - Submitting
 
     private var submitLabel: String {
-        isCall ? "Place the call" : "Send to the secretary"
+        isCall ? L("Place the call") : L("Send to Yaver")
     }
 
     /// The design gives the call its phone glyph and the document kinds an
@@ -251,9 +296,7 @@ struct BriefView: View {
                     NewTaskRequest(
                         kind: briefType,
                         goal: goal.trimmingCharacters(in: .whitespacesAndNewlines),
-                        phoneNumber: isCall
-                            ? phone.replacingOccurrences(of: " ", with: "")
-                            : nil,
+                        phoneNumber: isCall ? normalizedPhone : nil,
                         // For a call this is the language spoken; for a letter
                         // or a message it is the language the other side reads.
                         language: callLanguage,

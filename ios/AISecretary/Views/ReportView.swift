@@ -4,6 +4,7 @@ import SwiftUI
 /// four-cell grid, anything still on the user's plate, and the record below.
 struct ReportView: View {
     @Environment(SecretaryViewModel.self) private var model
+    @Environment(LiveTranslator.self) private var translator
 
     let taskID: String
     let reportLanguage: Language
@@ -17,7 +18,7 @@ struct ReportView: View {
         VStack(spacing: 0) {
             HeaderBar {
                 HStack {
-                    BackButton(title: "Home", action: goHome)
+                    BackButton(title: L("Home"), action: goHome)
                     Spacer()
                     if let task, let summary = shareText(task) {
                         ShareLink(item: summary) {
@@ -29,7 +30,7 @@ struct ReportView: View {
                                 variant: .icon, horizontalPadding: 0, verticalPadding: 0
                             )
                         )
-                        .accessibilityLabel("Share report")
+                        .accessibilityLabel(L("Share report"))
                         .padding(.trailing, -8)
                     }
                 }
@@ -39,22 +40,36 @@ struct ReportView: View {
                 if let task {
                     VStack(alignment: .leading, spacing: 0) {
                         verdictBlock(task)
-                        metaGrid(task)
+                        if task.kind == .call {
+                            metaGrid(task)
+                        }
+                        if task.isInbound, let number = task.phoneNumber, !number.isEmpty {
+                            callBackBlock(number)
+                        }
                         if let todo = task.todo, !todo.isEmpty {
                             todoBlock(task, todo: todo)
                         }
                         if let draft = task.result, !draft.isEmpty {
                             draftBlock(task, draft: draft)
                         }
-                        transcriptBlock(task)
+                        if task.kind == .call {
+                            transcriptBlock(task)
+                        }
                     }
                     .padding(.horizontal, Modernist.gutter)
+                } else {
+                    Text(L("This task is no longer on the server."))
+                        .typeStyle(.body)
+                        .foregroundStyle(Modernist.Neutral.s700)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, Modernist.gutter)
+                        .padding(.top, 22)
                 }
             }
 
             FooterBar {
                 Button(action: goHome) {
-                    ButtonLabel(title: "Done", icon: .check)
+                    ButtonLabel(title: L("Done"), icon: .check)
                 }
                 .buttonStyle(
                     ModernistButtonStyle(variant: .primary, block: true, height: 56, fontSize: 16)
@@ -69,25 +84,50 @@ struct ReportView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 Kicker(
-                    text: "\(task.kind.label) · \(task.status.label) · \(task.whenLabel)",
+                    text: "\(task.kindLabel) · \(task.status.label) · \(task.whenLabel)",
                     tabularNumbers: true
                 )
                 .padding(.bottom, 12)
 
                 HStack(alignment: .center, spacing: 12) {
-                    if task.outcome == .achieved {
+                    if succeeded(task) {
                         Rectangle()
                             .fill(Modernist.accent)
                             .frame(width: 14, height: 14)
                     }
-                    Text(task.outcome?.label ?? task.status.label)
+                    Text(task.verdict)
                         .typeStyle(.titleReport)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.75)
                 }
 
-                Text(task.summary ?? "The secretary is still working on this task.")
+                // For a call that was answered, the subject says who rang.
+                if task.isInbound, !task.goal.isEmpty {
+                    Text(task.goal)
+                        .typeStyle(TypeStyle(size: 17, weight: .extrabold, lineHeight: 1.3))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 14)
+                }
+
+                Text(explanation(task))
                     .typeStyle(.lead)
+                    .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 16)
+                    .padding(.top, task.isInbound && !task.goal.isEmpty ? 8 : 16)
+
+                // A call that was cut short still has a summary; say why it ended.
+                if let problem = task.problem, task.summary != nil {
+                    Notice(title: problem.title, message: problem.explanation)
+                        .padding(.top, 14)
+                }
+
+                if task.simulated {
+                    Notice(
+                        title: L("Simulated call"),
+                        message: L("No real phone call was made. This is what a report looks like.")
+                    )
+                    .padding(.top, 14)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 22)
@@ -96,23 +136,42 @@ struct ReportView: View {
         }
     }
 
+    private func succeeded(_ task: SecretaryTask) -> Bool {
+        task.status == .completed && task.outcome == .achieved
+    }
+
+    /// The paragraph under the verdict: the report if there is one; otherwise
+    /// why there is none, in plain words.
+    private func explanation(_ task: SecretaryTask) -> String {
+        if let summary = task.summary, !summary.isEmpty { return summary }
+        if let problem = task.problem { return problem.explanation }
+        if task.status == .failed {
+            return L("The call could not be completed. Nothing was agreed.")
+        }
+        if task.status.isActive { return L("Yaver is still working on this.") }
+        return L("There is no report for this task.")
+    }
+
     // MARK: - The facts
 
     private func metaGrid(_ task: SecretaryTask) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                metaCell("Number", task.phoneNumber ?? "—", tabular: true)
-                    .padding(.trailing, 12)
+                metaCell(
+                    task.isInbound ? L("Caller") : L("Number"),
+                    task.phoneNumber ?? "—", tabular: true
+                )
+                .padding(.trailing, 12)
                 VHairline()
-                metaCell("Call language", task.kind == .call ? task.language.displayName : "—")
+                metaCell(L("Call language"), spokenLanguage(task))
                     .padding(.leading, 12)
             }
             Hairline()
             HStack(spacing: 0) {
-                metaCell("Duration", durationLabel(task), tabular: true)
+                metaCell(L("Duration"), durationLabel(task), tabular: true)
                     .padding(.trailing, 12)
                 VHairline()
-                metaCell("Report in", reportLanguage.displayName)
+                metaCell(L("Report in"), task.summaryLanguage.displayName)
                     .padding(.leading, 12)
             }
             Rule()
@@ -120,15 +179,25 @@ struct ReportView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// The language the other side spoke. For a call that was answered it is
+    /// worked out from what the caller said.
+    private func spokenLanguage(_ task: SecretaryTask) -> String {
+        guard task.isInbound else { return task.language.displayName }
+        guard let said = task.lines.first(where: { $0.role == .other })?.text else { return "—" }
+        return translator.language(of: said, expected: task.language).displayName
+    }
+
     private func metaCell(_ label: String, _ value: String, tabular: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label.uppercased())
+            Text(label.displayUppercased)
                 .typeStyle(.kickerSmall)
                 .foregroundStyle(Modernist.Neutral.s700)
             Text(value)
                 .typeStyle(
                     TypeStyle(size: 15, weight: .regular, lineHeight: 1.3, tabularNumbers: tabular)
                 )
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 12)
@@ -139,12 +208,32 @@ struct ReportView: View {
         return DateFormatting.clock(seconds)
     }
 
+    // MARK: - Calling back
+
+    /// One tap to ring the caller back from the phone's own dialler.
+    @ViewBuilder
+    private func callBackBlock(_ number: String) -> some View {
+        let digits = number.filter { $0.isNumber || $0 == "+" }
+        if let url = URL(string: "tel:\(digits)"), !digits.isEmpty {
+            VStack(spacing: 0) {
+                Link(destination: url) {
+                    ButtonLabel(title: Lf("Call back %@", number), icon: .phone, iconSize: 16)
+                }
+                .buttonStyle(
+                    ModernistButtonStyle(variant: .secondary, block: true, height: 48, fontSize: 15)
+                )
+                .padding(.vertical, 14)
+                Rule()
+            }
+        }
+    }
+
     // MARK: - Still to do
 
     private func todoBlock(_ task: SecretaryTask, todo: String) -> some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Kicker(text: "Still to do")
+                Kicker(text: L("Still to do"))
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(todo)
@@ -163,7 +252,7 @@ struct ReportView: View {
                     }
 
                     if model.hasReminder(for: task) {
-                        Tag(title: "Reminder set", variant: .accent)
+                        Tag(title: L("Reminder set"), variant: .accent)
                     } else {
                         Button {
                             isAddingReminder = true
@@ -172,7 +261,7 @@ struct ReportView: View {
                                 isAddingReminder = false
                             }
                         } label: {
-                            Text("Add reminder")
+                            Text(L("Add reminder"))
                         }
                         .buttonStyle(ModernistButtonStyle(variant: .secondary, height: 40))
                         .disabled(isAddingReminder)
@@ -209,29 +298,21 @@ struct ReportView: View {
 
     private func draftTitle(_ task: SecretaryTask) -> String {
         switch task.kind {
-        case .message: return "Draft, waiting to be sent"
-        case .form: return "The form so far"
-        default: return "Written for you"
+        case .message: return L("Draft, waiting to be sent")
+        case .form: return L("The form so far")
+        default: return L("Written for you")
         }
     }
 
     // MARK: - Transcript
 
     private func transcriptBlock(_ task: SecretaryTask) -> some View {
-        let lines = task.transcriptLines
-        return VStack(alignment: .leading, spacing: 0) {
-            SectionHeading(title: "Transcript", note: task.language.displayName)
-            if lines.isEmpty {
-                Text("No transcript for this type of task.")
-                    .typeStyle(.small)
-                    .foregroundStyle(Modernist.Neutral.s700)
-                    .padding(.top, 10)
-            } else {
-                ForEach(lines) { line in
-                    TranscriptRow(line: line)
-                }
-            }
-        }
+        TranscriptSection(
+            task: task,
+            readerLanguage: reportLanguage,
+            title: L("Transcript"),
+            emptyText: L("Nothing was said on this call.")
+        )
         .padding(.top, 14)
         .padding(.bottom, 24)
     }
@@ -239,10 +320,10 @@ struct ReportView: View {
     /// What the share sheet hands over: the report, not the raw transcript.
     private func shareText(_ task: SecretaryTask) -> String? {
         guard let summary = task.summary else { return nil }
-        var lines = ["\(task.kind.label) · \(task.goal)", "", summary]
+        var lines = ["\(task.kindLabel) · \(task.title)", "", summary]
         if let todo = task.todo, !todo.isEmpty {
             lines.append("")
-            lines.append("Still to do: \(todo)\(task.todoWhen.map { " (\($0))" } ?? "")")
+            lines.append("\(L("Still to do")): \(todo)\(task.todoWhen.map { " (\($0))" } ?? "")")
         }
         if let draft = task.result, !draft.isEmpty {
             lines.append("")

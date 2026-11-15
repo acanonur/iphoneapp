@@ -1,50 +1,83 @@
 import SwiftUI
-import Translation
 
 struct ConversationEntry: Identifiable, Equatable {
-    enum Side {
+    enum Side: Equatable {
         /// You spoke; translated into their language.
         case mine
         /// They spoke; translated into your language.
         case theirs
     }
 
-    let id = UUID().uuidString
+    var id = UUID().uuidString
     let side: Side
     let original: String
-    let translated: String
+    /// The languages of this turn, fixed when it was spoken — changing the
+    /// language bar afterwards must not change what an old line means.
+    let pair: TranslationPair
 }
 
-private struct PendingUtterance: Equatable {
-    let text: String
-    let side: ConversationEntry.Side
+/// A ready-made conversation for previews and screenshots, where neither the
+/// microphone nor the system's translation is available.
+struct TranslatorStage {
+    var entries: [ConversationEntry] = []
+    /// Who is "speaking" right now, with the words recognised so far.
+    var speaking: ConversationEntry.Side?
+    var partial = ""
 }
 
 /// Live two-way conversation translator, laid out as a two-column ledger: what
-/// was said on one side, what the other side hears on the other.
+/// was said on one side, what the other side reads on the other.
+///
+/// The translation is written while the person is still speaking: every few
+/// words the recogniser hears are translated and the line on the other side
+/// grows with them. When the turn ends the whole sentence is translated once
+/// more, kept, and read aloud.
 ///
 /// Recognition, translation and speech all use Apple's on-device frameworks —
 /// no server, no per-use cost, and it keeps working offline once the language
 /// packs are downloaded.
 struct TranslatorView: View {
     var goBack: () -> Void
+    var stage: TranslatorStage?
 
-    @AppStorage("translator.myLanguage") private var myLanguageRaw = Language.tr.rawValue
-    @AppStorage("translator.theirLanguage") private var theirLanguageRaw = Language.de.rawValue
+    @Environment(LiveTranslator.self) private var translator
+
+    @AppStorage("translator.myLanguage") private var myLanguageRaw = ""
+    @AppStorage("translator.theirLanguage") private var theirLanguageRaw = ""
     @AppStorage("translator.autoSpeak") private var autoSpeak = true
 
     @State private var recognizer = SpeechRecognizer()
     @State private var speaker = Speaker()
 
+    private enum Phase: Equatable {
+        case idle
+        case listening(ConversationEntry.Side)
+        /// The microphone is closed and the last words are being recognised.
+        case finishing(ConversationEntry.Side)
+    }
+
+    @State private var phase: Phase = .idle
     @State private var entries: [ConversationEntry] = []
-    @State private var listening: ConversationEntry.Side?
-    @State private var pending: PendingUtterance?
-    @State private var configuration: TranslationSession.Configuration?
+    /// The languages of the turn in progress.
+    @State private var turnPair: TranslationPair?
+    /// The newest translation of the sentence being spoken. Kept on screen
+    /// while the next, longer version is on its way, so the line never blinks.
+    @State private var liveTranslation = ""
+    @State private var spoken: Set<String> = []
     @State private var errorMessage: String?
     @State private var permissionsGranted = false
 
-    private var myLanguage: Language { Language(rawValue: myLanguageRaw) ?? .tr }
-    private var theirLanguage: Language { Language(rawValue: theirLanguageRaw) ?? .de }
+    /// "Your" language starts as the language the iPhone is in; "theirs" as
+    /// German, or Turkish for someone whose own language is German.
+    private var myLanguage: Language {
+        Language(rawValue: myLanguageRaw) ?? L10n.language
+    }
+
+    private var theirLanguage: Language {
+        Language(rawValue: theirLanguageRaw) ?? (myLanguage == .de ? .tr : .de)
+    }
+
+    private var isBusy: Bool { phase != .idle }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -53,14 +86,44 @@ struct TranslatorView: View {
             conversation
             controls
         }
-        .translationTask(configuration) { session in
-            await translatePending(with: session)
-        }
         .task {
+            guard stage == nil else {
+                entries = stage?.entries ?? []
+                spoken = Set(entries.map(\.id))
+                if let side = stage?.speaking {
+                    turnPair = pair(for: side)
+                    phase = .listening(side)
+                }
+                return
+            }
             permissionsGranted = await SpeechRecognizer.requestPermissions()
+            prepareLanguages()
         }
-        .alert("Translator", isPresented: .constant(errorMessage != nil)) {
-            Button("OK") { errorMessage = nil }
+        .onChange(of: recognizer.transcript) { _, text in
+            guard case .listening = phase, let turnPair else { return }
+            translator.requestLatest(text, turnPair)
+        }
+        .onChange(of: currentLiveTranslation) { _, fresh in
+            if let fresh { liveTranslation = fresh }
+        }
+        // The recogniser can stop on its own (a long pause, its time limit):
+        // treat that exactly like the user tapping "done".
+        .onChange(of: recognizer.isRecording) { _, recording in
+            if !recording, case .listening = phase, stage == nil { finishListening() }
+        }
+        .onChange(of: translator.results.count) { speakNewTranslations() }
+        .onDisappear {
+            recognizer.cancel()
+            speaker.stop()
+        }
+        .alert(
+            L("Translator"),
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button(L("OK")) { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "")
         }
@@ -72,14 +135,14 @@ struct TranslatorView: View {
         HeaderBar {
             HStack {
                 HStack(spacing: 6) {
-                    IconButton(glyph: .chevronLeft, accessibilityLabel: "Back", action: goBack)
+                    IconButton(glyph: .chevronLeft, accessibilityLabel: L("Back"), action: goBack)
                         .padding(.leading, -10)
-                    Wordmark(title: "Live translator")
+                    Wordmark(title: L("Live translator"))
                 }
                 Spacer()
                 IconButton(
                     glyph: autoSpeak ? .volumeHigh : .volumeOff,
-                    accessibilityLabel: autoSpeak ? "Voice output on" : "Voice output off"
+                    accessibilityLabel: autoSpeak ? L("Voice output on") : L("Voice output off")
                 ) {
                     autoSpeak.toggle()
                     if !autoSpeak { speaker.stop() }
@@ -90,31 +153,31 @@ struct TranslatorView: View {
     }
 
     /// Who speaks what. Tapping a side cycles through the three languages;
-    /// the middle control swaps them.
+    /// the middle control swaps them. Locked while someone is speaking.
     private var languageBar: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                languageButton(title: "You speak", language: myLanguage) {
-                    myLanguageRaw = cycled(from: myLanguage).rawValue
+                languageButton(title: L("You speak"), language: myLanguage) {
+                    setLanguages(mine: cycled(from: myLanguage, avoiding: theirLanguage), theirs: theirLanguage)
                 }
 
-                IconButton(glyph: .swap, accessibilityLabel: "Swap languages") {
-                    let mine = myLanguageRaw
-                    myLanguageRaw = theirLanguageRaw
-                    theirLanguageRaw = mine
+                IconButton(glyph: .swap, accessibilityLabel: L("Swap languages")) {
+                    setLanguages(mine: theirLanguage, theirs: myLanguage)
                 }
                 .frame(width: 44)
 
                 HStack(spacing: 0) {
                     VHairline()
-                    languageButton(title: "They speak", language: theirLanguage) {
-                        theirLanguageRaw = cycled(from: theirLanguage).rawValue
+                    languageButton(title: L("They speak"), language: theirLanguage) {
+                        setLanguages(mine: myLanguage, theirs: cycled(from: theirLanguage, avoiding: myLanguage))
                     }
                     .padding(.leading, 12)
                 }
             }
             .padding(.horizontal, Modernist.gutter)
             .padding(.vertical, 12)
+            .disabled(isBusy)
+            .opacity(isBusy ? 0.5 : 1)
             Rule()
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -138,11 +201,30 @@ struct TranslatorView: View {
         .accessibilityLabel("\(title): \(language.displayName)")
     }
 
-    /// tr → de → en → tr, as the design cycles them.
-    private func cycled(from language: Language) -> Language {
+    /// The next language in the cycle that is not the other side's — the two
+    /// sides are never the same language.
+    private func cycled(from language: Language, avoiding other: Language) -> Language {
         let order: [Language] = [.tr, .de, .en]
-        let index = order.firstIndex(of: language) ?? 0
-        return order[(index + 1) % order.count]
+        let start = order.firstIndex(of: language) ?? 0
+        for step in 1 ... order.count {
+            let candidate = order[(start + step) % order.count]
+            if candidate != other { return candidate }
+        }
+        return language
+    }
+
+    private func setLanguages(mine: Language, theirs: Language) {
+        myLanguageRaw = mine.rawValue
+        theirLanguageRaw = theirs.rawValue
+        prepareLanguages()
+    }
+
+    /// Opens both directions now, so that a request to download a language
+    /// comes when the screen opens rather than in the middle of a sentence.
+    private func prepareLanguages() {
+        guard stage == nil else { return }
+        translator.prepare(pair(for: .mine))
+        translator.prepare(pair(for: .theirs))
     }
 
     // MARK: - The conversation
@@ -151,39 +233,70 @@ struct TranslatorView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 0) {
-                    if entries.isEmpty, listening == nil {
+                    if let blocked = blockedPair {
+                        downloadNotice(blocked)
+                    }
+                    if entries.isEmpty, !isBusy {
                         emptyState
                     }
                     ForEach(entries) { entry in
                         entryRow(entry).id(entry.id)
                     }
-                    if let listening {
-                        listeningRow(listening)
+                    if case let .listening(side) = phase {
+                        listeningRow(side).id("live")
+                    } else if case let .finishing(side) = phase {
+                        listeningRow(side).id("live")
                     }
-                    Color.clear.frame(height: 20)
+                    Color.clear.frame(height: 20).id("end")
                 }
                 .padding(.horizontal, Modernist.gutter)
             }
             .onChange(of: entries) {
-                if let last = entries.last {
-                    withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                }
+                withAnimation { proxy.scrollTo("end", anchor: .bottom) }
+            }
+            .onChange(of: recognizer.transcript) {
+                proxy.scrollTo("end", anchor: .bottom)
             }
         }
     }
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Hold a conversation across languages.")
+            Text(L("Hold a conversation across languages."))
                 .typeStyle(.headlineSmall)
             Text(
-                "Tap “I speak” and talk. The other side reads and hears it in their language. Tap “They speak” for their turn. Suited to reception desks, offices and speakerphone calls."
+                L("Tap “I speak” and talk. The translation is written on the other side while you are still speaking, and read aloud when you finish. Tap “They speak” for their turn.")
             )
             .typeStyle(TypeStyle(size: 14, weight: .regular, lineHeight: 1.5))
             .foregroundStyle(Modernist.Neutral.s700)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 40)
+    }
+
+    /// A direction whose languages are not on the phone.
+    private var blockedPair: TranslationPair? {
+        [pair(for: .mine), pair(for: .theirs)].first { translator.state($0) == .needsDownload }
+    }
+
+    private func downloadNotice(_ pair: TranslationPair) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Notice(
+                title: L("Translation needs a language download"),
+                message: Lf(
+                    "%1$@ and %2$@ are translated on your iPhone. The languages have to be downloaded once.",
+                    pair.source.displayName, pair.target.displayName
+                ),
+                tone: .accent
+            )
+            Button {
+                translator.retry(pair)
+            } label: {
+                ButtonLabel(title: L("Download languages"), icon: .arrowRight)
+            }
+            .buttonStyle(ModernistButtonStyle(variant: .secondary, block: true, height: 44))
+        }
+        .padding(.top, 14)
     }
 
     /// Original on the speaker's side, translation on the listener's.
@@ -209,45 +322,60 @@ struct TranslatorView: View {
         Text(text)
             .typeStyle(.smallTight)
             .foregroundStyle(Modernist.Neutral.s700)
+            .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 14)
     }
 
+    @ViewBuilder
     private func translationCell(_ entry: ConversationEntry) -> some View {
-        VStack(alignment: .leading, spacing: Modernist.Space.s2) {
-            Text(entry.translated)
-                .typeStyle(.translated)
-                .textSelection(.enabled)
-            Button {
-                play(entry)
-            } label: {
-                HStack(spacing: 5) {
-                    Icon(glyph: .volumeLow, size: 14)
-                    Text(speaker.speakingID == entry.id ? "Speaking…" : "Play")
+        if let translated = translator.translation(of: entry.original, entry.pair) {
+            VStack(alignment: .leading, spacing: Modernist.Space.s2) {
+                Text(translated)
+                    .typeStyle(.translated)
+                    .textSelection(.enabled)
+                Button {
+                    play(entry)
+                } label: {
+                    HStack(spacing: 5) {
+                        Icon(glyph: .volumeLow, size: 14)
+                        Text(speaker.speakingID == entry.id ? L("Speaking…") : L("Play"))
+                    }
                 }
-            }
-            .buttonStyle(
-                ModernistButtonStyle(
-                    variant: .ghost, fontSize: 12, horizontalPadding: 4, verticalPadding: 2
+                .buttonStyle(
+                    ModernistButtonStyle(
+                        variant: .ghost, fontSize: 12, horizontalPadding: 4, verticalPadding: 2
+                    )
                 )
-            )
-            .padding(.leading, -4)
+                .padding(.leading, -4)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 14)
+        } else {
+            waitingCell(pendingNote(for: entry.pair))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 14)
+    }
+
+    /// What to say in place of a translation that has not arrived.
+    private func pendingNote(for pair: TranslationPair) -> String {
+        switch translator.state(pair) {
+        case .needsDownload: return L("Waiting for the language download.")
+        case .unavailable: return L("Translation is not available here.")
+        case .idle, .preparing, .ready: return L("Translating…")
+        }
     }
 
     /// The live row while the microphone is open: a level meter and the words
-    /// as they are recognised.
+    /// as they are recognised on one side, their translation on the other.
     private func listeningRow(_ side: ConversationEntry.Side) -> some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 0) {
                 if side == .mine {
                     partialCell.padding(.trailing, 12)
                     VHairline()
-                    waitingCell("Translating as you speak…").padding(.leading, 12)
+                    liveCell(side).padding(.leading, 12)
                 } else {
-                    waitingCell("Translating as they speak…").padding(.trailing, 12)
+                    liveCell(side).padding(.trailing, 12)
                     VHairline()
                     partialCell.padding(.leading, 12)
                 }
@@ -257,15 +385,40 @@ struct TranslatorView: View {
         }
     }
 
+    private var partialText: String {
+        stage?.speaking != nil ? (stage?.partial ?? "") : recognizer.transcript
+    }
+
     private var partialCell: some View {
         VStack(alignment: .leading, spacing: Modernist.Space.s2) {
             ListeningBars()
-            Text(recognizer.transcript.isEmpty ? "Listening…" : recognizer.transcript)
+            Text(partialText.isEmpty ? L("Listening…") : partialText)
                 .typeStyle(TypeStyle(size: 14, weight: .regular, lineHeight: 1.4))
                 .foregroundStyle(Modernist.Accent.s700)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 14)
+    }
+
+    /// The translation of the sentence in progress, as far as it has got.
+    private var currentLiveTranslation: String? {
+        guard let turnPair, !partialText.isEmpty else { return nil }
+        return translator.translation(of: partialText, turnPair)
+    }
+
+    @ViewBuilder
+    private func liveCell(_ side: ConversationEntry.Side) -> some View {
+        let shown = currentLiveTranslation ?? liveTranslation
+        if shown.isEmpty {
+            waitingCell(
+                side == .mine ? L("Translating as you speak…") : L("Translating as they speak…")
+            )
+        } else {
+            Text(shown)
+                .typeStyle(.translated)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 14)
+        }
     }
 
     private func waitingCell(_ text: String) -> some View {
@@ -282,14 +435,14 @@ struct TranslatorView: View {
         VStack(spacing: 0) {
             Rule()
             HStack(spacing: 0) {
-                micButton(side: .mine, language: myLanguage, idleKicker: "I speak")
+                micButton(side: .mine, language: myLanguage, idleKicker: L("I speak"))
                 VHairline()
-                micButton(side: .theirs, language: theirLanguage, idleKicker: "They speak")
+                micButton(side: .theirs, language: theirLanguage, idleKicker: L("They speak"))
             }
             .fixedSize(horizontal: false, vertical: true)
             Hairline()
             Text(
-                "Works face-to-face and over speakerphone. iOS does not let apps listen to your own phone call."
+                L("Works face-to-face and over speakerphone. iOS does not let apps listen to your own phone call.")
             )
             .typeStyle(.captionSmall)
             .foregroundStyle(Modernist.Neutral.s700)
@@ -305,101 +458,96 @@ struct TranslatorView: View {
         language: Language,
         idleKicker: String
     ) -> some View {
-        let isActive = listening == side
+        let isActive = phase == .listening(side)
+        let isFinishing = phase == .finishing(side)
+        let highlighted = isActive || isFinishing
         return Button {
             if isActive {
                 finishListening()
-            } else if listening == nil {
-                startListening(side: side, language: language)
+            } else if phase == .idle {
+                startListening(side: side)
             }
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                Icon(glyph: isActive ? .stop : .mic, size: 22)
+                Icon(glyph: highlighted ? .stop : .mic, size: 22)
                 Spacer(minLength: Modernist.Space.s2)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text((isActive ? "Listening" : idleKicker).uppercased())
+                    Text((highlighted ? L("Listening") : idleKicker).displayUppercased)
                         .typeStyle(.kickerRow)
-                    Text(isActive ? "Tap when done" : language.displayName)
+                    Text(highlighted ? L("Tap when done") : language.displayName)
                         .typeStyle(TypeStyle(size: 16, weight: .extrabold, lineHeight: 1.2))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
             }
             .padding(.horizontal, Modernist.gutter)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-            .foregroundStyle(isActive ? Modernist.bg : Modernist.text)
-            .background(isActive ? Modernist.accent : .clear)
+            .foregroundStyle(highlighted ? Modernist.bg : Modernist.text)
+            .background(highlighted ? Modernist.accent : .clear)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .opacity(listening != nil && !isActive ? 0.45 : 1)
-        .disabled(listening != nil && !isActive)
+        .opacity(isBusy && !highlighted ? 0.45 : 1)
+        .disabled((isBusy && !isActive) || stage != nil)
     }
 
     // MARK: - Speech
 
-    private func pair(
-        for side: ConversationEntry.Side
-    ) -> (source: Language, target: Language) {
-        side == .mine ? (myLanguage, theirLanguage) : (theirLanguage, myLanguage)
+    private func pair(for side: ConversationEntry.Side) -> TranslationPair {
+        side == .mine
+            ? TranslationPair(source: myLanguage, target: theirLanguage)
+            : TranslationPair(source: theirLanguage, target: myLanguage)
     }
 
-    private func startListening(side: ConversationEntry.Side, language: Language) {
-        guard myLanguage != theirLanguage else {
-            errorMessage = "Please choose two different languages."
-            return
-        }
+    private func startListening(side: ConversationEntry.Side) {
         guard permissionsGranted else {
-            errorMessage =
-                "Microphone and speech recognition access are needed. Please allow both in Settings."
+            errorMessage = L("Microphone and speech recognition access are needed. Please allow both in the iPhone’s Settings.")
             return
         }
         speaker.stop()
+        let pair = pair(for: side)
         do {
-            try recognizer.start(localeIdentifier: language.speechLocaleIdentifier)
-            listening = side
+            try recognizer.start(language: pair.source)
+            turnPair = pair
+            liveTranslation = ""
+            phase = .listening(side)
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
+    /// Ends the turn: waits for the last words, then keeps the sentence and
+    /// sends it for its final translation.
     private func finishListening() {
-        let text = recognizer.stop().trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let side = listening else { return }
-        listening = nil
-        guard !text.isEmpty else { return }
-
-        pending = PendingUtterance(text: text, side: side)
-        let languages = pair(for: side)
-        let source = languages.source.localeLanguage
-        let target = languages.target.localeLanguage
-        if configuration?.source == source, configuration?.target == target {
-            // Same language pair: re-trigger the existing translation task.
-            configuration?.invalidate()
-        } else {
-            configuration = TranslationSession.Configuration(source: source, target: target)
+        guard case let .listening(side) = phase, let pair = turnPair else { return }
+        phase = .finishing(side)
+        Task {
+            let text = await recognizer.finish().trimmingCharacters(in: .whitespacesAndNewlines)
+            // Nothing half-spoken should be translated after this.
+            translator.requestLatest("", pair)
+            phase = .idle
+            liveTranslation = ""
+            turnPair = nil
+            guard !text.isEmpty else { return }
+            entries.append(ConversationEntry(side: side, original: text, pair: pair))
+            translator.request([text], pair)
+            speakNewTranslations()
         }
     }
 
-    private func translatePending(with session: TranslationSession) async {
-        guard let utterance = pending else { return }
-        do {
-            let response = try await session.translate(utterance.text)
-            let entry = ConversationEntry(
-                side: utterance.side,
-                original: utterance.text,
-                translated: response.targetText
-            )
-            entries.append(entry)
-            pending = nil
-            if autoSpeak { play(entry) }
-        } catch {
-            pending = nil
-            errorMessage = "Translation failed: \(error.localizedDescription)"
-        }
+    /// Reads a finished line aloud once, when its translation arrives.
+    private func speakNewTranslations() {
+        guard autoSpeak, stage == nil, !isBusy else { return }
+        guard let entry = entries.last, !spoken.contains(entry.id),
+              translator.translation(of: entry.original, entry.pair) != nil
+        else { return }
+        spoken.insert(entry.id)
+        play(entry)
     }
 
     private func play(_ entry: ConversationEntry) {
-        let target = pair(for: entry.side).target
-        speaker.speak(entry.translated, languageCode: target.voiceLanguageCode, id: entry.id)
+        guard let translated = translator.translation(of: entry.original, entry.pair) else { return }
+        speaker.speak(translated, languageCode: entry.pair.target.voiceLanguageCode, id: entry.id)
     }
 }

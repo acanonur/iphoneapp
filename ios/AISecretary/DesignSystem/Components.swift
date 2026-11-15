@@ -179,7 +179,7 @@ struct Kicker: View {
     var tabularNumbers = false
 
     var body: some View {
-        Text(text.uppercased())
+        Text(text.displayUppercased)
             .typeStyle(tabularNumbers ? tabular : style)
             .foregroundStyle(color)
     }

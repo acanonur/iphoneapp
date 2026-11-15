@@ -1,24 +1,27 @@
 # Checks every push the way a person with a Mac would: the backend's tests, a
 # real Xcode build of the iPhone app on the oldest and newest toolchains we
-# support, and a screenshot of every screen from the simulator.
+# support, and a photograph of every screen, in every language, from the
+# simulator.
 name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches-ignore:
+      # Holds only the screenshots this workflow itself produces.
+      - ci-screenshots
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend (typecheck + tests)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,12 +30,20 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+        working-directory: backend
       - run: npm run typecheck
+        working-directory: backend
       - run: npm test
+        working-directory: backend
+      - name: Every string in the app is translated
+        run: python3 ios/scripts/check-strings.py
 
   ios:
     name: iOS build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    permissions:
+      # The newest leg pushes its screenshots to the ci-screenshots branch.
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -41,8 +52,10 @@ jobs:
           # iOS 18 SDK as well as with the current one.
           - name: Xcode 16, iOS 18 SDK
             os: macos-15
+            screenshots: false
           - name: Xcode 26, iOS 26 SDK
             os: macos-26
+            screenshots: true
     steps:
       - uses: actions/checkout@v4
 
@@ -52,6 +65,11 @@ jobs:
       - name: Generate the Xcode project
         working-directory: ios
         run: xcodegen generate
+
+      - name: Check the string files
+        working-directory: ios
+        run: |
+          for file in AISecretary/*.lproj/*.strings; do plutil -lint "$file"; done
 
       - name: Build for the simulator
         working-directory: ios
@@ -65,14 +83,37 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
-            build 2>&1 | tee "$RUNNER_TEMP/build.log" | xcbeautify --renderer github-actions
+            build 2>&1 | tee "$RUNNER_TEMP/build.log" | xcbeautify --quiet --renderer github-actions
 
       - name: Summarise compiler errors
         if: failure()
         run: |
-          echo "::group::Errors"
-          grep -E "error:" "$RUNNER_TEMP/build.log" | sort -u | head -150 || true
-          echo "::endgroup::"
+          echo "=== COMPILER ERRORS ==="
+          grep -E "error:" "$RUNNER_TEMP/build.log" | sed "s|$GITHUB_WORKSPACE/||" | sort -u | head -120 || true
+          echo "=== END ==="
+
+      - name: Photograph every screen
+        if: matrix.screenshots
+        run: |
+          ios/scripts/screenshots.sh \
+            "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \
+            "$RUNNER_TEMP/screens"
+
+      # The pictures go to their own branch — nothing but pictures, replaced on
+      # every run — so they can be looked at without downloading anything.
+      - name: Publish the screenshots
+        if: matrix.screenshots
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          cd "$RUNNER_TEMP/screens"
+          printf '# Screenshots\n\nEvery screen of the app as built from `%s` (%s), in English, German and Turkish.\nProduced by the CI workflow; replaced on every run.\n' "$GITHUB_REF_NAME" "$GITHUB_SHA" > README.md
+          git init -q -b ci-screenshots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Screenshots of $GITHUB_SHA"
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-screenshots
 
       - name: Keep the full build log
         if: always()
