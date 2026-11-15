@@ -14,11 +14,19 @@ final class SecretaryViewModel {
     private var pollTask: Task<Void, Never>?
     /// Set when the screens are fed from fixtures and nothing may touch the network.
     private let isStaged: Bool
+    /// Handed-back tasks whose report the user has opened. Kept on the phone:
+    /// what has been read is a fact about this reader, not about the task.
+    private var seenTaskIDs: Set<String>
+
+    private static let seenKey = "yaver.seenTasks"
 
     init(server: ServerStore? = nil, staged tasks: [SecretaryTask]? = nil) {
         self.server = server ?? .shared
         isStaged = tasks != nil
         self.tasks = tasks ?? []
+        seenTaskIDs = tasks == nil
+            ? Set(UserDefaults.standard.stringArray(forKey: Self.seenKey) ?? [])
+            : []
     }
 
     // MARK: - Derived state the screens read
@@ -29,9 +37,28 @@ final class SecretaryViewModel {
 
     var completedCount: Int { tasks.filter { $0.status == .completed }.count }
 
-    /// Tasks the secretary has handed back and is waiting on the user for.
-    var waitingCount: Int {
-        tasks.filter { $0.status == .needsInput || $0.status == .draft }.count
+    /// Tasks the secretary has handed back and the user has not looked at yet.
+    var waitingCount: Int { tasks.filter(isWaiting).count }
+
+    /// Something for the user to read: a draft to check, a question to answer,
+    /// a message a caller left. It stops waiting once its report is opened.
+    func isWaiting(_ task: SecretaryTask) -> Bool {
+        guard !seenTaskIDs.contains(task.id) else { return false }
+        switch task.status {
+        case .needsInput, .draft: return true
+        case .completed: return task.isInbound
+        default: return false
+        }
+    }
+
+    /// The user has the report of this task in front of them.
+    func markSeen(_ task: SecretaryTask) {
+        guard !isStaged, isWaiting(task) else { return }
+        seenTaskIDs.insert(task.id)
+        // Remember only tasks that still exist, so the list cannot grow for ever.
+        let current = Set(tasks.map(\.id))
+        seenTaskIDs.formIntersection(current)
+        UserDefaults.standard.set(Array(seenTaskIDs), forKey: Self.seenKey)
     }
 
     func task(withID id: String) -> SecretaryTask? {

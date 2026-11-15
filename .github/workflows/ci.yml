@@ -1,7 +1,8 @@
 # Checks every push the way a person with a Mac would: the backend's tests, a
 # real Xcode build of the iPhone app on the oldest and newest toolchains we
-# support, and a photograph of every screen, in every language, from the
-# simulator.
+# support, a photograph of every screen, in every language, from the
+# simulator — and the app itself, run against a real server with nobody
+# touching it, doing what its owner would do.
 name: CI
 
 on:
@@ -102,13 +103,34 @@ jobs:
             "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \
             "$RUNNER_TEMP/screens"
 
+      - uses: actions/setup-node@v4
+        if: matrix.screenshots
+        with:
+          node-version: 22
+
+      # The server is started on this machine and the app is let loose on it:
+      # it has to find the server on the network, place a call and follow it
+      # line by line, hang up, take an answered call, and get past a server
+      # that asks for its key. See ios/scripts/selftest.sh.
+      - name: Run the app against a real server
+        if: matrix.screenshots
+        timeout-minutes: 15
+        run: |
+          (cd backend && npm ci --no-audit --no-fund)
+          ios/scripts/selftest.sh \
+            "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \
+            "$GITHUB_WORKSPACE/backend" \
+            "$RUNNER_TEMP/screens/selftest"
+
       # The pictures go to their own branch — nothing but pictures, replaced on
       # every run — so they can be looked at without downloading anything.
+      # Published also when the run above failed: its pictures show why.
       - name: Publish the screenshots
-        if: matrix.screenshots
+        if: ${{ !cancelled() && matrix.screenshots }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
+          [ -d "$RUNNER_TEMP/screens" ] || exit 0
           cd "$RUNNER_TEMP/screens"
           printf '# Screenshots\n\nEvery screen of the app as built from `%s` (%s), in English, German and Turkish.\nProduced by the CI workflow; replaced on every run.\n' "$GITHUB_REF_NAME" "$GITHUB_SHA" > README.md
           git init -q -b ci-screenshots

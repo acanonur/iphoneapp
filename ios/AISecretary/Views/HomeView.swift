@@ -302,7 +302,7 @@ struct HomeView: View {
                 .padding(.vertical, 14)
         } else {
             ForEach(model.tasks) { task in
-                TaskRow(task: task) { openTask(task) }
+                TaskRow(task: task, isNew: model.isWaiting(task)) { openTask(task) }
             }
         }
     }
@@ -311,6 +311,8 @@ struct HomeView: View {
 /// One line of the ledger: what kind of task, when, what it was, where it got to.
 private struct TaskRow: View {
     let task: SecretaryTask
+    /// Handed back and not opened yet — marked, so it is found at a glance.
+    var isNew = false
     var action: () -> Void
 
     /// The tag says where the task stands in a word or two: the reason for a
@@ -328,6 +330,12 @@ private struct TaskRow: View {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 7) {
                         HStack(spacing: 10) {
+                            if isNew {
+                                Rectangle()
+                                    .fill(Modernist.accent)
+                                    .frame(width: 8, height: 8)
+                                    .accessibilityLabel(L("New"))
+                            }
                             if task.isInbound {
                                 Icon(glyph: .phoneIncoming, size: 12)
                             }

@@ -90,6 +90,14 @@ struct RootView: View {
         .tint(Modernist.accent)
         .hostsLiveTranslation(translator)
         .task { if hasOnboarded { await model.refresh() } }
+        #if DEBUG
+        // The build machine's end-to-end check: the app against a real server.
+        .task {
+            if let plan = SelfTest.requestedPlan {
+                await SelfTest(plan: plan, model: model) { route = $0 }.run()
+            }
+        }
+        #endif
         // The server needs to know who it works for — to answer calls and
         // write notes while the app is closed.
         .task(id: ProfileKey(name: userName, language: reportLanguageRaw, connected: model.server.isConnected)) {

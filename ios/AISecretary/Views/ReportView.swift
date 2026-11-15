@@ -83,6 +83,11 @@ struct ReportView: View {
                 )
             }
         }
+        // Once a draft, a question or a caller's message is on screen, it is
+        // no longer "waiting for you" — also when it arrives while this is open.
+        .onChange(of: task?.status, initial: true) { _, _ in
+            if let task { model.markSeen(task) }
+        }
     }
 
     // MARK: - Verdict
