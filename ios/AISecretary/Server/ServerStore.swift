@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Observation
 
@@ -15,6 +16,8 @@ struct ServerHealth: Decodable, Equatable {
     var simulated: Bool?
     var auth: String?
     var reports: String?
+    /// Proof that the server holds the access key: an HMAC of the challenge.
+    var proof: String?
 
     /// Servers from before the app could find and pair with them answer with
     /// less; they still work, but should be updated.
@@ -112,6 +115,10 @@ final class ServerStore {
     /// use stops answering (the Wi-Fi address changed, the phone left home).
     private(set) var knownAddresses: [String]
 
+    /// True once the server in use has proved it holds the access key. Until
+    /// then the key is not sent to it.
+    private(set) var keyTrusted = false
+
     private let defaults: UserDefaults
     private let persists: Bool
     private var connecting: Task<Bool, Never>?
@@ -136,7 +143,9 @@ final class ServerStore {
     var isSimulated: Bool { session?.simulated ?? health?.simulated ?? true }
     var isOutdated: Bool { health.map { !$0.isCurrent } ?? false }
     var serverName: String { health?.name ?? baseURL.host() ?? "" }
-    var endpoint: ServerEndpoint { ServerEndpoint(baseURL: baseURL, accessKey: accessKey) }
+    var endpoint: ServerEndpoint {
+        ServerEndpoint(baseURL: baseURL, accessKey: keyTrusted ? accessKey : "")
+    }
 
     // MARK: - Connecting
 
@@ -161,10 +170,18 @@ final class ServerStore {
             if let url = URL(string: address), !candidates.contains(url) { candidates.append(url) }
         }
 
+        // A server that wants a key but cannot prove it holds ours is not our
+        // server — or ours with another key. Either way the key stays here.
+        var sawStranger = false
+
         for url in candidates {
-            switch await APIClient.probe(url) {
+            let challenge = Self.challenge()
+            switch await APIClient.probe(url, challenge: challenge) {
             case let .success(found):
-                return await adopt(url, health: found)
+                if let trusted = trust(found, challenge: challenge) {
+                    return await adopt(url, health: found, keyTrusted: trusted)
+                }
+                sawStranger = true
             case let .failure(problem):
                 if url == baseURL { lastProblem = problem }
             }
@@ -172,18 +189,42 @@ final class ServerStore {
 
         if searchNetwork {
             for url in await ServerDiscovery.search() where !candidates.contains(url) {
-                if case let .success(found) = await APIClient.probe(url) {
-                    return await adopt(url, health: found)
+                let challenge = Self.challenge()
+                if case let .success(found) = await APIClient.probe(url, challenge: challenge),
+                   let trusted = trust(found, challenge: challenge) {
+                    return await adopt(url, health: found, keyTrusted: trusted)
                 }
             }
         }
 
-        status = .unreachable(lastProblem)
+        status = sawStranger ? .wrongKey : .unreachable(lastProblem)
         return false
     }
 
+    private static func challenge() -> String {
+        UUID().uuidString + UUID().uuidString
+    }
+
+    /// Whether to talk to a server that answered, and whether to give it the key.
+    ///
+    /// - `false`: go ahead without the key — the server asks for none, or the
+    ///   app has none to give (it will then be asked for one).
+    /// - `true`: the server proved it holds the same key; send it.
+    /// - `nil`: the server wants a key and could not prove it holds ours. The
+    ///   app finds servers by itself, so this check is what keeps the key from
+    ///   being handed to whatever happens to answer on a strange network.
+    private func trust(_ found: ServerHealth, challenge: String) -> Bool? {
+        guard found.needsKey, !accessKey.isEmpty else { return false }
+        let expected = HMAC<SHA256>.authenticationCode(
+            for: Data(challenge.utf8), using: SymmetricKey(data: Data(accessKey.utf8))
+        )
+        let hex = expected.map { String(format: "%02x", $0) }.joined()
+        return found.proof == hex ? true : nil
+    }
+
     /// Settles on an address that answered, then asks to be let in.
-    private func adopt(_ url: URL, health found: ServerHealth) async -> Bool {
+    private func adopt(_ url: URL, health found: ServerHealth, keyTrusted trusted: Bool) async -> Bool {
+        keyTrusted = trusted
         if url != baseURL {
             baseURL = url
             if persists { defaults.set(url.absoluteString, forKey: Key.url) }
@@ -235,20 +276,35 @@ final class ServerStore {
         if persists { defaults.set(url.absoluteString, forKey: Key.url) }
         if let key {
             accessKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
+            keyTrusted = false
             if persists { Keychain.saveKey(accessKey) }
         }
         return await connect(searchNetwork: false)
     }
 
-    /// Handles the link the server's pairing page opens:
-    /// `yaver://pair?url=http://192.168.2.56:8787&key=…`
+    /// What a pairing link asks for: `yaver://pair?url=http://192.168.2.56:8787&key=…`
+    /// The server's pairing page opens such a link.
+    struct Pairing: Equatable {
+        let address: String
+        let key: String?
+
+        init?(link: URL) {
+            guard link.scheme == "yaver", link.host() == "pair",
+                  let items = URLComponents(url: link, resolvingAgainstBaseURL: false)?.queryItems,
+                  let address = items.first(where: { $0.name == "url" })?.value,
+                  ServerStore.url(from: address) != nil
+            else { return nil }
+            self.address = address
+            key = items.first(where: { $0.name == "key" })?.value
+        }
+
+        /// The server's host, for asking the user whether they meant this.
+        var host: String { ServerStore.url(from: address)?.host() ?? address }
+    }
+
     @discardableResult
-    func pair(with link: URL) async -> Bool {
-        guard link.scheme == "yaver", link.host() == "pair",
-              let items = URLComponents(url: link, resolvingAgainstBaseURL: false)?.queryItems,
-              let address = items.first(where: { $0.name == "url" })?.value
-        else { return false }
-        return await use(address: address, key: items.first(where: { $0.name == "key" })?.value)
+    func pair(_ pairing: Pairing) async -> Bool {
+        await use(address: pairing.address, key: pairing.key ?? "")
     }
 
     /// Re-reads what the server offers — after the profile changed, say.
@@ -262,7 +318,7 @@ final class ServerStore {
     }
 
     /// Accepts "192.168.2.56:8787", "my-mac.local" or a full URL.
-    static func url(from text: String) -> URL? {
+    nonisolated static func url(from text: String) -> URL? {
         var address = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !address.isEmpty else { return nil }
         if !address.contains("://") { address = "http://" + address }

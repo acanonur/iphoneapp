@@ -115,6 +115,7 @@ struct TranslatorView: View {
         .onDisappear {
             recognizer.cancel()
             speaker.stop()
+            SpeechRecognizer.releaseAudio()
         }
         .alert(
             L("Translator"),
@@ -257,6 +258,9 @@ struct TranslatorView: View {
             .onChange(of: recognizer.transcript) {
                 proxy.scrollTo("end", anchor: .bottom)
             }
+            .onChange(of: phase) {
+                withAnimation { proxy.scrollTo("end", anchor: .bottom) }
+            }
         }
     }
 
@@ -344,10 +348,14 @@ struct TranslatorView: View {
                 }
                 .buttonStyle(
                     ModernistButtonStyle(
-                        variant: .ghost, fontSize: 12, horizontalPadding: 4, verticalPadding: 2
+                        variant: .ghost, fontSize: 12, horizontalPadding: 4, verticalPadding: 12
                     )
                 )
                 .padding(.leading, -4)
+                // A finger-sized target without loosening the line spacing.
+                .padding(.vertical, -10)
+                // Played back now, the loudspeaker would be heard as speech.
+                .disabled(isBusy)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 14)
@@ -442,7 +450,9 @@ struct TranslatorView: View {
             .fixedSize(horizontal: false, vertical: true)
             Hairline()
             Text(
-                L("Works face-to-face and over speakerphone. iOS does not let apps listen to your own phone call.")
+                recognizer.isRecording && !recognizer.isOnDevice
+                    ? L("For this language, the iPhone sends the audio to Apple to recognise it.")
+                    : L("Works face-to-face and over speakerphone. iOS does not let apps listen to your own phone call.")
             )
             .typeStyle(.captionSmall)
             .foregroundStyle(Modernist.Neutral.s700)
@@ -529,7 +539,11 @@ struct TranslatorView: View {
             phase = .idle
             liveTranslation = ""
             turnPair = nil
-            guard !text.isEmpty else { return }
+            guard !text.isEmpty else {
+                // Nothing was heard. If the recogniser said why, pass it on.
+                errorMessage = recognizer.problem
+                return
+            }
             entries.append(ConversationEntry(side: side, original: text, pair: pair))
             translator.request([text], pair)
             speakNewTranslations()
@@ -538,12 +552,14 @@ struct TranslatorView: View {
 
     /// Reads a finished line aloud once, when its translation arrives.
     private func speakNewTranslations() {
-        guard autoSpeak, stage == nil, !isBusy else { return }
-        guard let entry = entries.last, !spoken.contains(entry.id),
-              translator.translation(of: entry.original, entry.pair) != nil
-        else { return }
-        spoken.insert(entry.id)
-        play(entry)
+        guard stage == nil, !isBusy else { return }
+        // The newest line that has a translation and has not been read yet.
+        // Anything older is skipped: reading it now would only be confusing.
+        guard let index = entries.lastIndex(where: {
+            !spoken.contains($0.id) && translator.translation(of: $0.original, $0.pair) != nil
+        }) else { return }
+        for entry in entries[...index] { spoken.insert(entry.id) }
+        if autoSpeak { play(entries[index]) }
     }
 
     private func play(_ entry: ConversationEntry) {

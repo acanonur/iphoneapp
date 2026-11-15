@@ -60,8 +60,9 @@ struct BackButton: View {
         .buttonStyle(
             ModernistButtonStyle(
                 variant: .ghost,
+                height: 44,
                 horizontalPadding: 6,
-                verticalPadding: 4,
+                verticalPadding: 0,
                 foreground: Modernist.text
             )
         )

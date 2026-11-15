@@ -45,10 +45,12 @@ struct OnboardingView: View {
             ScrollView {
                 stepContent
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Modernist.gutter)
+                    .padding(.bottom, 20)
             }
+            .scrollDismissesKeyboard(.interactively)
             footer
         }
-        .padding(.horizontal, Modernist.gutter)
     }
 
     // MARK: - Chrome
@@ -67,6 +69,7 @@ struct OnboardingView: View {
             .frame(height: Modernist.headerHeight)
             Rule()
         }
+        .padding(.horizontal, Modernist.gutter)
     }
 
     /// One cell per step, filled as the user moves through them.
@@ -79,6 +82,7 @@ struct OnboardingView: View {
             }
         }
         .padding(.top, 12)
+        .padding(.horizontal, Modernist.gutter)
     }
 
     @ViewBuilder
@@ -346,6 +350,8 @@ struct OnboardingView: View {
                 )
             }
             .padding(.top, 12)
+            .padding(.bottom, 10)
         }
+        .padding(.horizontal, Modernist.gutter)
     }
 }

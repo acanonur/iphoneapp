@@ -164,8 +164,17 @@ struct APIClient {
 
     /// Asks an address whether a Yaver server lives there. Short timeout: this
     /// runs over several candidate addresses in a row.
-    static func probe(_ baseURL: URL) async -> Result<ServerHealth, ConnectionProblem> {
-        var request = URLRequest(url: baseURL.appending(path: "/health"))
+    ///
+    /// The `challenge` is a random string; a server that holds the access key
+    /// answers with a proof of it (see `ServerStore.trust`), so the app can
+    /// tell its own server from anything else before it sends the key there.
+    static func probe(
+        _ baseURL: URL, challenge: String
+    ) async -> Result<ServerHealth, ConnectionProblem> {
+        var request = URLRequest(
+            url: baseURL.appending(path: "/health")
+                .appending(queryItems: [URLQueryItem(name: "challenge", value: challenge)])
+        )
         request.timeoutInterval = 4
         do {
             let (data, response) = try await transport.data(for: request)

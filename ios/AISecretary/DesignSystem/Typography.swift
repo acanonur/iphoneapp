@@ -105,7 +105,7 @@ extension TypeStyle {
     static let headlineSmall = TypeStyle(size: 24, weight: .extrabold, lineHeight: 1.1, tracking: -0.02)
     /// The language names in the translator's bar, and its ledger translations.
     static let subhead = TypeStyle(size: 20, weight: .extrabold, lineHeight: 1.2)
-    static let translated = TypeStyle(size: 17, weight: .extrabold, lineHeight: 1.25)
+    static let translated = TypeStyle(size: 16, weight: .extrabold, lineHeight: 1.25)
     /// The disclosure quotation and the grid tile labels.
     static let quote = TypeStyle(size: 18, weight: .extrabold, lineHeight: 1.25)
     static let tile = TypeStyle(size: 14, weight: .extrabold, lineHeight: 1.2)

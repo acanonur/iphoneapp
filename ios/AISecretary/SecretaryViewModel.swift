@@ -189,6 +189,8 @@ final class SecretaryViewModel {
 
     private var pollInterval: Duration? {
         if hasActiveCall { return .milliseconds(1_200) }
+        // The call is over; its report is still being written.
+        if tasks.contains(where: \.isAwaitingReport) { return .seconds(2) }
         if hasActiveTasks { return .seconds(3) }
         if server.session?.profile.answerCalls == true { return .seconds(20) }
         return nil

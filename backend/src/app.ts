@@ -3,7 +3,7 @@ import Fastify, {
   type FastifyReply,
   type FastifyRequest,
 } from 'fastify';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { hostname } from 'node:os';
 import { CallEngine } from './calls.js';
 import type { ClaudeSettings } from './claude.js';
@@ -316,17 +316,33 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
     return address && typeof address === 'object' ? address.port : config.port;
   }
 
-  /** What anyone may know: that this is a Yaver server, and what it needs from the app. */
-  fastify.get('/health', async () => ({
-    ok: true,
-    service: 'yaver',
-    version: API_VERSION,
-    name: serverName,
-    provider: provider.name,
-    simulated: provider.simulated,
-    auth: accessKey ? 'key' : 'none',
-    reports: claude ? 'claude' : 'basic',
-  }));
+  /**
+   * What anyone may know: that this is a Yaver server, and what it needs from
+   * the app.
+   *
+   * The app finds servers by itself, so it must be able to tell *its* server
+   * from anything else that answers on the network before it sends its key
+   * there. It sends a random challenge; a server that holds the key answers
+   * with a proof (an HMAC of the challenge), which gives nothing away.
+   */
+  fastify.get<{ Querystring: { challenge?: string } }>('/health', async (request) => {
+    const challenge = request.query.challenge;
+    const proof =
+      accessKey && typeof challenge === 'string' && challenge.length >= 16 && challenge.length <= 128
+        ? createHmac('sha256', accessKey).update(challenge).digest('hex')
+        : undefined;
+    return {
+      ok: true,
+      service: 'yaver',
+      version: API_VERSION,
+      name: serverName,
+      provider: provider.name,
+      simulated: provider.simulated,
+      auth: accessKey ? 'key' : 'none',
+      reports: claude ? 'claude' : 'basic',
+      ...(proof ? { proof } : {}),
+    };
+  });
 
   fastify.get('/', async (_request, reply) =>
     reply.type('text/html; charset=utf-8').send(landingPage()),

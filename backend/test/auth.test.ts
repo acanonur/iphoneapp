@@ -78,6 +78,34 @@ describe('the access key', () => {
     expect(right.statusCode).toBe(200);
   });
 
+  it('proves it holds the key without revealing it', async () => {
+    const { createHmac } = await import('node:crypto');
+    const app = makeApp({ REQUIRE_KEY: 'always', API_KEY: 'the-real-key' });
+    const challenge = 'a-random-challenge-0123456789';
+    const health = (
+      await app.fastify.inject({ method: 'GET', url: `/health?challenge=${challenge}` })
+    ).json();
+    expect(health.proof).toBe(
+      createHmac('sha256', 'the-real-key').update(challenge).digest('hex'),
+    );
+    expect(JSON.stringify(health)).not.toContain('the-real-key');
+
+    // No challenge, or a trivially short one: no proof.
+    const plain = (await app.fastify.inject({ method: 'GET', url: '/health' })).json();
+    expect(plain.proof).toBeUndefined();
+    const short = (await app.fastify.inject({ method: 'GET', url: '/health?challenge=abc' })).json();
+    expect(short.proof).toBeUndefined();
+  });
+
+  it('offers no proof when it has no key', async () => {
+    const app = makeApp();
+    const health = (
+      await app.fastify.inject({ method: 'GET', url: '/health?challenge=a-random-challenge-0123456789' })
+    ).json();
+    expect(health.auth).toBe('none');
+    expect(health.proof).toBeUndefined();
+  });
+
   it('uses the key from the environment when one is given', () => {
     const app = makeApp({ REQUIRE_KEY: 'always', API_KEY: 'chosen-by-the-owner' });
     expect(app.accessKey).toBe('chosen-by-the-owner');

@@ -36,6 +36,15 @@ struct LiveCallView: View {
                     if let task {
                         VStack(alignment: .leading, spacing: 0) {
                             statusBlock(task)
+                            if task.status.isActive, !model.server.isConnected {
+                                // The clock would keep running over a dead line.
+                                Notice(
+                                    title: L("The connection to your server is lost."),
+                                    message: L("The call itself may still be going on. What you see here stops updating until the server is back."),
+                                    tone: .accent
+                                )
+                                .padding(.top, 14)
+                            }
                             if task.simulated {
                                 Notice(
                                     title: L("Simulated call"),
@@ -48,6 +57,13 @@ struct LiveCallView: View {
                             Color.clear.frame(height: 1).id("end")
                         }
                         .padding(.horizontal, Modernist.gutter)
+                    } else {
+                        Text(L("This task is no longer on the server."))
+                            .typeStyle(.body)
+                            .foregroundStyle(Modernist.Neutral.s700)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, Modernist.gutter)
+                            .padding(.top, 22)
                     }
                 }
                 // Keep the newest line in view while the call is live.

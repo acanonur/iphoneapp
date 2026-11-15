@@ -20,9 +20,19 @@ struct BriefView: View {
     @State private var documentText = ""
     @State private var isSubmitting = false
     @State private var errorMessage: String?
+    @State private var notificationsOff = false
+    @State private var pendingCreated: SecretaryTask?
     @State private var showingCamera = false
     @State private var photoItem: PhotosPickerItem?
     @State private var showingPhotoPicker = false
+    /// When a follow-up is due. Tomorrow, same time, to start with.
+    @State private var dueDate = Date().addingTimeInterval(24 * 3600)
+    /// True while a photograph is being read into text.
+    @State private var isReadingDocument = false
+
+    /// What the server accepts.
+    private static let goalLimit = 2_000
+    private static let documentLimit = 20_000
 
     private static var exampleGoal: String {
         L("Call my dentist and book a check-up appointment for next week, mornings preferred.")
@@ -50,7 +60,9 @@ struct BriefView: View {
     private var isCall: Bool { briefType == .call }
 
     private var canSubmit: Bool {
-        guard !isSubmitting, goal.trimmingCharacters(in: .whitespacesAndNewlines).count >= 4 else {
+        guard !isSubmitting, !isReadingDocument,
+              goal.trimmingCharacters(in: .whitespacesAndNewlines).count >= 4
+        else {
             return false
         }
         guard isCall else { return true }
@@ -86,6 +98,8 @@ struct BriefView: View {
                 HStack(spacing: 6) {
                     IconButton(glyph: .close, accessibilityLabel: L("Cancel"), action: onCancel)
                         .padding(.leading, -10)
+                        // Once the task is on its way it cannot be taken back here.
+                        .disabled(isSubmitting)
                     Wordmark(title: L("New task"))
                 }
             }
@@ -97,7 +111,9 @@ struct BriefView: View {
                     if isCall {
                         phoneField
                     }
-                    if briefType != .followup {
+                    if briefType == .followup {
+                        dueField
+                    } else {
                         callLanguageField
                     }
                     if briefType.takesDocument {
@@ -137,10 +153,12 @@ struct BriefView: View {
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
+            isReadingDocument = true
             Task {
                 let text = await DocumentText.recognize(in: item)
                 if !text.isEmpty { documentText = text }
                 photoItem = nil
+                isReadingDocument = false
             }
         }
         .alert(
@@ -153,6 +171,13 @@ struct BriefView: View {
             Button(L("OK")) { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "")
+        }
+        .alert(L("Saved, but it will not ring"), isPresented: $notificationsOff) {
+            Button(L("OK")) {
+                if let pendingCreated { onCreated(pendingCreated) }
+            }
+        } message: {
+            Text(L("Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings."))
         }
     }
 
@@ -221,6 +246,23 @@ struct BriefView: View {
         }
     }
 
+    /// When to be reminded. The reminder is a notification on this iPhone.
+    private var dueField: some View {
+        Field(label: L("Remind me on")) {
+            DatePicker(
+                L("Remind me on"),
+                selection: $dueDate,
+                in: Date()...,
+                displayedComponents: [.date, .hourAndMinute]
+            )
+            .labelsHidden()
+            .datePickerStyle(.compact)
+            .tint(Modernist.accent)
+            .environment(\.locale, L10n.locale)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     /// Photographs the letter or form and keeps only the text it reads.
     private var documentButton: some View {
         VStack(alignment: .leading, spacing: Modernist.Space.s2) {
@@ -232,6 +274,7 @@ struct BriefView: View {
             .buttonStyle(
                 ModernistButtonStyle(variant: .secondary, block: true, height: 48, fontSize: 14)
             )
+            .disabled(isReadingDocument)
 
             if !documentText.isEmpty {
                 Text(L("Only the text is sent — the photograph stays on your phone."))
@@ -242,7 +285,8 @@ struct BriefView: View {
     }
 
     private var documentButtonTitle: String {
-        documentText.isEmpty
+        if isReadingDocument { return L("Reading the document…") }
+        return documentText.isEmpty
             ? L("Add a photo of the document")
             : Lf("Document read · %d characters", documentText.count)
     }
@@ -295,16 +339,35 @@ struct BriefView: View {
                 let created = try await model.create(
                     NewTaskRequest(
                         kind: briefType,
-                        goal: goal.trimmingCharacters(in: .whitespacesAndNewlines),
+                        goal: String(
+                            goal.trimmingCharacters(in: .whitespacesAndNewlines)
+                                .prefix(Self.goalLimit)
+                        ),
                         phoneNumber: isCall ? normalizedPhone : nil,
                         // For a call this is the language spoken; for a letter
                         // or a message it is the language the other side reads.
                         language: callLanguage,
                         summaryLanguage: reportLanguage,
                         userName: userName.isEmpty ? nil : userName,
-                        documentText: documentText.isEmpty ? nil : documentText
+                        // Only the kinds that work from a document take one
+                        // along; a scan made before the type was changed stays behind.
+                        documentText: briefType.takesDocument && !documentText.isEmpty
+                            ? String(documentText.prefix(Self.documentLimit))
+                            : nil,
+                        todoWhen: briefType == .followup ? DateFormatting.due(dueDate) : nil
                     )
                 )
+                if created.kind == .followup {
+                    let scheduled = await Reminders.schedule(
+                        id: created.id, text: created.goal, at: dueDate
+                    )
+                    if !scheduled {
+                        // Saved, but it will not ring: say so before moving on.
+                        notificationsOff = true
+                        pendingCreated = created
+                        return
+                    }
+                }
                 onCreated(created)
             } catch {
                 errorMessage = error.localizedDescription

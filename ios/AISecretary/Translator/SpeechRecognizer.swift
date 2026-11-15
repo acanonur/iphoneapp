@@ -28,6 +28,8 @@ final class SpeechRecognizer {
     private(set) var isRecording = false
     /// True when this turn is recognised on the phone, with no audio sent anywhere.
     private(set) var isOnDevice = false
+    /// Why the last turn produced nothing, when the recogniser said so.
+    private(set) var problem: String?
 
     private var audioEngine: AVAudioEngine?
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -35,6 +37,23 @@ final class SpeechRecognizer {
     /// Counts turns, so a late callback from an earlier one is ignored.
     private var turn = 0
     private var finalWaiter: CheckedContinuation<Void, Never>?
+    private let observers = ObserverBag()
+
+    init() {
+        // A phone call, Siri, or headphones being plugged in stop the audio
+        // under us; end the turn then, instead of "listening" to nothing.
+        let center = NotificationCenter.default
+        for name in [AVAudioSession.interruptionNotification, .AVAudioEngineConfigurationChange] {
+            observers.tokens.append(
+                center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    Task { @MainActor in
+                        guard let self, self.isRecording else { return }
+                        self.recognitionEnded()
+                    }
+                }
+            )
+        }
+    }
 
     /// Asks for speech-recognition + microphone permission. Returns true if both granted.
     static func requestPermissions() async -> Bool {
@@ -63,12 +82,13 @@ final class SpeechRecognizer {
             mode: .spokenAudio,
             options: [.defaultToSpeaker, .duckOthers]
         )
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
+        try session.setActive(true)
 
         let engine = AVAudioEngine()
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         request.addsPunctuation = true
+        request.taskHint = .dictation
         // Recognise on the phone wherever the language allows it: nothing
         // leaves the device, and there is no one-minute limit.
         request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
@@ -78,6 +98,7 @@ final class SpeechRecognizer {
         // No usable input (another app holds the microphone, or there is none):
         // installing a tap on such a format would bring the app down.
         guard format.sampleRate > 0, format.channelCount > 0 else {
+            Self.releaseAudio()
             throw RecognizerError.noMicrophone
         }
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
@@ -88,12 +109,14 @@ final class SpeechRecognizer {
             try engine.start()
         } catch {
             inputNode.removeTap(onBus: 0)
+            Self.releaseAudio()
             throw error
         }
 
         turn += 1
         let thisTurn = turn
         transcript = ""
+        problem = nil
         isRecording = true
         isOnDevice = request.requiresOnDeviceRecognition
         audioEngine = engine
@@ -102,9 +125,11 @@ final class SpeechRecognizer {
         task = recognizer.recognitionTask(with: request) { [weak self] result, error in
             let text = result?.bestTranscription.formattedString
             let ended = error != nil || (result?.isFinal ?? false)
+            let failure = error.flatMap(Self.explain)
             Task { @MainActor in
                 guard let self, self.turn == thisTurn else { return }
                 if let text, !text.isEmpty { self.transcript = text }
+                if let failure { self.problem = failure }
                 if ended { self.recognitionEnded() }
             }
         }
@@ -123,12 +148,14 @@ final class SpeechRecognizer {
         request?.endAudio()
         task.finish()
 
-        // The final result normally arrives within a moment; do not wait forever.
+        // The final result normally arrives within a moment; do not wait
+        // forever. Recognition by Apple's servers takes a little longer.
         let thisTurn = turn
+        let patience: Duration = isOnDevice ? .milliseconds(1_500) : .seconds(3)
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             finalWaiter = continuation
             Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .milliseconds(1_500))
+                try? await Task.sleep(for: patience)
                 guard let self, self.turn == thisTurn else { return }
                 self.resumeWaiter()
             }
@@ -136,6 +163,30 @@ final class SpeechRecognizer {
         let text = transcript
         reset()
         return text
+    }
+
+    /// The recogniser's failures that a person can do something about, in
+    /// plain words. Everything else ("no speech heard", a cancelled turn) is
+    /// not worth an alert.
+    nonisolated private static func explain(_ error: Error) -> String? {
+        let failure = error as NSError
+        guard failure.domain == "kAFAssistantErrorDomain" else { return nil }
+        switch failure.code {
+        case 201:
+            return L("Siri and Dictation are switched off on this iPhone. Switch them on in Settings to use the translator.")
+        case 102, 1101:
+            return L("The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection.")
+        default:
+            return nil
+        }
+    }
+
+    /// Hands the audio back to whatever was playing before — music, a
+    /// podcast — once the translator is done with the microphone.
+    static func releaseAudio() {
+        try? AVAudioSession.sharedInstance().setActive(
+            false, options: .notifyOthersOnDeactivation
+        )
     }
 
     /// Drops the turn without waiting for anything.
@@ -172,5 +223,14 @@ final class SpeechRecognizer {
         isRecording = false
         // A new turn number, so nothing from this one can touch the next.
         turn += 1
+    }
+}
+
+/// Notification observers that unregister themselves when their owner goes away.
+private final class ObserverBag {
+    var tokens: [NSObjectProtocol] = []
+
+    deinit {
+        for token in tokens { NotificationCenter.default.removeObserver(token) }
     }
 }

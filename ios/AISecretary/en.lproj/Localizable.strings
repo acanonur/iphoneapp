@@ -105,6 +105,9 @@
 "Listening" = "Listening";
 "Tap when done" = "Tap when done";
 "Microphone and speech recognition access are needed. Please allow both in the iPhone’s Settings." = "Microphone and speech recognition access are needed. Please allow both in the iPhone’s Settings.";
+"Siri and Dictation are switched off on this iPhone. Switch them on in Settings to use the translator." = "Siri and Dictation are switched off on this iPhone. Switch them on in Settings to use the translator.";
+"The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection." = "The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection.";
+"For this language, the iPhone sends the audio to Apple to recognise it." = "For this language, the iPhone sends the audio to Apple to recognise it.";
 "Call my dentist and book a check-up appointment for next week, mornings preferred." = "Call my dentist and book a check-up appointment for next week, mornings preferred.";
 "Start with the country code, for example +49 for Germany or +90 for Türkiye." = "Start with the country code, for example +49 for Germany or +90 for Türkiye.";
 "Your server only calls numbers starting with %@." = "Your server only calls numbers starting with %@.";
@@ -126,6 +129,11 @@
 "Yaver says at once that it is an AI calling on your behalf. This disclosure is required by law and cannot be turned off." = "Yaver says at once that it is an AI calling on your behalf. This disclosure is required by law and cannot be turned off.";
 "Place the call" = "Place the call";
 "Send to Yaver" = "Send to Yaver";
+"Remind me on" = "Remind me on";
+"Saved, but it will not ring" = "Saved, but it will not ring";
+"Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings." = "Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings.";
+"Connect to this server?" = "Connect to this server?";
+"Yaver will send your tasks to %@. Only connect to a server you started yourself." = "Yaver will send your tasks to %@. Only connect to a server you started yourself.";
 "Settings" = "Settings";
 "Brief Yaver" = "Brief Yaver";
 "Your server needs an update." = "Your server needs an update.";
@@ -209,8 +217,12 @@
 "Report in" = "Report in";
 "Call back %@" = "Call back %@";
 "Still to do" = "Still to do";
-"Reminder set" = "Reminder set";
-"Add reminder" = "Add reminder";
+"On your list" = "On your list";
+"Add to my list" = "Add to my list";
+"This is on your list. Nothing else has to happen for it." = "This is on your list. Nothing else has to happen for it.";
+"Reading the document…" = "Reading the document…";
+"The connection to your server is lost." = "The connection to your server is lost.";
+"The call itself may still be going on. What you see here stops updating until the server is back." = "The call itself may still be going on. What you see here stops updating until the server is back.";
 "Draft, waiting to be sent" = "Draft, waiting to be sent";
 "The form so far" = "The form so far";
 "Written for you" = "Written for you";

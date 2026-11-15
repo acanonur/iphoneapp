@@ -284,6 +284,8 @@ struct SecretaryTask: Decodable, Identifiable, Equatable {
     var lines: [CallLine] = []
     let transcript: String?
     let summary: String?
+    /// Where the summary came from. `placeholder` means "no report yet".
+    var summarySource: String?
     /// What the secretary produced — a drafted reply, a translation.
     let result: String?
     let todo: String?
@@ -298,6 +300,20 @@ struct SecretaryTask: Decodable, Identifiable, Equatable {
     var createdDate: Date? {
         ISO8601DateFormatter.withFractionalSeconds.date(from: createdAt)
             ?? ISO8601DateFormatter.plain.date(from: createdAt)
+    }
+
+    var updatedDate: Date? {
+        ISO8601DateFormatter.withFractionalSeconds.date(from: updatedAt)
+            ?? ISO8601DateFormatter.plain.date(from: updatedAt)
+    }
+
+    /// A call that has just ended, whose report is still being written. The
+    /// call is over before the report exists, so the app must keep asking.
+    var isAwaitingReport: Bool {
+        guard kind == .call, status == .completed else { return false }
+        guard summary == nil || summarySource == "placeholder" else { return false }
+        guard let updated = updatedDate else { return false }
+        return Date().timeIntervalSince(updated) < 90
     }
 
     /// The ledger's timestamp: "Now", "Today · 16:05", "Mon · 09:12".
@@ -365,7 +381,7 @@ struct SecretaryTask: Decodable, Identifiable, Equatable {
 extension SecretaryTask {
     private enum CodingKeys: String, CodingKey {
         case id, kind, goal, phoneNumber, language, summaryLanguage, userName, status
-        case direction, simulated, documentText, lines, transcript, summary, result
+        case direction, simulated, documentText, lines, transcript, summary, summarySource, result
         case todo, todoWhen, outcome, durationSeconds, error, errorCode, createdAt, updatedAt
     }
 
@@ -387,6 +403,7 @@ extension SecretaryTask {
         lines = try values.decodeIfPresent([CallLine].self, forKey: .lines) ?? []
         transcript = try values.decodeIfPresent(String.self, forKey: .transcript)
         summary = try values.decodeIfPresent(String.self, forKey: .summary)
+        summarySource = try values.decodeIfPresent(String.self, forKey: .summarySource)
         result = try values.decodeIfPresent(String.self, forKey: .result)
         todo = try values.decodeIfPresent(String.self, forKey: .todo)
         todoWhen = try values.decodeIfPresent(String.self, forKey: .todoWhen)
@@ -457,7 +474,9 @@ struct NewTaskRequest: Codable {
 enum DateFormatting {
     private static let time: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = L10n.locale
+        // A fixed format needs a fixed locale, or the phone's 12-hour switch
+        // rewrites it.
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "HH:mm"
         return formatter
     }()
@@ -465,6 +484,7 @@ enum DateFormatting {
     private static let weekday: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = L10n.locale
+        formatter.calendar = Calendar(identifier: .gregorian)
         formatter.dateFormat = "EEE"
         return formatter
     }()
@@ -472,6 +492,7 @@ enum DateFormatting {
     private static let dayMonth: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = L10n.locale
+        formatter.calendar = Calendar(identifier: .gregorian)
         formatter.setLocalizedDateFormatFromTemplate("d MMM")
         return formatter
     }()
@@ -487,6 +508,19 @@ enum DateFormatting {
             return "\(weekday.string(from: date)) · \(time.string(from: date))"
         }
         return "\(dayMonth.string(from: date)) · \(time.string(from: date))"
+    }
+
+    private static let dueDay: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = L10n.locale
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.setLocalizedDateFormatFromTemplate("EEE d MMM")
+        return formatter
+    }()
+
+    /// When something is due: "Fri 20 Nov · 14:30".
+    static func due(_ date: Date) -> String {
+        "\(dueDay.string(from: date)) · \(time.string(from: date))"
     }
 
     /// `mm:ss`, with the tabular figures the design asks for.

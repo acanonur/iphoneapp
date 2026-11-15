@@ -2,201 +2,238 @@
 >
 > | App | Folder | What it is |
 > |---|---|---|
-> | **AI Secretary** 📞 | [`ios/`](ios/) + [`backend/`](backend/) | Described below: an AI that makes phone calls for you and reports back in your language. |
+> | **Yaver** 📞 | [`ios/`](ios/) + [`backend/`](backend/) | Described below: an AI secretary that makes and answers phone calls for you in German, Turkish and English, and shows you what is said in your own language. |
 > | **KnitStudio** 🧶 | [`ios-knitstudio/`](ios-knitstudio/) (Apple)<br>[`android/`](android/) (Android) | A knitting technique guide, pattern calculator, chart tool and yarn shopping list. Runs on **iPhone, iPad, Mac and Android**; fully on-device. The knitting engine exists twice — Swift and Kotlin — and both are tested against the same verified numbers. See [**how to run it on a Mac**](docs/running-on-your-mac.md), the [Apple README](ios-knitstudio/README.md), the [Android README](android/README.md), [how the numbers work](docs/knitstudio.md), and [how to release it](docs/platforms-and-release.md). |
 
 ---
 
-# AI Secretary 📞🤖
+# Yaver 📞
 
-An iPhone app for people living in a country whose language they don't speak well.
-Two tools in one app:
+*Yaver* is Turkish for an aide — the person who makes the calls and carries the messages
+for someone else. It is an iPhone app for people living in a country whose language they
+do not speak well.
 
-**1. Secretary** — you type **what you need**; your AI secretary does it and reports back
-in your own language. It makes the real phone call in **German, English or Turkish**,
-reads the official letter you photograph, drafts the email you can't phrase, fills in the
-form as far as it can, and keeps the follow-up.
+**It makes phone calls for you.** You write what you need and give a number. Yaver calls
+in **German, Turkish or English**, says at once that it is an AI calling on your behalf,
+and handles the conversation. While the call is going on you see every sentence on your
+screen — **with its translation into your language underneath** — and afterwards a short
+report: what was agreed, and what you still have to do.
 
-> *"Call my dentist at +49 30 1234567 and book a check-up appointment for next week,
-> mornings preferred."* → 3 minutes later: *"Randevunuz salı 10:30'da alındı.
-> Sigorta kartınızı getirmeniz gerekiyor."*
+> *"Call my dentist at +49 30 1234567 and book a check-up for next week, mornings
+> preferred."* → three minutes later: *"Randevunuz salı 10.30'da alındı. Sigorta
+> kartınızı getirmeniz gerekiyor."*
 
-The interface was designed in [Claude Design](https://claude.ai/design) on the **Modernist**
-system — Archivo, ink on a light ground, one red, zero corner radius, 2px rules,
-everything flush left. One home, one primary action, and a ledger of everything the
-secretary has been asked to do. See **[docs/ai-secretary-design.md](docs/ai-secretary-design.md)**
-for how the design maps onto the code.
+**It answers calls for you.** When you cannot pick up, Yaver does: it says it is your AI
+assistant, takes a message in the caller's language, and writes down who rang and why.
 
-**2. Live Translator** — a two-way conversation translator for the moments you're there
-in person (reception desks, offices, speakerphone conversations). Tap "I speak", talk in
-your language — the app instantly shows the translation as text **and speaks it aloud**
-in the other language; tap "They speak" for their turn. Runs fully on-device with
-Apple's Speech + Translation frameworks: fast, private, no per-use cost, works offline
-once the language packs are downloaded.
+**It translates a conversation as it is spoken.** For the moments you are there in person:
+tap "I speak" and talk — the translation is written on the other side of the screen while
+you are still speaking, and read aloud when you finish. This part runs entirely on the
+iPhone.
 
-## How it works
+It also reads the official letter you photograph, drafts the email you cannot phrase, and
+fills in a form as far as it can.
 
-### Feature 1: Secretary (server-side tasks)
+The whole app is in **English, German and Turkish** and follows the iPhone's language.
 
-iPhones cannot place and control carrier phone calls from an app, so the app is a thin
-client and the call happens server-side:
+<p>
+<img src="docs/brand/yaver-icon.png" alt="The Yaver app icon: a white Y with a square full stop on red" width="120">
+</p>
 
-```
-iPhone app (SwiftUI)          Backend (Node/Fastify)            The real phone call
-┌──────────────────┐  HTTPS   ┌──────────────────────┐  PSTN    ┌──────────────────┐
-│ goal + number +  │ ───────▶ │ POST provider API     │ ───────▶ │ AI voice agent   │
-│ language         │          │ (Retell AI)           │          │ speaks DE/EN/TR  │
-│                  │ ◀─────── │ webhook → transcript  │ ◀─────── │ with the callee  │
-│ status, report,  │  polling │ Claude writes report  │          └──────────────────┘
-│ transcript       │          │ in user's language    │
-└──────────────────┘          └──────────────────────┘
-```
+## Try it in ten minutes — no accounts, no keys
 
-- **Voice calls**: [Retell AI](https://retellai.com) (bundled telephony + realtime voice AI,
-  official German/English/Turkish support) behind a small provider interface, so it can be
-  swapped for ElevenLabs Agents or OpenAI Realtime + SIP later.
-- **Mock mode**: with no API keys at all, the backend simulates the whole call lifecycle —
-  the app is fully demoable locally.
-- **Reports**: if `ANTHROPIC_API_KEY` is set, Claude (`claude-opus-4-8`) turns the transcript
-  into a short report in the user's language with an outcome verdict; otherwise it falls back
-  to Retell's summary or the transcript.
+Out of the box the server only *simulates* calls: everything in the app works, and no real
+phone call is made. You need a Mac with Xcode, and [Node.js 22](https://nodejs.org).
 
-**Beyond calls.** The secretary also handles the paperwork, as text tasks rather than voice
-ones. Each kind ends in the state the app's ledger shows:
-
-| Kind | What Claude does | Ends as |
-| --- | --- | --- |
-| **Letter or document** | Explains who sent it, what it asks for, any deadline, whether money is due; drafts a reply in the letter's language | `completed` |
-| **Email or message** | Writes the message, ready to send | `draft` — waiting for your approval |
-| **Fill in a form** | Fills it in as far as the information allows, marking what it cannot | `needs_input` |
-| **Follow-up or reminder** | Nothing — it is a date, not a piece of writing | `scheduled` |
-
-A photographed letter or form is read **on the phone** with Vision, and only the recognised
-text is sent; the photograph never leaves the device. With no `ANTHROPIC_API_KEY` the same
-states are reached with an honest placeholder summary, so the whole app stays demoable
-with no keys at all.
-
-### Feature 2: Live Translator (fully on-device)
-
-```
-🎤 mic → Speech framework (live transcription, de/en/tr)
-       → Translation framework (on-device translation)
-       → text on screen + AVSpeechSynthesizer speaks it aloud
-```
-
-No backend involved at all. One honest platform limitation to know: **iOS never lets a
-third-party app hear your own cellular phone call** (the same restriction that makes the
-secretary run server-side). So the translator works for face-to-face conversations and
-for calls played over a *nearby* speakerphone — but it cannot listen in on a call you are
-holding on the same iPhone. True translated phone calls are the next milestone: the
-backend dials **both** you and the other person and translates in the middle, so you just
-answer a normal incoming call (no app audio plumbing needed) — see Roadmap.
-
-## Repository layout
-
-```
-backend/   Node 22 + TypeScript + Fastify API, SQLite (node:sqlite), tests (vitest)
-ios/       SwiftUI app (XcodeGen project definition + sources)
-             AISecretary/DesignSystem/  the Modernist system in SwiftUI
-             AISecretary/Views/         the redesigned screens
-docs/      Retell agent prompt & setup guide, and how the design maps onto the code
-```
-
-## Quickstart — backend (no keys needed)
-
-Requires Node.js >= 22.5.
+**1. Start the server** (Terminal):
 
 ```bash
 cd backend
 npm install
-npm run dev          # starts on http://localhost:8787 in mock mode
+npm start
 ```
 
-Try it:
+It prints its address and a QR code, and stays running in that window.
 
-```bash
-# start a (simulated) call
-curl -X POST http://localhost:8787/api/tasks \
-  -H 'content-type: application/json' -H 'x-device-id: demo' \
-  -d '{"kind":"call","goal":"Book a dentist appointment for next week","phoneNumber":"+493012345678","language":"de","summaryLanguage":"tr","userName":"Can"}'
-
-# ask it to read a letter instead — no phone number needed
-curl -X POST http://localhost:8787/api/tasks \
-  -H 'content-type: application/json' -H 'x-device-id: demo' \
-  -d '{"kind":"letter","goal":"What does this letter from the Finanzamt ask for?","documentText":"Sehr geehrte Damen und Herren, ...","summaryLanguage":"tr"}'
-
-# ~10s later: status "completed" with transcript + report
-curl http://localhost:8787/api/tasks -H 'x-device-id: demo'
-```
-
-Tests & typecheck: `npm test && npm run typecheck`
-
-### API
-
-| Method & path                  | Purpose                                            |
-| ------------------------------ | -------------------------------------------------- |
-| `POST /api/tasks`              | Start a task. Body: `goal`, optional `kind` (`call`/`letter`/`message`/`form`/`followup`/`reminder`, default `call`), `phoneNumber` (E.164, required for a call), `language` (`de/en/tr`), `summaryLanguage`, `userName`, `documentText`, `todoWhen`. Header `X-Device-Id` required. |
-| `GET /api/tasks`               | List this device's tasks.                          |
-| `GET /api/tasks/:id`           | One task with live `status`, `transcript`, `summary`, `result`, `outcome`. |
-| `POST /webhooks/retell/:token` | Retell webhook (token = `WEBHOOK_SECRET`).         |
-
-`/api/calls` still works as it did — it is the same handler with `phoneNumber` required —
-so an older build of the app keeps running against a newer backend. Existing SQLite
-databases are migrated in place on startup.
-
-## Quickstart — iOS app
-
-On a Mac with Xcode 16+ (deployment target iOS 18, required by the Translation framework):
+**2. Build the app** (another Terminal window, once):
 
 ```bash
 brew install xcodegen
-cd ios && xcodegen generate
-open AISecretary.xcodeproj    # pick a simulator, press Run
+cd ios
+./generate.sh
+open AISecretary.xcodeproj
 ```
 
-- The app talks to `http://localhost:8787` (see `AISecretary/AppConfig.swift`) — start the
-  backend first, then brief the secretary and watch a call go
-  *Queued → Dialing → On the call → Report* on the live screen, with the transcript
-  filling in. On a physical device, change `AppConfig.baseURL` to your Mac's LAN IP or a
-  deployed URL.
-- **The translator** (from the home screen's grid, or the header) needs no backend. Test it
-  on a **real device** (the simulator has limited microphone/translation support). On first
-  use, iOS asks to download the language packs and to allow microphone + speech recognition.
-- **Photographing a letter or form** uses the document camera on a device and falls back to
-  the photo library in the simulator.
+In Xcode choose your iPhone (or a simulator) at the top and press ▶. For a real iPhone,
+pick your team once under *Signing & Capabilities* — `generate.sh` remembers it from then on.
 
-## Going live with real calls
+**3. Connect the app to the server.** Nothing to type:
 
-1. Follow **docs/retell-agent-prompt.md** — create the Retell agent (5 min), buy a number,
-   point its webhook at your backend.
-2. Copy `backend/.env.example` → `backend/.env`, set `CALL_PROVIDER=retell` and the Retell
-   keys; optionally `ANTHROPIC_API_KEY` for Claude-written reports.
-3. Deploy the backend anywhere Node 22 runs (Fly.io, Railway, a small VPS) with HTTPS.
+- On the same Wi-Fi the app **finds the server by itself**. The first time, iOS asks
+  whether Yaver may use the local network — say yes.
+- Or point the iPhone's **Camera** at the QR code in the Terminal window, tap the link,
+  then tap **Open Yaver**.
+- Or enter the address by hand in the app under *Settings → Server*.
 
-Rough per-call cost: ~$0.10–0.35/min all-in (~$0.50–1.75 for a typical 5-minute call).
+Then tap **Brief Yaver**, use the example, and watch a (simulated) call arrive line by
+line with its translation. *Settings → Answer my calls → Simulate an incoming call* shows
+the other direction.
 
-## Compliance (built in — do not remove)
+### If the app says it cannot reach the server
 
-- **AI self-disclosure**: every call opens with "This is an AI assistant calling on behalf
-  of …" in the call language. Required by EU AI Act Art. 50(1) from 2 Aug 2026.
-- **No stored audio**: the design keeps transcripts only. Storing call audio without
-  all-party consent is a criminal offense in Germany (§201 StGB) — disable recording
-  storage in the voice provider (see docs).
-- **User-initiated calls only**: one call per explicit user request, with a destination
-  country allowlist (`ALLOWED_COUNTRY_PREFIXES`) — this is not a robocall tool.
-- **Caller ID**: launch with a US/UK number. German landline caller IDs get suppressed on
-  international routes; Turkey blocks Turkish caller IDs arriving from abroad.
+The app tells you what it thinks is wrong. The usual causes, in order:
 
-## Roadmap ideas
+1. **The server is not running.** The Terminal window with `npm start` must stay open,
+   and the Mac must be awake.
+2. **Different networks.** The iPhone and the Mac must be on the same Wi-Fi (not a guest
+   network, not mobile data, no VPN on either).
+3. **The Mac's address changed.** Tap *Find automatically* — the app looks the server up
+   again. This is why the address is no longer built into the app.
+4. **Local network permission is off.** iPhone *Settings → Privacy & Security → Local
+   Network → Yaver*.
+5. **The Mac's firewall asked and was told no.** *System Settings → Network → Firewall*:
+   allow incoming connections for `node`.
 
-- **Translated phone calls** (translator milestone 2): the backend places two calls —
-  one to you, one to the target number — bridges them, and runs live
-  STT → translate → TTS in both directions. You answer a normal incoming call and
-  simply speak your language; no WebRTC in the app needed. (Alternative: an in-app
-  VoIP leg via LiveKit/Twilio SDK for on-screen live captions during the call.)
-- Push notifications (APNs) instead of polling; live transcript over WebSocket
-- Listen-in / barge-in on a running secretary call (WebRTC leg into the provider call)
-- Sign in with Apple + server-side accounts (replacing the anonymous device id)
-- Localized app UI (DE/TR), call scheduling, contact book, cost limits
-- Cheaper at scale: swap Retell for OpenAI Realtime + a Twilio/Telnyx SIP trunk
-  behind the existing `CallProvider` interface
+A quick test without the app: open the address the server printed (for example
+`http://192.168.1.20:8787`) in Safari on the iPhone. If the page says *The server is
+running*, the phone can reach the Mac.
+
+To use the app away from home, the server needs an address on the internet — see
+[docs/real-calls.md](docs/real-calls.md#an-address-on-the-internet).
+
+## Real phone calls
+
+Real calls go through [Retell AI](https://retellai.com), a telephone service with AI
+voices. It costs money per minute and needs a phone number, so it is switched on
+deliberately. The short version:
+
+```bash
+cd backend
+cp .env.example .env        # then put your Retell API key in it
+npm run retell:setup        # creates the two voice agents, fills in .env
+npm start
+```
+
+**[docs/real-calls.md](docs/real-calls.md)** walks through it step by step: the account,
+the phone number (the part that needs a decision), answering your calls, a public address,
+the first test call, and what each safety switch does.
+
+## Reports written by Claude
+
+With `ANTHROPIC_API_KEY` in `backend/.env`, the report on each call — what happened, what
+was agreed, what you still have to do — is written by Claude (`claude-opus-5-5`) in your
+language, and letters, messages and forms are handled too. Without a key, calls still
+work: you get the transcript with its on-device translation, and the phone service's own
+summary where there is one.
+
+The requests use Anthropic's server-side fallback, so that if the main model declines a
+request (official letters are full of debt, health and immigration matters) it is re-run
+on another model instead of leaving you with nothing. Set `ANTHROPIC_MODEL` to use a
+different model.
+
+## How it works
+
+An iPhone app cannot place and steer a phone call by itself, so the app is a thin client
+and the call happens on a server:
+
+```
+iPhone app (SwiftUI)            Server (Node · Fastify)             The phone call
+┌────────────────────┐  HTTP   ┌────────────────────────┐  phone   ┌─────────────────┐
+│ brief + number     │ ──────▶ │ starts the call        │ ───────▶ │ AI voice agent  │
+│                    │         │ (Retell AI)            │          │ speaks DE/TR/EN │
+│ the conversation,  │ ◀────── │ ◀─ each sentence as    │ ◀─────── │ with the other  │
+│ line by line       │  asks   │    it is said          │          │ side            │
+│ + translation      │  every  │ Claude writes the      │          └─────────────────┘
+│   (on the iPhone)  │  second │ report                 │
+└────────────────────┘         └────────────────────────┘
+```
+
+- **Finding the server.** The server announces itself on the local network (Bonjour,
+  `_yaver._tcp`); the app listens for it, remembers every address the server has been
+  seen at, and looks again when it stops answering.
+- **Live transcript.** A task carries `lines` — who said what — which grow during the
+  call. The simulator feeds them in one by one; with Retell they arrive through its
+  `transcript_updated` events. If Retell cannot reach the server (no public address), the
+  server reads the call's record from Retell instead: calls still work, the transcript
+  then arrives at the end.
+- **Translation.** Each line that is not in your language is translated by the iPhone
+  itself (Apple's Translation framework) as it arrives. Nothing is sent anywhere for that.
+- **Translator.** Apple's Speech framework hears, Translation translates, and the system
+  voice reads aloud — all on the device, offline once the languages are downloaded.
+- **Access.** As soon as real calls, a paid model or a public address are involved, the
+  app has to present an access key. The server makes one up on first start; it travels
+  to the app inside the QR code.
+
+### Server API
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | Is a Yaver server here, and what does it need from the app? (open) |
+| `GET` | `/api/session` | What this server can do, and the owner's profile |
+| `GET` `PUT` | `/api/profile` | Name, report language, answer calls on/off, note for callers |
+| `POST` | `/api/tasks` | Start a task: `call`, `letter`, `message`, `form`, `followup`, `reminder` |
+| `GET` | `/api/tasks`, `/api/tasks/:id` | The ledger; one task with its `lines`, `summary`, `todo` |
+| `POST` | `/api/tasks/:id/cancel` | Hang up a call that is under way |
+| `POST` | `/api/dev/incoming` | Simulator only: play an incoming call |
+| `POST` | `/webhooks/retell/:secret` | Events from Retell (signature checked) |
+| `GET` | `/`, `/pair` | Pages for a phone's browser: "the server is running", and pairing |
+
+Every `/api` request carries `X-Device-Id`, and `Authorization: Bearer <key>` when the
+server asks for a key.
+
+## Rules that are built in — do not remove
+
+- **It says it is an AI.** The first sentence of every call — placed or answered — is the
+  disclosure, spoken by the platform itself, word for word (EU AI Act, Article 50).
+- **The audio is not kept.** The app keeps a written transcript. The recording the phone
+  service makes is deleted there as soon as the report is saved.
+- **Calls only when you ask.** One request, one call, to a number you typed; only to the
+  countries the server allows (`ALLOWED_COUNTRY_PREFIXES`), and no more than
+  `MAX_CALLS_PER_DAY`.
+- **Only text leaves the phone.** A photographed letter is read on the device; the
+  photograph stays there. The translator's audio and text never leave the phone.
+
+## Repository layout
+
+```
+backend/              the server: src/, test/ (94 tests), scripts/retell-setup.ts
+ios/                  the iPhone app
+  AISecretary/        Swift sources (the target keeps the project's first name)
+    Server/           where the server is: saved address, discovery, access key
+    Translation/      live on-device translation of transcripts and speech
+    Translator/       the conversation translator
+    Views/            the screens
+    DesignSystem/     Modernist: Archivo, the palette, the Lucide icons, the mark
+    de.lproj tr.lproj en.lproj   the interface in three languages
+  scripts/            check-strings.py (nothing ships untranslated), screenshots.sh
+docs/                 real-calls.md, ai-secretary-design.md, brand/
+```
+
+## Working on it
+
+```bash
+cd backend && npm test && npm run typecheck      # the server
+python3 ios/scripts/check-strings.py             # every string exists in de and tr
+```
+
+Every push is built with Xcode 16 and Xcode 26 on GitHub Actions, and every screen is
+photographed in all three languages; the pictures land on the
+[`ci-screenshots`](../../tree/ci-screenshots) branch. To look at one screen over sample
+data yourself, add the launch argument `-yaverStage report` (or `home`, `call`,
+`answered`, `translator`, `settings`, …) in Xcode's scheme.
+
+The interface is the **Modernist** system from [Claude Design](https://claude.ai/design) —
+Archivo, ink on a light ground, one red, no rounded corners, everything flush left. See
+[docs/ai-secretary-design.md](docs/ai-secretary-design.md).
+
+### Updating a copy you already have
+
+```bash
+cd iphoneapp
+git pull
+cd backend && npm install        # then start the server again: npm start
+cd ../ios && ./generate.sh       # then press ▶ in Xcode again
+```
+
+If you once changed `AppConfig.swift` to your Mac's address, leave it — it is only the
+first address the app tries now.

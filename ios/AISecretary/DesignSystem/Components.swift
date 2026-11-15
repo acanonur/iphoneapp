@@ -253,6 +253,9 @@ struct DSTextField: View {
             .modifier(
                 InputSurface(minHeight: minHeight, isFocused: focused, alignment: .leading)
             )
+            // The whole box takes the tap, not only the line of text in it.
+            .contentShape(Rectangle())
+            .onTapGesture { focused = true }
     }
 }
 
@@ -292,6 +295,8 @@ struct DSTextEditor: View {
                 .frame(minHeight: minHeight - 12)
         }
         .modifier(InputSurface(minHeight: minHeight, isFocused: focused))
+        .contentShape(Rectangle())
+        .onTapGesture { focused = true }
     }
 }
 

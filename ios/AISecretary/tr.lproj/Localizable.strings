@@ -105,6 +105,9 @@
 "Listening" = "Dinliyor";
 "Tap when done" = "Bitince dokunun";
 "Microphone and speech recognition access are needed. Please allow both in the iPhone’s Settings." = "Mikrofon ve konuşma tanıma izni gerekiyor. Lütfen iPhone’un Ayarlar bölümünden ikisine de izin verin.";
+"Siri and Dictation are switched off on this iPhone. Switch them on in Settings to use the translator." = "Bu iPhone’da Siri ve Dikte kapalı. Çevirmeni kullanmak için ikisini de Ayarlar’dan açın.";
+"The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection." = "Konuşma tanıma dili henüz indirilmedi. İnternet bağlantısıyla birazdan yeniden deneyin.";
+"For this language, the iPhone sends the audio to Apple to recognise it." = "Bu dilde iPhone, sesi tanınması için Apple’a gönderir.";
 "Call my dentist and book a check-up appointment for next week, mornings preferred." = "Diş hekimimi ara ve gelecek hafta için bir kontrol randevusu al, tercihen öğleden önce.";
 "Start with the country code, for example +49 for Germany or +90 for Türkiye." = "Ülke koduyla başlayın; örneğin Almanya için +49, Türkiye için +90.";
 "Your server only calls numbers starting with %@." = "Sunucunuz yalnızca %@ ile başlayan numaraları arar.";
@@ -126,6 +129,11 @@
 "Yaver says at once that it is an AI calling on your behalf. This disclosure is required by law and cannot be turned off." = "Yaver, sizin adınıza arayan bir yapay zekâ olduğunu en başta söyler. Bu bilgilendirme yasal bir zorunluluktur ve kapatılamaz.";
 "Place the call" = "Aramayı başlat";
 "Send to Yaver" = "Yaver’e gönder";
+"Remind me on" = "Hatırlatma zamanı";
+"Saved, but it will not ring" = "Kaydedildi ama hatırlatma çalmayacak";
+"Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings." = "Yaver için bildirimler kapalı. Takip listenizde duruyor; hatırlatılması için iPhone’un Ayarlar bölümünden bildirimlere izin verin.";
+"Connect to this server?" = "Bu sunucuya bağlanılsın mı?";
+"Yaver will send your tasks to %@. Only connect to a server you started yourself." = "Yaver görevlerinizi %@ adresine gönderecek. Yalnızca kendi başlattığınız bir sunucuya bağlanın.";
 "Settings" = "Ayarlar";
 "Brief Yaver" = "Yaver’e görev ver";
 "Your server needs an update." = "Sunucunuzun güncellenmesi gerekiyor.";
@@ -209,8 +217,12 @@
 "Report in" = "Rapor dili";
 "Call back %@" = "%@ numarasını geri ara";
 "Still to do" = "Yapılacak";
-"Reminder set" = "Hatırlatma kuruldu";
-"Add reminder" = "Hatırlat";
+"On your list" = "Listenizde";
+"Add to my list" = "Listeme ekle";
+"This is on your list. Nothing else has to happen for it." = "Bu, listenizde duruyor. Bunun için başka bir şey yapılması gerekmiyor.";
+"Reading the document…" = "Belge okunuyor…";
+"The connection to your server is lost." = "Sunucunuzla bağlantı kesildi.";
+"The call itself may still be going on. What you see here stops updating until the server is back." = "Aramanın kendisi sürüyor olabilir. Sunucu geri gelene kadar burada gördükleriniz güncellenmez.";
 "Draft, waiting to be sent" = "Taslak, gönderilmeyi bekliyor";
 "The form so far" = "Formun şimdiki hâli";
 "Written for you" = "Sizin için yazıldı";

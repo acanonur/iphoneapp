@@ -149,6 +149,7 @@ struct ReportView: View {
             return L("The call could not be completed. Nothing was agreed.")
         }
         if task.status.isActive { return L("Yaver is still working on this.") }
+        if task.status == .scheduled { return L("This is on your list. Nothing else has to happen for it.") }
         return L("There is no report for this task.")
     }
 
@@ -252,8 +253,8 @@ struct ReportView: View {
                     }
 
                     if model.hasReminder(for: task) {
-                        Tag(title: L("Reminder set"), variant: .accent)
-                    } else {
+                        Tag(title: L("On your list"), variant: .accent)
+                    } else if task.kind != .followup, task.kind != .reminder {
                         Button {
                             isAddingReminder = true
                             Task {
@@ -261,7 +262,7 @@ struct ReportView: View {
                                 isAddingReminder = false
                             }
                         } label: {
-                            Text(L("Add reminder"))
+                            Text(L("Add to my list"))
                         }
                         .buttonStyle(ModernistButtonStyle(variant: .secondary, height: 40))
                         .disabled(isAddingReminder)

@@ -55,6 +55,8 @@ struct RootView: View {
         (L10n.language == .de ? Language.tr : Language.de).rawValue
 
     @State private var route: Route
+    /// A pairing link that arrived, waiting for the user to say yes.
+    @State private var pairing: ServerStore.Pairing?
 
     init(stage: Stage?) {
         self.stage = stage
@@ -96,12 +98,25 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await model.refresh() } }
         }
-        // yaver://pair?url=…&key=… — the server's pairing page opens this.
+        // yaver://pair?url=…&key=… — the server's pairing page opens this. Any
+        // web page could, too, so the app asks before it changes servers.
         .onOpenURL { link in
-            Task {
-                if await model.server.pair(with: link) { await model.refresh() }
-                if hasOnboarded { route = .settings }
+            pairing = ServerStore.Pairing(link: link)
+        }
+        .alert(
+            L("Connect to this server?"),
+            isPresented: Binding(get: { pairing != nil }, set: { if !$0 { pairing = nil } }),
+            presenting: pairing
+        ) { request in
+            Button(L("Connect")) {
+                Task {
+                    if await model.server.pair(request) { await model.refresh() }
+                    if hasOnboarded { route = .settings }
+                }
             }
+            Button(L("Cancel"), role: .cancel) {}
+        } message: { request in
+            Text(Lf("Yaver will send your tasks to %@. Only connect to a server you started yourself.", request.host))
         }
     }
 

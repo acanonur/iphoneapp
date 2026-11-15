@@ -105,6 +105,9 @@
 "Listening" = "Hört zu";
 "Tap when done" = "Tippen, wenn fertig";
 "Microphone and speech recognition access are needed. Please allow both in the iPhone’s Settings." = "Der Zugriff auf Mikrofon und Spracherkennung wird benötigt. Bitte erlauben Sie beides in den iPhone-Einstellungen.";
+"Siri and Dictation are switched off on this iPhone. Switch them on in Settings to use the translator." = "Siri und Diktieren sind auf diesem iPhone ausgeschaltet. Schalten Sie beides in den Einstellungen ein, um den Übersetzer zu verwenden.";
+"The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection." = "Die Sprache für die Spracherkennung ist noch nicht geladen. Versuchen Sie es gleich noch einmal, mit Internetverbindung.";
+"For this language, the iPhone sends the audio to Apple to recognise it." = "Bei dieser Sprache sendet das iPhone den Ton zur Erkennung an Apple.";
 "Call my dentist and book a check-up appointment for next week, mornings preferred." = "Ruf meinen Zahnarzt an und vereinbare für nächste Woche einen Kontrolltermin, am liebsten vormittags.";
 "Start with the country code, for example +49 for Germany or +90 for Türkiye." = "Beginnen Sie mit der Ländervorwahl, zum Beispiel +49 für Deutschland oder +90 für die Türkei.";
 "Your server only calls numbers starting with %@." = "Ihr Server ruft nur Nummern an, die mit %@ beginnen.";
@@ -126,6 +129,11 @@
 "Yaver says at once that it is an AI calling on your behalf. This disclosure is required by law and cannot be turned off." = "Yaver sagt gleich zu Beginn, dass eine KI in Ihrem Auftrag anruft. Dieser Hinweis ist gesetzlich vorgeschrieben und lässt sich nicht abschalten.";
 "Place the call" = "Anruf starten";
 "Send to Yaver" = "An Yaver senden";
+"Remind me on" = "Erinnern am";
+"Saved, but it will not ring" = "Gespeichert, aber ohne Erinnerungston";
+"Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings." = "Mitteilungen sind für Yaver ausgeschaltet. Die Wiedervorlage steht auf Ihrer Liste; um erinnert zu werden, erlauben Sie Mitteilungen in den iPhone-Einstellungen.";
+"Connect to this server?" = "Mit diesem Server verbinden?";
+"Yaver will send your tasks to %@. Only connect to a server you started yourself." = "Yaver sendet Ihre Aufgaben dann an %@. Verbinden Sie sich nur mit einem Server, den Sie selbst gestartet haben.";
 "Settings" = "Einstellungen";
 "Brief Yaver" = "Yaver beauftragen";
 "Your server needs an update." = "Ihr Server braucht ein Update.";
@@ -209,8 +217,12 @@
 "Report in" = "Bericht auf";
 "Call back %@" = "%@ zurückrufen";
 "Still to do" = "Noch zu erledigen";
-"Reminder set" = "Erinnerung gesetzt";
-"Add reminder" = "Erinnern";
+"On your list" = "Auf Ihrer Liste";
+"Add to my list" = "Auf meine Liste";
+"This is on your list. Nothing else has to happen for it." = "Das steht auf Ihrer Liste. Dafür muss nichts weiter geschehen.";
+"Reading the document…" = "Dokument wird gelesen …";
+"The connection to your server is lost." = "Die Verbindung zu Ihrem Server ist unterbrochen.";
+"The call itself may still be going on. What you see here stops updating until the server is back." = "Der Anruf selbst läuft möglicherweise weiter. Die Anzeige hier wird erst wieder aktualisiert, wenn der Server zurück ist.";
 "Draft, waiting to be sent" = "Entwurf, noch nicht gesendet";
 "The form so far" = "Das Formular bisher";
 "Written for you" = "Für Sie geschrieben";
