@@ -27,6 +27,8 @@ final class LiveTranslator {
         case idle
         /// Checking that the languages are on the phone, asking for them if not.
         case preparing
+        /// The user agreed to the download and it is on its way.
+        case downloading
         case ready
         /// The languages are not on the phone and were not downloaded.
         case needsDownload
@@ -43,7 +45,14 @@ final class LiveTranslator {
 
     /// Finished translations, by pair and source text.
     private(set) var results: [String: String] = [:]
+    /// The sentence being spoken, as far as it has been translated: the newest
+    /// translation of text that is still changing. It lags the speaker by one
+    /// translation, and never waits for them to pause.
+    private(set) var live: [TranslationPair: String] = [:]
     private(set) var states: [TranslationPair: LaneState] = [:]
+    /// How often a piece of text has failed to translate. Text that failed
+    /// twice is left alone, and the screens stop saying it is on its way.
+    private(set) var failures: [String: Int] = [:]
     /// A lane exists once it has a configuration; the host view starts a
     /// session for each one.
     private(set) var configurations: [TranslationPair: TranslationSession.Configuration] = [:]
@@ -53,9 +62,14 @@ final class LiveTranslator {
     /// Text that is still changing (a sentence being spoken): only the newest
     /// version is worth translating.
     @ObservationIgnored private var volatile: [TranslationPair: String] = [:]
+    /// Counts the turns of changing text, so a translation that arrives after
+    /// its turn has ended is not shown at the start of the next one.
+    @ObservationIgnored private var turns: [TranslationPair: Int] = [:]
     @ObservationIgnored private var wakers: [TranslationPair: AsyncStream<Void>.Continuation] = [:]
-    @ObservationIgnored private var failures: [String: Int] = [:]
-    @ObservationIgnored private var guesses: [String: Language] = [:]
+    /// What the language recogniser made of a line; nil where it could not tell.
+    @ObservationIgnored private var guesses: [String: Language?] = [:]
+    /// The lines of the transcript on screen, per lane, as last asked for.
+    @ObservationIgnored private var transcriptTexts: [TranslationPair: Set<String>] = [:]
 
     private static let cacheLimit = 600
     private static let batchSize = 8
@@ -96,13 +110,25 @@ final class LiveTranslator {
         guard pair.source != pair.target else { return }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
+            // The turn is over (or a new one begins): forget its half-finished versions.
             volatile[pair] = nil
+            live[pair] = nil
+            turns[pair, default: 0] += 1
             return
         }
-        guard results[key(trimmed, pair)] == nil else { return }
+        if let known = results[key(trimmed, pair)] {
+            volatile[pair] = nil
+            live[pair] = known
+            return
+        }
         volatile[pair] = trimmed
         open(pair)
         wakers[pair]?.yield()
+    }
+
+    /// The translation, so far, of the sentence that is still being spoken.
+    func liveTranslation(_ pair: TranslationPair) -> String? {
+        live[pair]
     }
 
     /// Gets a lane ready before it is needed, so that a request to download a
@@ -159,6 +185,8 @@ final class LiveTranslator {
                 states[pair] = .unavailable
                 return
             }
+            // Agreed to and on its way: say so, rather than "translating…".
+            states[pair] = .downloading
             try? await Task.sleep(for: .seconds(2))
         }
         guard !Task.isCancelled else {
@@ -172,8 +200,9 @@ final class LiveTranslator {
         wake.yield()
 
         for await _ in signals {
-            while let batch = nextBatch(pair) {
+            while let next = nextBatch(pair) {
                 if Task.isCancelled { return }
+                let batch = next.texts
                 do {
                     let requests = batch.enumerated().map { index, text in
                         TranslationSession.Request(
@@ -187,6 +216,12 @@ final class LiveTranslator {
                         else { continue }
                         store(response.targetText, for: batch[index], pair)
                     }
+                    // The sentence in progress has got this far — unless its
+                    // turn ended while this was being translated.
+                    if let turn = next.turn, turn == turns[pair, default: 0],
+                       let text = batch.first, let translated = results[key(text, pair)] {
+                        live[pair] = translated
+                    }
                     settle(batch, pair, translated: true)
                 } catch {
                     if Task.isCancelled || error is CancellationError { return }
@@ -196,12 +231,22 @@ final class LiveTranslator {
         }
     }
 
+    private struct Batch {
+        let texts: [String]
+        /// Set when this is the sentence still being spoken: the turn it belongs to.
+        let turn: Int?
+    }
+
     /// What to translate next: finished text first, a few pieces at a time;
     /// then the newest version of whatever is still changing.
-    private func nextBatch(_ pair: TranslationPair) -> [String]? {
+    private func nextBatch(_ pair: TranslationPair) -> Batch? {
         let waiting = (queues[pair] ?? []).filter { results[key($0, pair)] == nil }
-        if !waiting.isEmpty { return Array(waiting.prefix(Self.batchSize)) }
-        if let latest = volatile[pair], results[key(latest, pair)] == nil { return [latest] }
+        if !waiting.isEmpty {
+            return Batch(texts: Array(waiting.prefix(Self.batchSize)), turn: nil)
+        }
+        if let latest = volatile[pair], results[key(latest, pair)] == nil {
+            return Batch(texts: [latest], turn: turns[pair, default: 0])
+        }
         return nil
     }
 
@@ -233,59 +278,106 @@ final class LiveTranslator {
 
     // MARK: - Call transcripts
 
-    /// The language a line was spoken in. A call is usually held in one
-    /// language, but people switch; a line long enough to tell is checked.
-    func language(of text: String, expected: Language) -> Language {
+    /// The language each line of a call was spoken in, in step with `lines`.
+    ///
+    /// A line long enough to tell is checked by itself. A short one ("Ja.",
+    /// "Tamam.") cannot be told apart, so it takes the language its speaker
+    /// mostly uses, then the other speaker's — the secretary answers in the
+    /// caller's language — and only then the language the call was expected
+    /// to be in. That matters most for answered calls, where nobody knows
+    /// beforehand which language the caller will speak.
+    func languages(of lines: [TranscriptLine], expected: Language) -> [Language] {
+        let sure = lines.map { confidentLanguage(of: $0.text) }
+        var weight: [Bool: [Language: Int]] = [:]
+        for (line, language) in zip(lines, sure) {
+            guard let language else { continue }
+            weight[line.isAI, default: [:]][language, default: 0] += line.text.count
+        }
+        func usual(_ isAI: Bool) -> Language? {
+            weight[isAI]?.max { $0.value < $1.value }?.key
+        }
+        return zip(lines, sure).map { line, language in
+            language ?? usual(line.isAI) ?? usual(!line.isAI) ?? expected
+        }
+    }
+
+    /// The language one side of a call mostly spoke.
+    func usualLanguage(in lines: [TranscriptLine], ofAI: Bool, expected: Language) -> Language {
+        let spoken = languages(of: lines, expected: expected)
+        var weight: [Language: Int] = [:]
+        for (line, language) in zip(lines, spoken) where line.isAI == ofAI {
+            weight[language, default: 0] += line.text.count
+        }
+        return weight.max { $0.value < $1.value }?.key ?? expected
+    }
+
+    private func confidentLanguage(of text: String) -> Language? {
         if let known = guesses[text] { return known }
-        let guess = LanguageGuess.language(of: text, fallback: expected)
-        guesses[text] = guess
+        let guess = LanguageGuess.confident(of: text)
+        if guesses.count > 2_000 { guesses.removeAll() }
+        // `updateValue`, because assigning nil would remove the entry.
+        guesses.updateValue(guess, forKey: text)
         return guess
     }
 
-    /// Queues every line of a call that is not already in the reader's language.
-    func translate(lines: [TranscriptLine], spokenIn language: Language, into target: Language) {
+    /// Queues every line that is not already in the reader's language.
+    /// `languages` is what `languages(of:expected:)` made of the same lines.
+    func translate(_ lines: [TranscriptLine], spokenIn languages: [Language], into target: Language) {
         var bySource: [Language: [String]] = [:]
-        for line in lines {
-            let source = self.language(of: line.text, expected: language)
-            if source != target { bySource[source, default: []].append(line.text) }
+        for (line, source) in zip(lines, languages) where source != target {
+            bySource[source, default: []].append(
+                line.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
         }
-        for (source, texts) in bySource {
-            request(texts, TranslationPair(source: source, target: target))
+        for source in Language.allCases where source != target {
+            let pair = TranslationPair(source: source, target: target)
+            let texts = bySource[source] ?? []
+            let current = Set(texts)
+            // During a call the newest line grows and is corrected as it is
+            // spoken. Its earlier versions are no longer worth translating:
+            // drop them, so the lane keeps up with the conversation.
+            if let before = transcriptTexts[pair] {
+                let stale = before.subtracting(current)
+                if !stale.isEmpty { queues[pair]?.removeAll { stale.contains($0) } }
+            }
+            transcriptTexts[pair] = current.isEmpty ? nil : current
+            if !texts.isEmpty { request(texts, pair) }
         }
     }
 
     /// The translation of a line into the reader's language, if it needs one
     /// and it has arrived.
     func translation(
-        of line: TranscriptLine, spokenIn language: Language, into target: Language
+        of line: TranscriptLine, spokenIn source: Language, into target: Language
     ) -> String? {
-        let source = self.language(of: line.text, expected: language)
         guard source != target else { return nil }
         return translation(of: line.text, TranslationPair(source: source, target: target))
     }
 
     /// True while a line's translation is still on its way.
     func isWorking(
-        on line: TranscriptLine, spokenIn language: Language, into target: Language
+        on line: TranscriptLine, spokenIn source: Language, into target: Language
     ) -> Bool {
-        let source = self.language(of: line.text, expected: language)
         guard source != target else { return false }
         let pair = TranslationPair(source: source, target: target)
-        guard translation(of: line.text, pair) == nil else { return false }
-        let state = self.state(pair)
-        return state == .preparing || state == .ready
+        let text = line.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard results[key(text, pair)] == nil, (failures[key(text, pair)] ?? 0) < 2 else {
+            return false
+        }
+        switch state(pair) {
+        case .preparing, .downloading, .ready: return true
+        case .idle, .needsDownload, .unavailable: return false
+        }
     }
 
-    /// The lanes a call's transcript needs, and where they stand — so a screen
-    /// can say "download the language" instead of showing nothing.
-    func blockedPair(
-        for lines: [TranscriptLine], spokenIn language: Language, into target: Language
+    /// A lane this transcript needs that is in the given state — so a screen
+    /// can offer a download, or say one is under way, instead of showing nothing.
+    func pair(
+        in wanted: LaneState, spokenIn languages: [Language], into target: Language
     ) -> TranslationPair? {
-        for line in lines {
-            let source = self.language(of: line.text, expected: language)
-            guard source != target else { continue }
+        for source in Language.allCases where source != target && languages.contains(source) {
             let pair = TranslationPair(source: source, target: target)
-            if state(pair) == .needsDownload { return pair }
+            if state(pair) == wanted { return pair }
         }
         return nil
     }
@@ -314,22 +406,23 @@ enum TranslationSetup {
 
 /// Works out which of the app's three languages a piece of text is in.
 enum LanguageGuess {
-    /// Short text ("Ja.", "Tamam") cannot be told apart reliably, so anything
-    /// under twenty characters is taken to be in the expected language.
-    static func language(of text: String, fallback: Language) -> Language {
-        guard text.count >= 20 else { return fallback }
+    /// The language of the text, or nil where it cannot be told reliably:
+    /// anything under twenty characters ("Ja.", "Tamam"), and anything the
+    /// recogniser is not clearly sure about.
+    static func confident(of text: String) -> Language? {
+        guard text.count >= 20 else { return nil }
         let recognizer = NLLanguageRecognizer()
         recognizer.languageConstraints = [.german, .english, .turkish]
         recognizer.processString(text)
         let hypotheses = recognizer.languageHypotheses(withMaximum: 2)
         guard let best = hypotheses.max(by: { $0.value < $1.value }), best.value >= 0.75 else {
-            return fallback
+            return nil
         }
         switch best.key {
         case .german: return .de
         case .turkish: return .tr
         case .english: return .en
-        default: return fallback
+        default: return nil
         }
     }
 }

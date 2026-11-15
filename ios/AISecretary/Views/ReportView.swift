@@ -184,7 +184,7 @@ struct ReportView: View {
                 metaCell(L("Duration"), durationLabel(task), tabular: true)
                     .padding(.trailing, 12)
                 VHairline()
-                metaCell(L("Report in"), task.summaryLanguage.displayName)
+                metaCell(L("Report in"), task.summaryLanguage.localizedName)
                     .padding(.leading, 12)
             }
             Rule()
@@ -195,9 +195,11 @@ struct ReportView: View {
     /// The language the other side spoke. For a call that was answered it is
     /// worked out from what the caller said.
     private func spokenLanguage(_ task: SecretaryTask) -> String {
-        guard task.isInbound else { return task.language.displayName }
-        guard let said = task.lines.first(where: { $0.role == .other })?.text else { return "—" }
-        return translator.language(of: said, expected: task.language).displayName
+        guard task.isInbound else { return task.language.localizedName }
+        let lines = task.transcriptLines
+        guard lines.contains(where: { !$0.isAI }) else { return "—" }
+        return translator.usualLanguage(in: lines, ofAI: false, expected: task.language)
+            .localizedName
     }
 
     private func metaCell(_ label: String, _ value: String, tabular: Bool = false) -> some View {
@@ -345,7 +347,7 @@ struct ReportView: View {
     private func draftBlock(_ task: SecretaryTask, draft: String) -> some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                SectionHeading(title: draftTitle(task), note: task.language.displayName)
+                SectionHeading(title: draftTitle(task), note: task.language.localizedName)
                 Text(draft)
                     .typeStyle(.transcript)
                     .textSelection(.enabled)

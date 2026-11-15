@@ -31,7 +31,7 @@ async function createTask(body: Record<string, unknown>) {
 const settle = () => new Promise((r) => setTimeout(r, 80));
 
 describe('POST /api/tasks — document kinds', () => {
-  it('accepts a letter without a phone number and resolves it as completed', async () => {
+  it('accepts a letter without a phone number, and says honestly that nobody can read it yet', async () => {
     makeApp();
     const res = await createTask({
       kind: 'letter',
@@ -47,31 +47,27 @@ describe('POST /api/tasks — document kinds', () => {
 
     await settle();
     const task = app!.store.get(created.id);
-    expect(task?.status).toBe('completed');
-    // No Anthropic key in tests -> the offline result, in the report language.
-    expect(task?.summary).toContain('Mektup');
+    // No Anthropic key in tests: the letter is not "completed", it is waiting
+    // for a report writer — and the app explains that from the code.
+    expect(task?.status).toBe('failed');
+    expect(task?.errorCode).toBe('reports_off');
+    expect(task?.summary).toBeNull();
+    expect(task?.documentText).toContain('Sehr geehrte');
   });
 
-  it('leaves a drafted message waiting for approval', async () => {
+  it('does not pretend a message or a form was written without a report writer', async () => {
     makeApp();
-    const res = await createTask({
-      kind: 'message',
-      goal: 'Write an email to the landlord about the broken heating in the bathroom.',
-    });
-    await settle();
-    const task = app!.store.get(res.json().id);
-    expect(task?.status).toBe('draft');
-    expect(task?.summary).toBeTruthy();
-  });
-
-  it('marks a form as needing the user details', async () => {
-    makeApp();
-    const res = await createTask({
-      kind: 'form',
-      goal: 'Fill in the Anmeldung form for the new flat.',
-    });
-    await settle();
-    expect(app!.store.get(res.json().id)?.status).toBe('needs_input');
+    for (const kind of ['message', 'form'] as const) {
+      const res = await createTask({
+        kind,
+        goal: 'Write an email to the landlord about the broken heating in the bathroom.',
+      });
+      await settle();
+      const task = app!.store.get(res.json().id);
+      expect(task?.status).toBe('failed');
+      expect(task?.errorCode).toBe('reports_off');
+      expect(task?.result).toBeNull();
+    }
   });
 
   it('schedules a follow-up and keeps its goal as the thing still to do', async () => {

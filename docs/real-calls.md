@@ -13,7 +13,7 @@ reports every sentence back.
 |---|---|---|
 | 1 | A Retell account and its API key | free to open; calls are billed per minute |
 | 2 | A phone number in that account | monthly fee — see [A phone number](#a-phone-number) |
-| 3 | *Optional:* an Anthropic API key | for reports written by Claude |
+| 3 | *Optional:* an Anthropic API key (`npm run claude:setup` asks for it) | for reports written by Claude |
 | 4 | *Optional for placing calls, needed for answering them:* an address on the internet for your server | free with a tunnel |
 
 Allow an hour the first time. Everything below is typed in the Terminal, in the `backend`
@@ -25,16 +25,7 @@ folder.
 
 1. Open an account at <https://dashboard.retellai.com> and add a payment method.
 2. In the dashboard, open **Settings → API Keys** and copy a key (it starts with `key_`).
-3. In the `backend` folder, make your settings file and put the key in it:
-
-   ```bash
-   cp .env.example .env
-   open -e .env
-   ```
-
-   Find the line `RETELL_API_KEY=` and paste the key after the `=`. Save and close.
-
-`.env` is your private settings file. It is never uploaded anywhere.
+   You paste it in the next step.
 
 ## 2. Create the two voice agents
 
@@ -42,8 +33,13 @@ folder.
 npm run retell:setup
 ```
 
-This talks to Retell and creates two "agents" in your account, then writes their ids into
-`.env` for you:
+The first time, it asks for the key: paste it and press Enter. The key is kept in a file
+called `.env` in the `backend` folder — your private settings file. It stays on your
+computer and is never uploaded anywhere. (To look at or change your settings later:
+`open -e .env`.)
+
+The script then talks to Retell and creates two "agents" in your account, and writes
+their ids into `.env` for you:
 
 - **Yaver — places calls.** It opens every call with the sentence that says it is an AI
   calling on your behalf, pursues what you asked for, confirms the result and hangs up.

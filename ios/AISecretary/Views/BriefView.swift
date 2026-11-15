@@ -31,6 +31,12 @@ struct BriefView: View {
     @State private var isReadingDocument = false
 
     /// What the server accepts.
+    /// The name as the server takes it: trimmed, of a sensible length, or none.
+    private static func cleanName(_ name: String) -> String? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : String(trimmed.prefix(80))
+    }
+
     private static let goalLimit = 2_000
     private static let documentLimit = 20_000
 
@@ -59,8 +65,18 @@ struct BriefView: View {
 
     private var isCall: Bool { briefType == .call }
 
+    /// A letter, message or form is worked on by Claude on the server. Where
+    /// the server has no key for it, say so before anything is typed.
+    private var writerMissing: Bool {
+        guard briefType == .letter || briefType == .message || briefType == .form else {
+            return false
+        }
+        guard model.server.isConnected, let session = model.server.session else { return false }
+        return session.reports != "claude"
+    }
+
     private var canSubmit: Bool {
-        guard !isSubmitting, !isReadingDocument,
+        guard !isSubmitting, !isReadingDocument, !writerMissing,
               goal.trimmingCharacters(in: .whitespacesAndNewlines).count >= 4
         else {
             return false
@@ -107,6 +123,13 @@ struct BriefView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     typeField
+                    if writerMissing {
+                        Notice(
+                            title: CallProblem.reportsOff.title,
+                            message: CallProblem.reportsOff.explanation,
+                            tone: .accent
+                        )
+                    }
                     goalField
                     if isCall {
                         phoneField
@@ -348,7 +371,7 @@ struct BriefView: View {
                         // or a message it is the language the other side reads.
                         language: callLanguage,
                         summaryLanguage: reportLanguage,
-                        userName: userName.isEmpty ? nil : userName,
+                        userName: Self.cleanName(userName),
                         // Only the kinds that work from a document take one
                         // along; a scan made before the type was changed stays behind.
                         documentText: briefType.takesDocument && !documentText.isEmpty

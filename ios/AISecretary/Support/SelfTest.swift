@@ -251,9 +251,11 @@ final class SelfTest {
                 )
             )
             let read = await wait(for: letter.id, upTo: 30) { !$0.status.isActive }
+            // This server has no AI key: the honest answer is "not set up yet",
+            // not "completed".
             check(
-                "takes in a letter",
-                read?.status.isActive == false && !(read?.summary ?? "").isEmpty,
+                "takes in a letter, and says that nobody can read it yet",
+                read?.status == .failed && read?.problem == .reportsOff,
                 describe(read)
             )
 

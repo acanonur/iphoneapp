@@ -60,9 +60,6 @@ struct TranslatorView: View {
     @State private var entries: [ConversationEntry] = []
     /// The languages of the turn in progress.
     @State private var turnPair: TranslationPair?
-    /// The newest translation of the sentence being spoken. Kept on screen
-    /// while the next, longer version is on its way, so the line never blinks.
-    @State private var liveTranslation = ""
     @State private var spoken: Set<String> = []
     @State private var errorMessage: String?
     @State private var permissionsGranted = false
@@ -102,9 +99,6 @@ struct TranslatorView: View {
         .onChange(of: recognizer.transcript) { _, text in
             guard case .listening = phase, let turnPair else { return }
             translator.requestLatest(text, turnPair)
-        }
-        .onChange(of: currentLiveTranslation) { _, fresh in
-            if let fresh { liveTranslation = fresh }
         }
         // The recogniser can stop on its own (a long pause, its time limit):
         // treat that exactly like the user tapping "done".
@@ -204,7 +198,7 @@ struct TranslatorView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(title): \(language.displayName)")
+        .accessibilityLabel("\(title): \(language.localizedName)")
     }
 
     /// The next language in the cycle that is not the other side's — the two
@@ -241,6 +235,15 @@ struct TranslatorView: View {
                 VStack(spacing: 0) {
                     if let blocked = blockedPair {
                         downloadNotice(blocked)
+                    } else if let coming = downloadingPair {
+                        Notice(
+                            title: L("The languages for the translation are downloading"),
+                            message: Lf(
+                                "%1$@ and %2$@ are being downloaded to your iPhone. This happens once and can take a minute.",
+                                coming.source.localizedName, coming.target.localizedName
+                            )
+                        )
+                        .padding(.top, 14)
                     }
                     if entries.isEmpty, !isBusy {
                         emptyState
@@ -288,13 +291,18 @@ struct TranslatorView: View {
         [pair(for: .mine), pair(for: .theirs)].first { translator.state($0) == .needsDownload }
     }
 
+    /// A direction whose languages are being downloaded right now.
+    private var downloadingPair: TranslationPair? {
+        [pair(for: .mine), pair(for: .theirs)].first { translator.state($0) == .downloading }
+    }
+
     private func downloadNotice(_ pair: TranslationPair) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Notice(
                 title: L("Translation needs a language download"),
                 message: Lf(
                     "%1$@ and %2$@ are translated on your iPhone. The languages have to be downloaded once.",
-                    pair.source.displayName, pair.target.displayName
+                    pair.source.localizedName, pair.target.localizedName
                 ),
                 tone: .accent
             )
@@ -373,6 +381,7 @@ struct TranslatorView: View {
     private func pendingNote(for pair: TranslationPair) -> String {
         switch translator.state(pair) {
         case .needsDownload: return L("Waiting for the language download.")
+        case .downloading: return L("Downloading the language…")
         case .unavailable: return L("Translation is not available here.")
         case .idle, .preparing, .ready: return L("Translating…")
         }
@@ -413,15 +422,20 @@ struct TranslatorView: View {
         .padding(.vertical, 14)
     }
 
-    /// The translation of the sentence in progress, as far as it has got.
-    private var currentLiveTranslation: String? {
-        guard let turnPair, !partialText.isEmpty else { return nil }
-        return translator.translation(of: partialText, turnPair)
+    /// The translation of the sentence in progress, as far as it has got. It
+    /// follows the speaker one translation behind and does not wait for a
+    /// pause: whatever version of the sentence was translated last is shown.
+    private var liveTranslation: String {
+        guard let turnPair else { return "" }
+        if let soFar = translator.liveTranslation(turnPair) { return soFar }
+        // The very same words were translated before (and the demo data).
+        guard !partialText.isEmpty else { return "" }
+        return translator.translation(of: partialText, turnPair) ?? ""
     }
 
     @ViewBuilder
     private func liveCell(_ side: ConversationEntry.Side) -> some View {
-        let shown = currentLiveTranslation ?? liveTranslation
+        let shown = liveTranslation
         if shown.isEmpty {
             waitingCell(
                 side == .mine ? L("Translating as you speak…") : L("Translating as they speak…")
@@ -525,8 +539,9 @@ struct TranslatorView: View {
         let pair = pair(for: side)
         do {
             try recognizer.start(language: pair.source)
+            // A new sentence: nothing of the last one may linger.
+            translator.requestLatest("", pair)
             turnPair = pair
-            liveTranslation = ""
             phase = .listening(side)
         } catch {
             errorMessage = error.localizedDescription
@@ -543,7 +558,6 @@ struct TranslatorView: View {
             // Nothing half-spoken should be translated after this.
             translator.requestLatest("", pair)
             phase = .idle
-            liveTranslation = ""
             turnPair = nil
             guard !text.isEmpty else {
                 // Nothing was heard. If the recogniser said why, pass it on.

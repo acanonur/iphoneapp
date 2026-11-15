@@ -1,20 +1,20 @@
 import Fastify, {
+  type FastifyError,
   type FastifyInstance,
   type FastifyReply,
   type FastifyRequest,
 } from 'fastify';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { hostname } from 'node:os';
 import { CallEngine } from './calls.js';
 import type { ClaudeSettings } from './claude.js';
 import { keyRequired, type Config } from './config.js';
 import { TaskStore } from './db.js';
-import { lanUrls } from './discovery.js';
+import { computerName, lanUrls } from './discovery.js';
 import {
   isDocumentKind,
-  offlineDocumentResult,
   processDocumentTask,
   scheduleResult,
+  unworkedDocumentResult,
 } from './documents.js';
 import { landingPage, pairPage } from './pairing.js';
 import { MockProvider, type MockTimings } from './providers/mock.js';
@@ -53,12 +53,14 @@ const CREATE_TASK_SCHEMA = {
     additionalProperties: false,
     properties: {
       kind: { type: 'string', enum: TASK_KINDS },
-      goal: { type: 'string', minLength: 4, maxLength: 2000 },
+      // The app stops at 2,000 characters as a person counts them; an accent
+      // or an emoji can be several of the units counted here.
+      goal: { type: 'string', minLength: 4, maxLength: 4000 },
       phoneNumber: { type: 'string', pattern: E164_PATTERN },
       language: { type: 'string', enum: LANGUAGE_ENUM },
       summaryLanguage: { type: 'string', enum: LANGUAGE_ENUM },
       userName: { type: 'string', maxLength: 100 },
-      documentText: { type: 'string', maxLength: 20000 },
+      documentText: { type: 'string', maxLength: 40000 },
       todoWhen: { type: 'string', maxLength: 100 },
     },
   },
@@ -122,6 +124,63 @@ export interface AppOptions {
   documentDelayMs?: number;
   /** Replaces the network layer of the Retell client (used by tests). */
   retellFetch?: typeof fetch;
+  /** Receives one plain sentence for each thing a person would want to know happened. */
+  announce?: (line: string) => void;
+}
+
+function minutesAndSeconds(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** What a task's new state means, in a sentence for the server's window. */
+function progressLine(task: SecretaryTask): string | null {
+  const note = task.simulated ? ' (simulated)' : '';
+  if (task.kind !== 'call') {
+    const what = { letter: 'Letter', message: 'Message', form: 'Form', followup: 'Follow-up', reminder: 'Reminder' }[
+      task.kind
+    ];
+    switch (task.status) {
+      case 'completed':
+        return `${what}: done`;
+      case 'draft':
+        return `${what}: a draft is ready in the app`;
+      case 'needs_input':
+        return `${what}: waiting for an answer in the app`;
+      case 'scheduled':
+        return `${what}: scheduled`;
+      case 'failed':
+        return `${what}: not done — ${task.error ?? 'no reason given'}`;
+      default:
+        return null;
+    }
+  }
+  const number = task.phoneNumber ?? 'an unknown number';
+  if (task.direction === 'inbound') {
+    switch (task.status) {
+      case 'in_progress':
+        return `Answering a call from ${number}${note}`;
+      case 'completed':
+        return `The call from ${number} is over — a note is on its way to the app${note}`;
+      case 'failed':
+        return `The call from ${number} ended: ${task.error ?? 'nothing was said'}${note}`;
+      default:
+        return null;
+    }
+  }
+  switch (task.status) {
+    case 'dialing':
+      return `Calling ${number}${note}`;
+    case 'in_progress':
+      return `${number} picked up${note}`;
+    case 'completed':
+      return `The call to ${number} is over${
+        task.durationSeconds != null ? ` (${minutesAndSeconds(task.durationSeconds)})` : ''
+      }${note}`;
+    case 'failed':
+      return `The call to ${number} did not get through: ${task.error ?? task.errorCode ?? 'no reason given'}${note}`;
+    default:
+      return null;
+  }
 }
 
 export interface App {
@@ -162,6 +221,10 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       process.env.NODE_ENV === 'test'
         ? false
         : {
+            // A line per request would bury the QR code within a minute; what
+            // a person needs to know is said in plain sentences (announce).
+            // Warnings and errors always show.
+            level: config.logRequests ? 'info' : 'warn',
             serializers: {
               req(request: FastifyRequest) {
                 return {
@@ -173,6 +236,23 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
             },
           },
   });
+  const announce = options.announce ?? (() => {});
+  // Every refusal leaves in the same shape — { error, code } — because the
+  // app turns the code into words in its owner's language. Without this, a
+  // request the server cannot read comes back in the framework's own format,
+  // and the owner is shown "Bad Request".
+  fastify.setErrorHandler((error: FastifyError, request, reply) => {
+    const status =
+      typeof error.statusCode === 'number' && error.statusCode >= 400 ? error.statusCode : 500;
+    if (status >= 500) {
+      request.log.error(error);
+      return reply.code(status).send({ error: 'The server ran into a problem', code: 'internal' });
+    }
+    return reply
+      .code(status)
+      .send({ error: error.message, code: status === 413 ? 'too_large' : 'invalid_request' });
+  });
+
   const store = new TaskStore(config.dbPath);
   const documentDelayMs = options.documentDelayMs ?? 1_500;
   const pendingDocumentTimers = new Set<NodeJS.Timeout>();
@@ -199,7 +279,13 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       warn: (message) => fastify.log.warn(message),
       error: (message) => fastify.log.error(message),
     },
+    onProgress: (task) => {
+      const line = progressLine(task);
+      if (line) announce(line);
+    },
   });
+  /** Phones that have been let in since the server started. */
+  const greeted = new Set<string>();
 
   let retell: RetellProvider | null = null;
   let mock: MockProvider | null = null;
@@ -241,8 +327,14 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       return;
     }
 
-    const result = claude ? await processDocumentTask(claude, task) : null;
-    engine.applyUpdate(taskId, result ?? offlineDocumentResult(task));
+    // Without a report writer there is nobody to read the letter: say so,
+    // rather than calling it done.
+    if (!claude) {
+      engine.applyUpdate(taskId, unworkedDocumentResult('reports_off'));
+      return;
+    }
+    const result = await processDocumentTask(claude, task);
+    engine.applyUpdate(taskId, result ?? unworkedDocumentResult('report_failed'));
   }
 
   function scheduleDocumentTask(taskId: string, delayMs = documentDelayMs): void {
@@ -309,7 +401,7 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
 
   // MARK: - Open routes
 
-  const serverName = hostname().replace(/\.local$/, '');
+  const serverName = computerName();
 
   function listeningPort(): number {
     const address = fastify.server.address();
@@ -355,6 +447,11 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
 
   fastify.get('/api/session', async (request) => {
     const deviceId = deviceIdOf(request)!;
+    if (!greeted.has(deviceId)) {
+      if (greeted.size > 1_000) greeted.clear();
+      greeted.add(deviceId);
+      announce('An iPhone connected — the app has found this server');
+    }
     return {
       ok: true,
       version: API_VERSION,
@@ -612,6 +709,8 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
         providerCallId: `mock_in_${randomBytes(6).toString('hex')}`,
       });
       store.create(task);
+      const line = progressLine(task);
+      if (line) announce(line);
       mock.playInbound(task, callerLanguage);
       return reply.code(201).send(task);
     },

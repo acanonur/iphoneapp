@@ -80,7 +80,9 @@ export type CallErrorCode =
   | 'provider_error' // the provider could not place the call at all
   | 'technical' // the call was cut off by a technical fault
   | 'cancelled' // the user ended it
-  | 'limit_reached'; // this server's own daily cap
+  | 'limit_reached' // this server's own daily cap
+  | 'reports_off' // paperwork needs the AI report writer, and none is set up
+  | 'report_failed'; // the AI report writer was asked and did not deliver
 
 /** Where the report text came from — decides what may replace it later. */
 export type SummarySource = 'claude' | 'provider' | 'placeholder' | 'script';

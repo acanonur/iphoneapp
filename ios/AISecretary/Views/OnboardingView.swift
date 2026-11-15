@@ -13,7 +13,11 @@ struct OnboardingView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var step: Int
-    @State private var isSearching = false
+    /// Searches under way. Counted, because the one started when the app
+    /// comes back to the front can overlap the one that began with the step.
+    @State private var searches = 0
+
+    private var isSearching: Bool { searches > 0 }
 
     private static let stepCount = 4
 
@@ -264,7 +268,7 @@ struct OnboardingView: View {
         // the local network — and has usually given up by the time the answer
         // is tapped. Coming back from that question, look again.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await search() } }
+            if phase == .active { Task { await search(again: true) } }
         }
     }
 
@@ -341,11 +345,11 @@ struct OnboardingView: View {
         }
     }
 
-    private func search() async {
-        guard !isSearching, !model.server.isConnected else { return }
-        isSearching = true
+    private func search(again: Bool = false) async {
+        guard again || !isSearching, !model.server.isConnected else { return }
+        searches += 1
         await model.refresh()
-        isSearching = false
+        searches -= 1
     }
 
     // MARK: - Footer

@@ -1,3 +1,4 @@
+import './env.js';
 import qrcode from 'qrcode-terminal';
 import { API_VERSION, buildApp } from './app.js';
 import { loadConfig } from './config.js';
@@ -7,7 +8,15 @@ import { describeError } from './providers/retell.js';
 import { openTunnel } from './tunnel.js';
 
 const config = loadConfig();
-const app = buildApp(config);
+
+/** The server's window is read by a person: say what happens, with the time. */
+function announce(line: string): void {
+  const now = new Date();
+  const clock = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  console.log(`  ${clock}  ${line}`);
+}
+
+const app = buildApp(config, { announce });
 const { fastify } = app;
 
 // Things to shut down with the server. Collected here because Fastify takes
@@ -41,7 +50,7 @@ async function main(): Promise<void> {
     const announcement = advertise(
       config.port,
       { auth: app.accessKey ? 'key' : 'none', version: API_VERSION },
-      (message) => fastify.log.info(message),
+      announce,
     );
     cleanups.push(() => announcement.stop());
   }
@@ -79,6 +88,9 @@ async function main(): Promise<void> {
     '',
     code,
     '  Or in the app: Settings → Server → Find automatically.',
+    '',
+    '  If the Mac asks whether "node" may accept incoming connections,',
+    '  click Allow. Keep this window open; press Ctrl-C to stop the server.',
     '────────────────────────────────────────────────────────',
     '',
   ];

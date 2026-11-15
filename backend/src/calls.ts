@@ -79,16 +79,21 @@ export class CallEngine {
   private pollTimer: NodeJS.Timeout | null = null;
   private stopped = false;
 
+  /** Told whenever a task moves on — for the line a person reads in the server's window. */
+  private readonly onProgress: ((task: SecretaryTask) => void) | null;
+
   constructor(deps: {
     store: TaskStore;
     config: Config;
     log: EngineLog;
     claude: ClaudeSettings | null;
     webhookSecret: string;
+    onProgress?: (task: SecretaryTask) => void;
   }) {
     this.store = deps.store;
     this.config = deps.config;
     this.log = deps.log;
+    this.onProgress = deps.onProgress ?? null;
     this.claude = deps.claude;
     this.webhookSecret = deps.webhookSecret;
     this.publicBaseUrl = deps.config.publicBaseUrl;
@@ -158,6 +163,7 @@ export class CallEngine {
 
     const updated = this.store.update(taskId, effective);
     if (!updated) return;
+    if (updated.status !== current.status) this.onProgress?.(updated);
     if (!wasTerminal && updated.status === 'completed' && updated.kind === 'call') {
       void this.finalizeCall(updated.id);
     }
@@ -307,6 +313,7 @@ export class CallEngine {
     });
     this.store.create(task);
     this.answeredAt.set(task.id, Date.now());
+    this.onProgress?.(task);
     return task;
   }
 

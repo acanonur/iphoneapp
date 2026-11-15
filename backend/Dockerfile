@@ -18,4 +18,4 @@ ENV HOST=0.0.0.0 \
 VOLUME /data
 EXPOSE 8787
 
-CMD ["npx", "tsx", "src/index.ts"]
+CMD ["npx", "tsx", "--disable-warning=ExperimentalWarning", "src/index.ts"]

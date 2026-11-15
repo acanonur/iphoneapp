@@ -132,6 +132,10 @@ enum APIError: LocalizedError {
             return L("Answering calls needs a server that can be reached from the internet.")
         case "not_simulated":
             return L("This is only available while calls are simulated.")
+        case "invalid_request":
+            return L("The server could not use this request. Check what you entered and try again.")
+        case "too_large":
+            return L("That is too much text for one request. Shorten it and try again.")
         default:
             return nil
         }

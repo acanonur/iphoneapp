@@ -42,8 +42,10 @@ The whole app is in **English, German and Turkish** and follows the iPhone's lan
 
 ## Try it in ten minutes — no accounts, no keys
 
-Out of the box the server only *simulates* calls: everything in the app works, and no real
-phone call is made. You need a Mac with Xcode, and [Node.js 22](https://nodejs.org).
+Out of the box the server only *simulates* calls: you can place a call, have one answered
+and use the translator, and no real phone call is made. (Letters, messages and forms need
+an AI key — [see below](#reports-written-by-claude).) You need a Mac with Xcode, and
+[Node.js 22](https://nodejs.org).
 
 **1. Start the server** (Terminal):
 
@@ -53,7 +55,10 @@ npm install
 npm start
 ```
 
-It prints its address and a QR code, and stays running in that window.
+It prints its address and a QR code, and stays running in that window. From then on the
+window says what happens in plain sentences — *An iPhone connected*, *Calling +49…*,
+*The call is over*. If the Mac asks whether "node" may accept incoming connections, click
+**Allow**.
 
 **2. Build the app** (another Terminal window, once):
 
@@ -109,8 +114,7 @@ deliberately. The short version:
 
 ```bash
 cd backend
-cp .env.example .env        # then put your Retell API key in it
-npm run retell:setup        # creates the two voice agents, fills in .env
+npm run retell:setup        # asks for your Retell API key, creates the two voice agents
 npm start
 ```
 
@@ -120,11 +124,19 @@ the first test call, and what each safety switch does.
 
 ## Reports written by Claude
 
-With `ANTHROPIC_API_KEY` in `backend/.env`, the report on each call — what happened, what
-was agreed, what you still have to do — is written by Claude (`claude-opus-5-5`) in your
-language, and letters, messages and forms are handled too. Without a key, calls still
-work: you get the transcript with its on-device translation, and the phone service's own
-summary where there is one.
+```bash
+cd backend
+npm run claude:setup        # asks for your Anthropic API key and keeps it in backend/.env
+npm start
+```
+
+With a key, the report on each call — what happened, what was agreed, what you still have
+to do — is written by Claude (`claude-opus-5-5`) in your language, and letters, messages
+and forms are handled too. Without a key, calls still work: you get the transcript with
+its on-device translation, and the phone service's own summary where there is one.
+
+Once a key is set the server asks the app for its access key (a paid service is now behind
+it): scan the QR code in the server's window once with the iPhone's Camera.
 
 The requests use Anthropic's server-side fallback, so that if the main model declines a
 request (official letters are full of debt, health and immigration matters) it is re-run

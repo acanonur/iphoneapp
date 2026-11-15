@@ -56,6 +56,11 @@ export interface Config {
   advertise: boolean;
   /** Open a public tunnel on start (needs `cloudflared`). */
   tunnel: boolean;
+  /**
+   * Print a line for every request. Off by default: the server's window is
+   * read by a person, and the app asks about once a second during a call.
+   */
+  logRequests: boolean;
 }
 
 function flag(value: string | undefined, fallback: boolean): boolean {
@@ -128,6 +133,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mockPace: positiveNumber(env.MOCK_PACE, 1),
     advertise: flag(env.ADVERTISE, true),
     tunnel: flag(env.TUNNEL, false),
+    logRequests: flag(env.LOG_REQUESTS, false),
   };
 }
 

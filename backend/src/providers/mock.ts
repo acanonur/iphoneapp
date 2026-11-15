@@ -44,14 +44,18 @@ interface ScriptedReport {
 const A = (text: string): TranscriptLine => ({ role: 'assistant', text });
 const O = (text: string): TranscriptLine => ({ role: 'other', text });
 
-/** A call the secretary places: it asks for an appointment and gets one. */
+/**
+ * A call the secretary places: it asks for an appointment and gets one. The
+ * conversation is a fixed one — what the user wrote is an instruction to the
+ * secretary, not something to be read out to the practice.
+ */
 function outboundScript(task: SecretaryTask): TranscriptLine[] {
   const opening = disclosureLine(task.language, task.userName);
   switch (task.language) {
     case 'de':
       return [
         O('Praxis am Park, guten Tag.'),
-        A(`${opening} Es geht um Folgendes: ${task.goal}`),
+        A(`${opening} Ich möchte gern einen Kontrolltermin für nächste Woche vereinbaren, am liebsten vormittags.`),
         O('Einen Moment, ich schaue in den Kalender. Dienstag um 10:30 Uhr wäre noch etwas frei.'),
         A('Dienstag um 10:30 Uhr passt sehr gut. Können Sie den Termin bitte fest eintragen?'),
         O('Ist eingetragen. Bitte bringen Sie die Versichertenkarte mit.'),
@@ -61,7 +65,7 @@ function outboundScript(task: SecretaryTask): TranscriptLine[] {
     case 'tr':
       return [
         O('Park Polikliniği, buyurun.'),
-        A(`${opening} Arama nedenim şu: ${task.goal}`),
+        A(`${opening} Gelecek hafta için bir kontrol randevusu almak istiyorum, tercihen öğleden önce.`),
         O('Bir saniye, takvime bakıyorum. Salı günü saat 10.30 uygun görünüyor.'),
         A('Salı 10.30 çok uygun. Randevuyu kesinleştirebilir misiniz?'),
         O('Kaydettim. Lütfen sigorta kartınızı yanınızda getirin.'),
@@ -71,7 +75,7 @@ function outboundScript(task: SecretaryTask): TranscriptLine[] {
     case 'en':
       return [
         O('Park Street Practice, good morning.'),
-        A(`${opening} I am calling about the following: ${task.goal}`),
+        A(`${opening} I would like to book a check-up for next week, preferably in the morning.`),
         O('One moment, let me check the calendar. Tuesday at 10:30 is still free.'),
         A('Tuesday at 10:30 works very well. Could you book that in, please?'),
         O('It is booked. Please bring your insurance card.'),

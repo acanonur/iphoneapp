@@ -41,6 +41,25 @@ export function localHostName(): string | null {
   return generic.endsWith('.local') ? generic : null;
 }
 
+/**
+ * What the owner calls this computer ("Can’s MacBook Pro") — the name the app
+ * shows when it says which server it is connected to.
+ */
+export function computerName(): string {
+  if (platform() === 'darwin') {
+    try {
+      const name = execFileSync('scutil', ['--get', 'ComputerName'], {
+        encoding: 'utf8',
+        timeout: 2_000,
+      }).trim();
+      if (name) return name.slice(0, 60);
+    } catch {
+      // Fall through to the host name.
+    }
+  }
+  return hostname().replace(/\.local$/, '').slice(0, 60);
+}
+
 /** Every address on the local network the app could use to reach this server. */
 export function lanUrls(port: number): string[] {
   const local = localHostName();
@@ -73,7 +92,7 @@ export function advertise(
     const addresses = lanAddresses();
     const local = localHostName();
     published = addresses.join(',');
-    const name = `Yaver on ${hostname().replace(/\.local$/, '')}`;
+    const name = `Yaver on ${computerName()}`;
     const txt = [
       `v=${details.version}`,
       `auth=${details.auth}`,

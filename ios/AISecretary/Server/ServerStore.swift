@@ -156,7 +156,15 @@ final class ServerStore {
     /// the others it has been seen at, then a search of the local network.
     @discardableResult
     func connect(searchNetwork: Bool = true) async -> Bool {
-        if let connecting { return await connecting.value }
+        if let running = connecting {
+            // An attempt is under way: wait for it rather than start a second.
+            if await running.value { return true }
+            // It found nothing — but it may have started before something
+            // changed, most often before the iPhone's "allow local network?"
+            // question was answered. So this caller looks once more, freshly
+            // (or joins whoever already does).
+            if let newer = connecting, newer != running { return await newer.value }
+        }
         let attempt = Task { await self.establish(searchNetwork: searchNetwork) }
         connecting = attempt
         let result = await attempt.value

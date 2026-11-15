@@ -1,5 +1,12 @@
 import { askForJson, type ClaudeSettings } from './claude.js';
-import type { CallOutcome, Language, SecretaryTask, TaskKind, TaskStatus } from './types.js';
+import type {
+  CallErrorCode,
+  CallOutcome,
+  Language,
+  SecretaryTask,
+  TaskKind,
+  TaskStatus,
+} from './types.js';
 import { LANGUAGE_NAMES } from './prompt.js';
 
 /**
@@ -9,12 +16,15 @@ import { LANGUAGE_NAMES } from './prompt.js';
  */
 export interface DocumentResult {
   status: TaskStatus;
-  summary: string;
+  /** What the user reads. Null when the app explains the state in its own words. */
+  summary: string | null;
   /** The artefact produced: a reply draft, a translation, the filled form. */
   result: string | null;
   todo: string | null;
   todoWhen: string | null;
   outcome: CallOutcome | null;
+  errorCode?: CallErrorCode;
+  error?: string;
 }
 
 /** Kinds handled here rather than by the call provider. */
@@ -122,51 +132,33 @@ export async function processDocumentTask(
 }
 
 /**
- * What a document task resolves to with no Anthropic key configured — the same
- * shape the app renders, so the whole product is demoable offline. The wording
- * matches the states the design shows for each kind.
+ * What a letter, message or form resolves to when it could not be worked on:
+ * either no AI report writer is set up on this server, or it was asked and
+ * did not deliver. The task says so honestly rather than pretending to be
+ * done; the app puts the reason — and what to do about it — into the user's
+ * own language from the code.
  */
-type OfflineKind = 'letter' | 'message' | 'form' | 'followup';
-
-const OFFLINE_SUMMARIES = {
-  letter: {
-    en: 'The letter is saved and waiting to be read. Add an Anthropic API key to the backend and the secretary will translate it and draft a reply.',
-    de: 'Der Brief ist gespeichert und wartet auf die Auswertung. Mit einem Anthropic-API-Schlüssel übersetzt die Sekretärin ihn und entwirft eine Antwort.',
-    tr: 'Mektup kaydedildi ve okunmayı bekliyor. Arka uca bir Anthropic API anahtarı eklerseniz sekreter mektubu çevirir ve bir yanıt taslağı hazırlar.',
-  },
-  message: {
-    en: 'The request is saved as a draft, waiting for your approval before it is sent. Add an Anthropic API key to the backend and the secretary will write it for you.',
-    de: 'Die Anfrage liegt als Entwurf bereit und wartet vor dem Versand auf Ihre Freigabe. Mit einem Anthropic-API-Schlüssel schreibt die Sekretärin sie für Sie.',
-    tr: 'İstek taslak olarak kaydedildi; gönderilmeden önce onayınızı bekliyor. Arka uca bir Anthropic API anahtarı eklerseniz sekreter metni sizin için yazar.',
-  },
-  form: {
-    en: 'The form is saved. Your details are still needed before it can be filled in — add an Anthropic API key to the backend and the secretary will complete what it can.',
-    de: 'Das Formular ist gespeichert. Es fehlen noch Ihre Angaben — mit einem Anthropic-API-Schlüssel füllt die Sekretärin aus, was möglich ist.',
-    tr: 'Form kaydedildi. Doldurulabilmesi için hâlâ bilgileriniz gerekiyor — arka uca bir Anthropic API anahtarı eklerseniz sekreter yapabildiği kadarını tamamlar.',
-  },
-  followup: {
-    en: 'The follow-up is scheduled. You will be reminded on the day.',
-    de: 'Die Erinnerung ist eingetragen. Sie werden am Tag daran erinnert.',
-    tr: 'Takip planlandı. Gününde hatırlatılacak.',
-  },
-} satisfies Record<OfflineKind, Record<Language, string>>;
-
-function offlineSummary(kind: TaskKind, language: Language): string {
-  const key: OfflineKind =
-    kind === 'letter' || kind === 'message' || kind === 'form' ? kind : 'followup';
-  return OFFLINE_SUMMARIES[key][language];
-}
-
-export function offlineDocumentResult(task: SecretaryTask): DocumentResult {
+export function unworkedDocumentResult(reason: 'reports_off' | 'report_failed'): DocumentResult {
   return {
-    status: RESULTING_STATUS[task.kind] ?? 'completed',
-    summary: offlineSummary(task.kind, task.summaryLanguage),
+    status: 'failed',
+    summary: null,
     result: null,
     todo: null,
     todoWhen: null,
     outcome: null,
+    errorCode: reason,
+    error:
+      reason === 'reports_off'
+        ? 'No AI report writer is set up on this server (npm run claude:setup)'
+        : 'The AI report writer did not deliver a result',
   };
 }
+
+const SCHEDULED_SUMMARY: Record<Language, string> = {
+  en: 'The reminder is set. You will be reminded at the time you chose.',
+  de: 'Die Erinnerung ist eingetragen. Sie werden zum gewählten Zeitpunkt daran erinnert.',
+  tr: 'Hatırlatma kaydedildi. Seçtiğiniz zamanda size hatırlatılacak.',
+};
 
 /**
  * A follow-up needs no model: it is a date the app will remind the user about.
@@ -175,7 +167,7 @@ export function offlineDocumentResult(task: SecretaryTask): DocumentResult {
 export function scheduleResult(task: SecretaryTask): DocumentResult {
   return {
     status: 'scheduled',
-    summary: offlineSummary('followup', task.summaryLanguage),
+    summary: SCHEDULED_SUMMARY[task.summaryLanguage],
     result: null,
     todo: task.goal,
     todoWhen: task.todoWhen,

@@ -218,7 +218,7 @@ struct LiveCallView: View {
                     HStack(alignment: .firstTextBaseline) {
                         Kicker(text: L("Brief"))
                         Spacer()
-                        Text(task.language.displayName)
+                        Text(task.language.localizedName)
                             .typeStyle(.captionSmall)
                             .foregroundStyle(Modernist.Neutral.s700)
                     }

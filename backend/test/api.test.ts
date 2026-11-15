@@ -53,6 +53,32 @@ describe('GET /health', () => {
   });
 });
 
+describe('what the server tells the person watching its window', () => {
+  it('says in plain sentences that a phone connected and how a call went', async () => {
+    const lines: string[] = [];
+    app = buildApp(testConfig(), { announce: (line) => lines.push(line) });
+    const { fastify, store } = app;
+
+    await fastify.inject({ method: 'GET', url: '/api/session', headers: DEVICE });
+    await fastify.inject({ method: 'GET', url: '/api/session', headers: DEVICE });
+    expect(lines.filter((line) => line.includes('iPhone connected'))).toHaveLength(1);
+
+    const created = (await startCall(app)).json();
+    await until(() => store.get(created.id)?.status === 'completed');
+    expect(lines).toContain('Calling +493012345678 (simulated)');
+    expect(lines).toContain('+493012345678 picked up (simulated)');
+    expect(lines.some((line) => line.startsWith('The call to +493012345678 is over'))).toBe(true);
+
+    await fastify.inject({
+      method: 'POST',
+      url: '/api/tasks',
+      headers: DEVICE,
+      payload: { kind: 'followup', goal: 'Call the landlord back', todoWhen: 'Friday' },
+    });
+    await until(() => lines.includes('Follow-up: scheduled'));
+  });
+});
+
 describe('POST /api/calls', () => {
   it('creates a call task and starts the simulated call', async () => {
     const built = makeApp();
@@ -117,6 +143,22 @@ describe('POST /api/calls', () => {
     const built = makeApp();
     const res = await startCall(built, { ...validBody, phoneNumber: '030 1234' });
     expect(res.statusCode).toBe(400);
+    // In the shape the app reads, not the framework's own.
+    expect(res.json().code).toBe('invalid_request');
+    expect(res.json().error).toContain('phoneNumber');
+  });
+
+  it('answers a body it cannot read in the same shape', async () => {
+    const { fastify } = makeApp();
+    const res = await fastify.inject({
+      method: 'POST',
+      url: '/api/tasks',
+      headers: { 'x-device-id': 'device-a', 'content-type': 'application/json' },
+      payload: '{"goal": "Book a table",',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe('invalid_request');
+    expect(typeof res.json().error).toBe('string');
   });
 
   it('rejects destinations outside the allowlist', async () => {

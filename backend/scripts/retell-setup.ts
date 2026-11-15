@@ -5,35 +5,16 @@
  *
  *   npm run retell:setup
  *
- * It needs RETELL_API_KEY in backend/.env. It never buys a phone number: that
- * costs money every month, so it is left to a person (see docs/real-calls.md).
+ * It needs a Retell API key: it asks for one the first time and keeps it in
+ * backend/.env (RETELL_API_KEY). It never buys a phone number: that costs
+ * money every month, so it is left to a person (see docs/real-calls.md).
  * Running it again updates the existing agents instead of making new ones.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import '../src/env.js';
 import Retell from 'retell-sdk';
 import { AGENT_PROMPT_TEMPLATE, INBOUND_PROMPT_TEMPLATE, greetingLine } from '../src/prompt.js';
 import { WEBHOOK_EVENTS, describeError } from '../src/providers/retell.js';
-
-const ENV_FILE = '.env';
-
-function say(message = ''): void {
-  console.log(message);
-}
-
-/** Sets KEY=value in backend/.env, replacing an existing line or adding one. */
-function saveToEnv(values: Record<string, string>): void {
-  let text = existsSync(ENV_FILE)
-    ? readFileSync(ENV_FILE, 'utf8')
-    : existsSync('.env.example')
-      ? readFileSync('.env.example', 'utf8')
-      : '';
-  for (const [key, value] of Object.entries(values)) {
-    const line = `${key}=${value}`;
-    const pattern = new RegExp(`^${key}=.*$`, 'm');
-    text = pattern.test(text) ? text.replace(pattern, line) : `${text.replace(/\n*$/, '\n')}${line}\n`;
-  }
-  writeFileSync(ENV_FILE, text);
-}
+import { ask, saveToEnv, say } from './terminal.js';
 
 const END_CALL_TOOL: Retell.LlmCreateParams.EndCallTool = {
   type: 'end_call',
@@ -143,12 +124,26 @@ async function upsertAgent(
 }
 
 async function main(): Promise<void> {
-  const apiKey = process.env.RETELL_API_KEY?.trim();
+  let apiKey = process.env.RETELL_API_KEY?.trim();
+  if (!apiKey && process.stdin.isTTY) {
+    // Nobody should have to edit a settings file to get started.
+    say('Real phone calls go through Retell AI. Yaver needs a key from your account there:');
+    say('  1. Open https://dashboard.retellai.com and sign in (or create an account).');
+    say('  2. Go to Settings → API Keys and copy a key. It starts with "key_".');
+    say();
+    apiKey = await ask('Paste the key here and press Enter (or just press Enter to stop): ');
+    if (apiKey) {
+      saveToEnv({ RETELL_API_KEY: apiKey });
+      say('Saved in backend/.env. The key stays on this computer.');
+      say();
+    }
+  }
   if (!apiKey) {
-    say('No RETELL_API_KEY found.');
+    say('No Retell API key yet.');
     say('1. Create an account at https://dashboard.retellai.com');
     say('2. Copy an API key from Settings → API Keys');
-    say('3. Put it in backend/.env as  RETELL_API_KEY=key_...   and run this again.');
+    say('3. Run this again and paste the key when asked');
+    say('   (or put it in backend/.env as  RETELL_API_KEY=key_...).');
     process.exitCode = 1;
     return;
   }

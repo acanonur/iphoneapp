@@ -16,7 +16,7 @@ final class SpeechRecognizer {
         var errorDescription: String? {
             switch self {
             case let .unavailable(language):
-                return Lf("Speech recognition for %@ is not available on this iPhone right now.", language.displayName)
+                return Lf("Speech recognition for %@ is not available on this iPhone right now.", language.localizedName)
             case .noMicrophone:
                 return L("The microphone is not available right now.")
             }

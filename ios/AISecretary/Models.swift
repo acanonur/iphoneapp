@@ -14,6 +14,17 @@ enum Language: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// The language's name in the reader's own language — for sentences and
+    /// facts ("translated into German"). `displayName` is for choosing a
+    /// language, where each is best recognised by its own name.
+    var localizedName: String {
+        switch self {
+        case .de: return L("German")
+        case .en: return L("English")
+        case .tr: return L("Turkish")
+        }
+    }
+
     /// The name in capitals, by the rules of the language it names — so
     /// "English" never picks up a Turkish dotted İ.
     var displayNameUppercased: String {
@@ -206,6 +217,10 @@ enum CallProblem: String {
     case technical
     case cancelled
     case limitReached = "limit_reached"
+    /// A letter, message or form on a server with no AI to work on it.
+    case reportsOff = "reports_off"
+    /// The AI was asked and did not deliver.
+    case reportFailed = "report_failed"
 
     /// The few words that stand where the outcome would.
     var title: String {
@@ -220,6 +235,8 @@ enum CallProblem: String {
         case .technical: return L("Call interrupted")
         case .cancelled: return L("Ended by you")
         case .limitReached: return L("Daily limit reached")
+        case .reportsOff: return L("Not set up yet")
+        case .reportFailed: return L("Could not be done")
         }
     }
 
@@ -248,6 +265,10 @@ enum CallProblem: String {
             return L("You ended this call.")
         case .limitReached:
             return L("Your server has reached the number of calls it places per day.")
+        case .reportsOff:
+            return L("Letters, messages and forms are worked on by Claude, and your server has no key for it yet. On the computer, in the backend folder, run “npm run claude:setup” — then try again.")
+        case .reportFailed:
+            return L("The AI service did not answer, or declined. Try again in a moment. If it keeps happening, check the key on your server.")
         }
     }
 }
