@@ -71,7 +71,12 @@ struct ModernistButtonStyle: ButtonStyle {
                     alignment: style.block ? .leading : .center
                 )
                 .frame(height: style.height)
-                .background(style.variant.background(pressed: configuration.isPressed))
+                // Stops at the safe area: a button at the foot of a screen must
+                // not bleed down under the home indicator.
+                .background(
+                    style.variant.background(pressed: configuration.isPressed),
+                    ignoresSafeAreaEdges: []
+                )
                 .overlay {
                     Rectangle()
                         .strokeBorder(style.variant.borderColor, lineWidth: Modernist.hairlineWidth)

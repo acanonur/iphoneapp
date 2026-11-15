@@ -113,6 +113,8 @@ struct LiveCallView: View {
                 }
             }
         }
+        // A call is watched, not touched: keep the screen on while it runs.
+        .keepsScreenAwake(task?.status.isActive == true)
         .confirmationDialog(
             L("End this call now?"),
             isPresented: $confirmingHangUp,

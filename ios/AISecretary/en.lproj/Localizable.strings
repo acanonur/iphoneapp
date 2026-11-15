@@ -25,6 +25,10 @@
 "Answering calls is not set up on your server yet." = "Answering calls is not set up on your server yet.";
 "Answering calls needs a server that can be reached from the internet." = "Answering calls needs a server that can be reached from the internet.";
 "This is only available while calls are simulated." = "This is only available while calls are simulated.";
+"Yaver is not allowed to use the local network." = "Yaver is not allowed to use the local network.";
+"No server was found on this Wi-Fi." = "No server was found on this Wi-Fi.";
+"In the iPhone’s Settings → Privacy & Security → Local Network, switch Yaver on. Then come back and tap “Find automatically”." = "In the iPhone’s Settings → Privacy & Security → Local Network, switch Yaver on. Then come back and tap “Find automatically”.";
+"Start the server on your computer, keep the iPhone on the same Wi-Fi, and tap “Find automatically” — or point the iPhone’s Camera at the code the server shows." = "Start the server on your computer, keep the iPhone on the same Wi-Fi, and tap “Find automatically” — or point the iPhone’s Camera at the code the server shows.";
 "Phone call" = "Phone call";
 "Letter" = "Letter";
 "Message" = "Message";
@@ -216,6 +220,7 @@
 "Duration" = "Duration";
 "Report in" = "Report in";
 "Call back %@" = "Call back %@";
+"Call again" = "Call again";
 "Still to do" = "Still to do";
 "On your list" = "On your list";
 "Add to my list" = "Add to my list";

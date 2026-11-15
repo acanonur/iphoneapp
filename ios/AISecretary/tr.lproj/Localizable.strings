@@ -25,6 +25,10 @@
 "Answering calls is not set up on your server yet." = "Aramaları yanıtlama özelliği sunucunuzda henüz kurulmamış.";
 "Answering calls needs a server that can be reached from the internet." = "Aramaları yanıtlamak için sunucuya internetten ulaşılabilmesi gerekir.";
 "This is only available while calls are simulated." = "Bu yalnızca aramalar simüle edilirken kullanılabilir.";
+"Yaver is not allowed to use the local network." = "Yaver’in yerel ağı kullanmasına izin verilmemiş.";
+"No server was found on this Wi-Fi." = "Bu Wi-Fi ağında sunucu bulunamadı.";
+"In the iPhone’s Settings → Privacy & Security → Local Network, switch Yaver on. Then come back and tap “Find automatically”." = "iPhone’un Ayarlar → Gizlilik ve Güvenlik → Yerel Ağ bölümünde Yaver’i açın. Sonra geri dönüp “Otomatik bul”a dokunun.";
+"Start the server on your computer, keep the iPhone on the same Wi-Fi, and tap “Find automatically” — or point the iPhone’s Camera at the code the server shows." = "Sunucuyu bilgisayarınızda başlatın, iPhone’u aynı Wi-Fi ağında tutun ve “Otomatik bul”a dokunun; ya da iPhone’un Kamera uygulamasını sunucunun gösterdiği koda tutun.";
 "Phone call" = "Telefon araması";
 "Letter" = "Mektup";
 "Message" = "Mesaj";
@@ -216,6 +220,7 @@
 "Duration" = "Süre";
 "Report in" = "Rapor dili";
 "Call back %@" = "%@ numarasını geri ara";
+"Call again" = "Yeniden ara";
 "Still to do" = "Yapılacak";
 "On your list" = "Listenizde";
 "Add to my list" = "Listeme ekle";

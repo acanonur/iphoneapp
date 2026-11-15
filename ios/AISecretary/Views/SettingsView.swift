@@ -52,7 +52,6 @@ struct SettingsView: View {
             accessKey = server.accessKey
             loadAnswering()
             if !server.isConnected { _ = await server.connect() }
-            address = server.baseURL.absoluteString
             loadAnswering()
         }
         .onChange(of: server.baseURL) { _, url in address = url.absoluteString }
@@ -83,7 +82,7 @@ struct SettingsView: View {
                         .autocorrectionDisabled()
                 }
 
-                HStack(spacing: Modernist.Space.s2) {
+                VStack(spacing: Modernist.Space.s2) {
                     Button {
                         isConnecting = true
                         Task {
@@ -139,7 +138,11 @@ struct SettingsView: View {
                     .typeStyle(TypeStyle(size: 15, weight: .extrabold, lineHeight: 1.3))
             }
         case let .unreachable(problem):
-            statusRow(connected: false, title: problem.title, details: [problem.advice])
+            statusRow(
+                connected: false,
+                title: problem.title,
+                details: [problem.advice] + (server.failureDetail.map { [$0] } ?? [])
+            )
         case .needsKey:
             statusRow(
                 connected: false,

@@ -9,8 +9,12 @@ struct ReportView: View {
     let taskID: String
     let reportLanguage: Language
     var goHome: () -> Void
+    /// Opens another task — the new call when a failed one is tried again.
+    var openTask: (SecretaryTask) -> Void = { _ in }
 
     @State private var isAddingReminder = false
+    @State private var isRetrying = false
+    @State private var retryError: String?
 
     private var task: SecretaryTask? { model.task(withID: taskID) }
 
@@ -45,6 +49,9 @@ struct ReportView: View {
                         }
                         if task.isInbound, let number = task.phoneNumber, !number.isEmpty {
                             callBackBlock(number)
+                        }
+                        if canRetry(task) {
+                            retryBlock(task)
                         }
                         if let todo = task.todo, !todo.isEmpty {
                             todoBlock(task, todo: todo)
@@ -226,6 +233,54 @@ struct ReportView: View {
                 .padding(.vertical, 14)
                 Rule()
             }
+        }
+    }
+
+    // MARK: - Trying again
+
+    /// A call the secretary placed that did not get through — and that the
+    /// user did not end themselves — is worth another go.
+    private func canRetry(_ task: SecretaryTask) -> Bool {
+        task.kind == .call && !task.isInbound && task.status == .failed
+            && task.problem != .cancelled && task.phoneNumber != nil
+    }
+
+    private func retryBlock(_ task: SecretaryTask) -> some View {
+        VStack(spacing: 0) {
+            Button {
+                isRetrying = true
+                retryError = nil
+                Task {
+                    defer { isRetrying = false }
+                    do {
+                        let again = try await model.create(
+                            NewTaskRequest(
+                                kind: .call,
+                                goal: task.goal,
+                                phoneNumber: task.phoneNumber,
+                                language: task.language,
+                                summaryLanguage: task.summaryLanguage,
+                                userName: task.userName
+                            )
+                        )
+                        openTask(again)
+                    } catch {
+                        retryError = error.localizedDescription
+                    }
+                }
+            } label: {
+                ButtonLabel(title: L("Call again"), icon: .phone, iconSize: 16)
+            }
+            .buttonStyle(
+                ModernistButtonStyle(variant: .secondary, block: true, height: 48, fontSize: 15)
+            )
+            .disabled(isRetrying)
+            .padding(.vertical, 14)
+            if let retryError {
+                Notice(title: L("That did not work."), message: retryError, tone: .accent)
+                    .padding(.bottom, 14)
+            }
+            Rule()
         }
     }
 

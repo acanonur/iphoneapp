@@ -17,6 +17,11 @@ enum ConnectionProblem: Error, Equatable {
     case badAddress
     /// Something answered, but it is not this app's server.
     case notOurServer
+    /// The app may not use the local network, so it can neither search for
+    /// the server nor reach it.
+    case localNetworkDenied
+    /// No address is known yet, and a search of the Wi-Fi found no server.
+    case noServerFound
 
     init(_ error: Error) {
         guard let urlError = error as? URLError else {
@@ -52,6 +57,8 @@ enum ConnectionProblem: Error, Equatable {
         case .needsHTTPS: return L("This address needs a secure (https) connection.")
         case .badAddress: return L("That does not look like a server address.")
         case .notOurServer: return L("Something answered, but it is not a Yaver server.")
+        case .localNetworkDenied: return L("Yaver is not allowed to use the local network.")
+        case .noServerFound: return L("No server was found on this Wi-Fi.")
         }
     }
 
@@ -70,8 +77,20 @@ enum ConnectionProblem: Error, Equatable {
             return L("An address looks like 192.168.1.20:8787 or https://yaver.example.com.")
         case .notOurServer:
             return L("Check the address and the port (usually 8787).")
+        case .localNetworkDenied:
+            return L("In the iPhone’s Settings → Privacy & Security → Local Network, switch Yaver on. Then come back and tap “Find automatically”.")
+        case .noServerFound:
+            return L("Start the server on your computer, keep the iPhone on the same Wi-Fi, and tap “Find automatically” — or point the iPhone’s Camera at the code the server shows.")
         }
     }
+}
+
+/// Why an address did not answer, with the system's own code kept for the
+/// person who has to work out what is going on.
+struct ProbeFailure: Error {
+    let problem: ConnectionProblem
+    /// The system's error number (for example -1004), if there was one.
+    let code: Int?
 }
 
 enum APIError: LocalizedError {
@@ -170,7 +189,7 @@ struct APIClient {
     /// tell its own server from anything else before it sends the key there.
     static func probe(
         _ baseURL: URL, challenge: String
-    ) async -> Result<ServerHealth, ConnectionProblem> {
+    ) async -> Result<ServerHealth, ProbeFailure> {
         var request = URLRequest(
             url: baseURL.appending(path: "/health")
                 .appending(queryItems: [URLQueryItem(name: "challenge", value: challenge)])
@@ -181,10 +200,12 @@ struct APIClient {
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                   let health = try? JSONDecoder().decode(ServerHealth.self, from: data),
                   health.service == "yaver" || health.provider != nil
-            else { return .failure(.notOurServer) }
+            else { return .failure(ProbeFailure(problem: .notOurServer, code: nil)) }
             return .success(health)
         } catch {
-            return .failure(ConnectionProblem(error))
+            return .failure(
+                ProbeFailure(problem: ConnectionProblem(error), code: (error as? URLError)?.code.rawValue)
+            )
         }
     }
 

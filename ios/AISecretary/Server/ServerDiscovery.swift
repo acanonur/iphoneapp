@@ -5,19 +5,31 @@ import Network
 /// address. The server announces itself over Bonjour and puts its addresses in
 /// the announcement, so finding it is a matter of listening for a moment.
 enum ServerDiscovery {
+    /// Must match the server's announcement (backend/src/discovery.ts) and the
+    /// `NSBonjourServices` entry in the app's Info.plist, letter for letter.
     static let serviceType = "_yaver._tcp"
+
+    struct Outcome {
+        /// The addresses announced, most useful first.
+        var urls: [URL] = []
+        /// True when iOS refused the search because the user has not allowed
+        /// the app to use the local network — a different problem from
+        /// "nothing was found", with a different fix.
+        var permissionDenied = false
+    }
 
     /// Everything the search needs to remember, touched only on its own queue.
     private final class Search: @unchecked Sendable {
-        var urls: [URL] = []
+        var outcome = Outcome()
         var finished = false
     }
 
-    /// Listens for up to `timeout` seconds and returns the addresses announced,
-    /// most useful first. Empty when nothing answered — including when the user
-    /// has not allowed the app to use the local network.
-    static func search(timeout: TimeInterval = 3) async -> [URL] {
-        await withCheckedContinuation { (continuation: CheckedContinuation<[URL], Never>) in
+    /// The system's error for "the user said no to local network access".
+    private static let policyDenied: Int32 = -65570
+
+    /// Listens for up to `timeout` seconds.
+    static func search(timeout: TimeInterval = 3) async -> Outcome {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Outcome, Never>) in
             let queue = DispatchQueue(label: "yaver.discovery")
             let search = Search()
             let browser = NWBrowser(
@@ -29,7 +41,7 @@ enum ServerDiscovery {
                 guard !search.finished else { return }
                 search.finished = true
                 browser.cancel()
-                continuation.resume(returning: search.urls)
+                continuation.resume(returning: search.outcome)
             }
 
             browser.browseResultsChangedHandler = { results, _ in
@@ -40,12 +52,22 @@ enum ServerDiscovery {
                     }
                 }
                 guard !found.isEmpty else { return }
-                search.urls = found
+                search.outcome.urls = found
                 // Give a second announcement a moment to arrive, then stop.
                 queue.asyncAfter(deadline: .now() + 0.4, execute: finish)
             }
             browser.stateUpdateHandler = { state in
-                if case .failed = state { finish() }
+                switch state {
+                case let .waiting(error):
+                    if case let .dns(code) = error, code == policyDenied {
+                        search.outcome.permissionDenied = true
+                        finish()
+                    }
+                case .failed:
+                    finish()
+                default:
+                    break
+                }
             }
             browser.start(queue: queue)
             queue.asyncAfter(deadline: .now() + timeout, execute: finish)

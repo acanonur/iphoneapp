@@ -89,14 +89,14 @@ struct RootView: View {
         .foregroundStyle(Modernist.text)
         .tint(Modernist.accent)
         .hostsLiveTranslation(translator)
-        .task { await model.refresh() }
+        .task { if hasOnboarded { await model.refresh() } }
         // The server needs to know who it works for — to answer calls and
         // write notes while the app is closed.
         .task(id: ProfileKey(name: userName, language: reportLanguageRaw, connected: model.server.isConnected)) {
             await model.syncProfile(name: userName, language: reportLanguage.wrappedValue)
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await model.refresh() } }
+            if phase == .active, hasOnboarded { Task { await model.refresh() } }
         }
         // yaver://pair?url=…&key=… — the server's pairing page opens this. Any
         // web page could, too, so the app asks before it changes servers.
@@ -171,8 +171,11 @@ struct RootView: View {
             ReportView(
                 taskID: id,
                 reportLanguage: reportLanguage.wrappedValue,
-                goHome: { route = .home }
+                goHome: { route = .home },
+                openTask: { open($0) }
             )
+            // A report is about one task; another task is another report.
+            .id(id)
 
         case .translator:
             TranslatorView(goBack: { route = .home }, stage: stage?.translatorStage)

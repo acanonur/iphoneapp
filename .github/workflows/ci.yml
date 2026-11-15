@@ -41,6 +41,7 @@ jobs:
   ios:
     name: iOS build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     permissions:
       # The newest leg pushes its screenshots to the ci-screenshots branch.
       contents: write
@@ -94,6 +95,8 @@ jobs:
 
       - name: Photograph every screen
         if: matrix.screenshots
+        # A simulator that will not start must not hold the build up for hours.
+        timeout-minutes: 25
         run: |
           ios/scripts/screenshots.sh \
             "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \

@@ -118,6 +118,9 @@ final class ServerStore {
     /// True once the server in use has proved it holds the access key. Until
     /// then the key is not sent to it.
     private(set) var keyTrusted = false
+    /// The system's error number and the address it was for, when the server
+    /// did not answer — shown small in Settings.
+    private(set) var failureDetail: String?
 
     private let defaults: UserDefaults
     private let persists: Bool
@@ -157,17 +160,24 @@ final class ServerStore {
         let attempt = Task { await self.establish(searchNetwork: searchNetwork) }
         connecting = attempt
         let result = await attempt.value
-        connecting = nil
+        if connecting == attempt { connecting = nil }
         return result
     }
 
     private func establish(searchNetwork: Bool) async -> Bool {
         status = .checking
-        var lastProblem = ConnectionProblem.notRunning
+        failureDetail = nil
+        var lastProblem: ConnectionProblem?
 
-        var candidates = [baseURL]
+        var candidates: [URL] = []
+        // "localhost" is the computer itself: right for the simulator, never
+        // right on a real iPhone, where it would only produce a misleading error.
+        if !Self.isThisDevice(baseURL) || Self.runsInSimulator { candidates.append(baseURL) }
         for address in knownAddresses {
-            if let url = URL(string: address), !candidates.contains(url) { candidates.append(url) }
+            if let url = URL(string: address), !candidates.contains(url),
+               !Self.isThisDevice(url) || Self.runsInSimulator {
+                candidates.append(url)
+            }
         }
 
         // A server that wants a key but cannot prove it holds ours is not our
@@ -178,27 +188,59 @@ final class ServerStore {
             let challenge = Self.challenge()
             switch await APIClient.probe(url, challenge: challenge) {
             case let .success(found):
-                if let trusted = trust(found, challenge: challenge) {
+                if let trusted = trust(found, key: accessKey, challenge: challenge) {
                     return await adopt(url, health: found, keyTrusted: trusted)
                 }
                 sawStranger = true
-            case let .failure(problem):
-                if url == baseURL { lastProblem = problem }
+            case let .failure(failure):
+                if url == baseURL {
+                    lastProblem = failure.problem
+                    failureDetail = Self.detail(failure, url)
+                }
             }
         }
 
         if searchNetwork {
-            for url in await ServerDiscovery.search() where !candidates.contains(url) {
+            let found = await ServerDiscovery.search()
+            for url in found.urls where !candidates.contains(url) {
                 let challenge = Self.challenge()
-                if case let .success(found) = await APIClient.probe(url, challenge: challenge),
-                   let trusted = trust(found, challenge: challenge) {
-                    return await adopt(url, health: found, keyTrusted: trusted)
+                if case let .success(health) = await APIClient.probe(url, challenge: challenge),
+                   let trusted = trust(health, key: accessKey, challenge: challenge) {
+                    return await adopt(url, health: health, keyTrusted: trusted)
                 }
+            }
+            if found.permissionDenied {
+                status = .unreachable(.localNetworkDenied)
+                return false
             }
         }
 
-        status = sawStranger ? .wrongKey : .unreachable(lastProblem)
+        if sawStranger {
+            status = .wrongKey
+        } else {
+            status = .unreachable(lastProblem ?? .noServerFound)
+        }
         return false
+    }
+
+    private static var runsInSimulator: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    private static func isThisDevice(_ url: URL) -> Bool {
+        let host = url.host() ?? ""
+        return host == "localhost" || host == "127.0.0.1" || host == "::1"
+    }
+
+    /// "-1004 · 192.168.2.56:8787" — small print for whoever is debugging.
+    private static func detail(_ failure: ProbeFailure, _ url: URL) -> String {
+        let host = url.host() ?? url.absoluteString
+        let place = url.port.map { "\(host):\($0)" } ?? host
+        return failure.code.map { "\($0) · \(place)" } ?? place
     }
 
     private static func challenge() -> String {
@@ -213,10 +255,10 @@ final class ServerStore {
     /// - `nil`: the server wants a key and could not prove it holds ours. The
     ///   app finds servers by itself, so this check is what keeps the key from
     ///   being handed to whatever happens to answer on a strange network.
-    private func trust(_ found: ServerHealth, challenge: String) -> Bool? {
-        guard found.needsKey, !accessKey.isEmpty else { return false }
+    private func trust(_ found: ServerHealth, key: String, challenge: String) -> Bool? {
+        guard found.needsKey, !key.isEmpty else { return false }
         let expected = HMAC<SHA256>.authenticationCode(
-            for: Data(challenge.utf8), using: SymmetricKey(data: Data(accessKey.utf8))
+            for: Data(challenge.utf8), using: SymmetricKey(data: Data(key.utf8))
         )
         let hex = expected.map { String(format: "%02x", $0) }.joined()
         return found.proof == hex ? true : nil
@@ -265,21 +307,69 @@ final class ServerStore {
         if persists { defaults.set(knownAddresses, forKey: Key.known) }
     }
 
-    /// Points the app at an address the user typed, scanned or tapped.
+    /// Points the app at an address the user typed, scanned or tapped. The
+    /// server in use is only given up once the new one has answered.
     @discardableResult
     func use(address: String, key: String?) async -> Bool {
+        // One attempt at a time: a search that is still under way must not
+        // write its "nothing found" over what this one finds.
+        while let running = connecting {
+            _ = await running.value
+            if connecting == running { connecting = nil }
+        }
+        let attempt = Task { await self.switchTo(address: address, key: key) }
+        connecting = attempt
+        let result = await attempt.value
+        if connecting == attempt { connecting = nil }
+        return result
+    }
+
+    private func switchTo(address: String, key: String?) async -> Bool {
         guard let url = Self.url(from: address) else {
             status = .unreachable(.badAddress)
             return false
         }
-        baseURL = url
-        if persists { defaults.set(url.absoluteString, forKey: Key.url) }
-        if let key {
-            accessKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-            keyTrusted = false
-            if persists { Keychain.saveKey(accessKey) }
+        // Plain http is for the home network. Anything on the internet has to
+        // be https, or the access key would travel in the clear.
+        guard url.scheme == "https" || Self.isLocal(url) else {
+            status = .unreachable(.needsHTTPS)
+            return false
         }
-        return await connect(searchNetwork: false)
+        let candidateKey = (key ?? accessKey).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        status = .checking
+        failureDetail = nil
+        let challenge = Self.challenge()
+        switch await APIClient.probe(url, challenge: challenge) {
+        case let .failure(failure):
+            failureDetail = Self.detail(failure, url)
+            status = .unreachable(failure.problem)
+            return false
+        case let .success(found):
+            guard let trusted = trust(found, key: candidateKey, challenge: challenge) else {
+                status = .wrongKey
+                return false
+            }
+            accessKey = candidateKey
+            if persists { Keychain.saveKey(candidateKey) }
+            return await adopt(url, health: found, keyTrusted: trusted)
+        }
+    }
+
+    /// An address on the home network: a private IPv4 address, a `.local`
+    /// name, a bare host name, or this device itself.
+    nonisolated static func isLocal(_ url: URL) -> Bool {
+        guard let host = url.host()?.lowercased(), !host.isEmpty else { return false }
+        if host == "localhost" || host.hasSuffix(".local") || !host.contains(".") { return true }
+        let parts = host.split(separator: ".").compactMap { Int($0) }
+        guard parts.count == 4, parts.allSatisfy({ (0 ... 255).contains($0) }) else { return false }
+        switch (parts[0], parts[1]) {
+        case (10, _), (127, _), (192, 168), (169, 254): return true
+        case (172, 16 ... 31): return true
+        // The range carriers and some VPNs (Tailscale) hand out.
+        case (100, 64 ... 127): return true
+        default: return false
+        }
     }
 
     /// What a pairing link asks for: `yaver://pair?url=http://192.168.2.56:8787&key=…`
@@ -304,7 +394,8 @@ final class ServerStore {
 
     @discardableResult
     func pair(_ pairing: Pairing) async -> Bool {
-        await use(address: pairing.address, key: pairing.key ?? "")
+        // A link without a key leaves the key the app already has alone.
+        await use(address: pairing.address, key: pairing.key)
     }
 
     /// Re-reads what the server offers — after the profile changed, say.

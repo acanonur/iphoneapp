@@ -111,7 +111,7 @@ struct HomeView: View {
     private func connectionPanel(title: String, message: String, showsSearch: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Notice(title: title, message: message, tone: .accent)
-            HStack(spacing: Modernist.Space.s2) {
+            VStack(spacing: Modernist.Space.s2) {
                 if showsSearch {
                     Button {
                         isSearching = true

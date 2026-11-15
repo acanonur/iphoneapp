@@ -77,6 +77,7 @@ enum TaskKind: String, Codable, CaseIterable, Identifiable {
     var briefLabel: String {
         switch self {
         case .call: return L("Call")
+        case .followup: return L("Reminder")
         default: return label
         }
     }

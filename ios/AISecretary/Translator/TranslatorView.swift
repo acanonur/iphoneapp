@@ -112,6 +112,9 @@ struct TranslatorView: View {
             if !recording, case .listening = phase, stage == nil { finishListening() }
         }
         .onChange(of: translator.results.count) { speakNewTranslations() }
+        // The phone lies between two people and nobody touches it while they
+        // talk: it must not lock in the middle of the conversation.
+        .keepsScreenAwake(stage == nil)
         .onDisappear {
             recognizer.cancel()
             speaker.stop()
@@ -192,6 +195,8 @@ struct TranslatorView: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
                 Kicker(text: title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 Text(language.displayName)
                     .typeStyle(.subhead)
             }
@@ -472,6 +477,7 @@ struct TranslatorView: View {
         let isFinishing = phase == .finishing(side)
         let highlighted = isActive || isFinishing
         return Button {
+            guard stage == nil else { return }
             if isActive {
                 finishListening()
             } else if phase == .idle {
@@ -499,7 +505,7 @@ struct TranslatorView: View {
         }
         .buttonStyle(.plain)
         .opacity(isBusy && !highlighted ? 0.45 : 1)
-        .disabled((isBusy && !isActive) || stage != nil)
+        .disabled(isBusy && !isActive)
     }
 
     // MARK: - Speech

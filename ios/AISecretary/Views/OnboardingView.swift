@@ -10,6 +10,7 @@ struct OnboardingView: View {
     var onFinish: () -> Void
 
     @Environment(SecretaryViewModel.self) private var model
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var step: Int
     @State private var isSearching = false
@@ -259,6 +260,12 @@ struct OnboardingView: View {
         }
         .padding(.top, 40)
         .task { await search() }
+        // The first search makes the iPhone ask whether Yaver may look around
+        // the local network — and has usually given up by the time the answer
+        // is tapped. Coming back from that question, look again.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await search() } }
+        }
     }
 
     private var connectHints: [String] {
@@ -295,8 +302,13 @@ struct OnboardingView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                Text(L("No server found yet."))
+                Text(notFound.title)
                     .typeStyle(TypeStyle(size: 17, weight: .extrabold, lineHeight: 1.3))
+                if let advice = notFound.advice {
+                    Text(advice)
+                        .typeStyle(.smallTight)
+                        .foregroundStyle(Modernist.Neutral.s800)
+                }
                 Button {
                     Task { await search() }
                 } label: {
@@ -304,6 +316,28 @@ struct OnboardingView: View {
                 }
                 .buttonStyle(ModernistButtonStyle(variant: .secondary, block: true, height: 46))
             }
+        }
+    }
+
+    /// What to say when the search came back empty-handed. Most of the time
+    /// the numbered hints below are the answer; a few cases have their own.
+    private var notFound: (title: String, advice: String?) {
+        switch model.server.status {
+        case .unreachable(.localNetworkDenied):
+            let problem = ConnectionProblem.localNetworkDenied
+            return (problem.title, problem.advice)
+        case .needsKey:
+            return (
+                L("This server needs an access key."),
+                L("On your computer, look at the server’s window and scan the code it shows with the iPhone’s Camera.")
+            )
+        case .wrongKey:
+            return (
+                L("The server did not accept the access key."),
+                L("Scan the code the server shows again, with the iPhone’s Camera.")
+            )
+        default:
+            return (L("No server found yet."), nil)
         }
     }
 

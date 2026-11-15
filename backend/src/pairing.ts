@@ -72,6 +72,7 @@ export function pairPage(): string {
 <p class="muted">Tippen Sie auf die Schaltfläche. Die Yaver-App öffnet sich und speichert die Adresse dieses Servers.</p>
 <p class="muted">Düğmeye dokunun. Yaver uygulaması açılır ve bu sunucunun adresini kaydeder.</p>
 <a class="button" id="open" href="#">Open Yaver →</a>
+<p class="muted">The first time, the iPhone asks whether Yaver may find devices on your local network. Say yes — without it the app cannot reach this server, even though this page can.</p>
 <p class="muted">Nothing happens? Open the app, go to Settings → Server, and enter:</p>
 <div class="box"><code id="address"></code></div>
 <div class="box" id="keybox" hidden><span class="muted">Access key</span><br><code id="key"></code></div>

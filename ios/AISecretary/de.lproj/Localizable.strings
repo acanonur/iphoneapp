@@ -25,6 +25,10 @@
 "Answering calls is not set up on your server yet." = "Das Annehmen von Anrufen ist auf Ihrem Server noch nicht eingerichtet.";
 "Answering calls needs a server that can be reached from the internet." = "Zum Annehmen von Anrufen muss der Server aus dem Internet erreichbar sein.";
 "This is only available while calls are simulated." = "Das ist nur möglich, solange Anrufe simuliert werden.";
+"Yaver is not allowed to use the local network." = "Yaver darf das lokale Netzwerk nicht verwenden.";
+"No server was found on this Wi-Fi." = "In diesem WLAN wurde kein Server gefunden.";
+"In the iPhone’s Settings → Privacy & Security → Local Network, switch Yaver on. Then come back and tap “Find automatically”." = "Schalten Sie in den iPhone-Einstellungen unter Datenschutz & Sicherheit → Lokales Netzwerk Yaver ein. Kommen Sie dann zurück und tippen Sie auf „Automatisch suchen“.";
+"Start the server on your computer, keep the iPhone on the same Wi-Fi, and tap “Find automatically” — or point the iPhone’s Camera at the code the server shows." = "Starten Sie den Server auf Ihrem Computer, lassen Sie das iPhone im selben WLAN und tippen Sie auf „Automatisch suchen“ – oder richten Sie die Kamera des iPhone auf den Code, den der Server anzeigt.";
 "Phone call" = "Anruf";
 "Letter" = "Brief";
 "Message" = "Nachricht";
@@ -216,6 +220,7 @@
 "Duration" = "Dauer";
 "Report in" = "Bericht auf";
 "Call back %@" = "%@ zurückrufen";
+"Call again" = "Erneut anrufen";
 "Still to do" = "Noch zu erledigen";
 "On your list" = "Auf Ihrer Liste";
 "Add to my list" = "Auf meine Liste";
