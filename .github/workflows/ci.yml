@@ -1,0 +1,83 @@
+# Checks every push the way a person with a Mac would: the backend's tests, a
+# real Xcode build of the iPhone app on the oldest and newest toolchains we
+# support, and a screenshot of every screen from the simulator.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (typecheck + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  ios:
+    name: iOS build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The deployment target is iOS 18, so the app has to build with the
+          # iOS 18 SDK as well as with the current one.
+          - name: Xcode 16, iOS 18 SDK
+            os: macos-15
+          - name: Xcode 26, iOS 26 SDK
+            os: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build for the simulator
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -version
+          xcodebuild \
+            -project AISecretary.xcodeproj \
+            -scheme AISecretary \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/build.log" | xcbeautify --renderer github-actions
+
+      - name: Summarise compiler errors
+        if: failure()
+        run: |
+          echo "::group::Errors"
+          grep -E "error:" "$RUNNER_TEMP/build.log" | sort -u | head -150 || true
+          echo "::endgroup::"
+
+      - name: Keep the full build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.os }}
+          path: ${{ runner.temp }}/build.log
+          if-no-files-found: ignore

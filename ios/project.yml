@@ -64,3 +64,14 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
+# A shared scheme, so `xcodebuild -scheme AISecretary` works from the command
+# line (CI) and Xcode shows the same one.
+schemes:
+  AISecretary:
+    build:
+      targets:
+        AISecretary: all
+    run:
+      config: Debug
+    archive:
+      config: Release
