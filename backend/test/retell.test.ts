@@ -329,6 +329,44 @@ describe('placing a call through Retell', () => {
     expect(built.store.get(task.id)).toMatchObject({ status: 'completed' });
   });
 
+  it('keeps the result of a call that was over before the request for it failed', async () => {
+    let answer: () => void = () => {};
+    const answered = new Promise<void>((resolve) => (answer = resolve));
+    const { app: built } = retellApp({ RETELL_SEND_OVERRIDES: 'false' }, async (request) => {
+      if (request.url.endsWith('/v2/create-phone-call')) {
+        await answered;
+        return { status: 500, body: { message: 'timeout' } };
+      }
+      return undefined;
+    });
+    const placing = placeCall(built);
+    const task = await until(() => built.store.listByDevice(DEVICE['x-device-id'])[0]);
+    // A short call: over before Retell's answer to the request arrives.
+    await deliver(built, {
+      event: 'call_ended',
+      call: {
+        call_id: 'call_A',
+        metadata: { task_id: task.id },
+        disconnection_reason: 'user_hangup',
+        duration_ms: 31_000,
+        transcript_object: conversation,
+      },
+    });
+    expect(built.store.get(task.id)).toMatchObject({ status: 'completed' });
+
+    answer();
+    const placed = await placing;
+    // The call took place, and what was agreed in it stands.
+    expect(placed.statusCode).toBe(201);
+    expect(built.store.get(task.id)).toMatchObject({
+      status: 'completed',
+      providerCallId: 'call_A',
+      errorCode: null,
+      durationSeconds: 31,
+    });
+    expect(built.store.get(task.id)?.lines).toHaveLength(conversation.length);
+  });
+
   it('ends such a call when the owner had already hung up', async () => {
     let answer: () => void = () => {};
     const answered = new Promise<void>((resolve) => (answer = resolve));

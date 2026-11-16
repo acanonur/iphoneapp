@@ -699,6 +699,10 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
         }
         return reply.code(201).send(store.get(task.id) ?? now);
       }
+      // Already over: a short call — busy, a mailbox, a quick answer — can
+      // end while the request for it is still waiting. What came of it has
+      // been recorded; it is not this failure's to overwrite.
+      if (now?.providerCallId) return reply.code(201).send(now);
       const updated = store.update(task.id, {
         status: 'failed',
         // Hung up before there was a call: that, not the phone service, is
