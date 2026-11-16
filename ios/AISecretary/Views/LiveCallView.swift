@@ -6,6 +6,7 @@ import SwiftUI
 /// on the same grid.
 struct LiveCallView: View {
     @Environment(SecretaryViewModel.self) private var model
+    @Environment(LiveTranslator.self) private var translator
 
     let taskID: String
     let readerLanguage: Language
@@ -66,9 +67,18 @@ struct LiveCallView: View {
                             .padding(.top, 22)
                     }
                 }
-                // Keep the newest line in view while the call is live.
+                // Keep the newest line in view while the call is live — also
+                // when it grows as it is spoken, and when its translation
+                // arrives and makes the row taller. The call is watched, not
+                // touched.
                 .onChange(of: task?.lines.count ?? 0) {
                     withAnimation { proxy.scrollTo("end", anchor: .bottom) }
+                }
+                .onChange(of: task?.lines.last?.text) {
+                    proxy.scrollTo("end", anchor: .bottom)
+                }
+                .onChange(of: translator.results.count) {
+                    if task?.status.isActive == true { proxy.scrollTo("end", anchor: .bottom) }
                 }
             }
 

@@ -14,6 +14,10 @@ struct ConversationEntry: Identifiable, Equatable {
     /// The languages of this turn, fixed when it was spoken — changing the
     /// language bar afterwards must not change what an old line means.
     let pair: TranslationPair
+    /// The translation, kept with the row once it has arrived: a long
+    /// conversation must not lose its first lines when the translator's own
+    /// memory moves on.
+    var translation: String?
 }
 
 /// A ready-made conversation for previews and screenshots, where neither the
@@ -86,6 +90,7 @@ struct TranslatorView: View {
         .task {
             guard stage == nil else {
                 entries = stage?.entries ?? []
+                keepTranslations()
                 spoken = Set(entries.map(\.id))
                 if let side = stage?.speaking {
                     turnPair = pair(for: side)
@@ -105,7 +110,10 @@ struct TranslatorView: View {
         .onChange(of: recognizer.isRecording) { _, recording in
             if !recording, case .listening = phase, stage == nil { finishListening() }
         }
-        .onChange(of: translator.results.count) { speakNewTranslations() }
+        .onChange(of: translator.results.count) {
+            keepTranslations()
+            speakNewTranslations()
+        }
         // The phone lies between two people and nobody touches it while they
         // talk: it must not lock in the middle of the conversation.
         .keepsScreenAwake(stage == nil)
@@ -269,6 +277,14 @@ struct TranslatorView: View {
             .onChange(of: phase) {
                 withAnimation { proxy.scrollTo("end", anchor: .bottom) }
             }
+            // A translation that arrives makes its row taller: keep the end
+            // of the conversation in view for the person reading it.
+            .onChange(of: liveTranslation) {
+                proxy.scrollTo("end", anchor: .bottom)
+            }
+            .onChange(of: translator.results.count) {
+                proxy.scrollTo("end", anchor: .bottom)
+            }
         }
     }
 
@@ -344,9 +360,23 @@ struct TranslatorView: View {
             .padding(.vertical, 14)
     }
 
+    /// A row's translation: its own copy, or the translator's if it has just arrived.
+    private func translation(for entry: ConversationEntry) -> String? {
+        entry.translation ?? translator.translation(of: entry.original, entry.pair)
+    }
+
+    /// Gives every row that has none yet its translation, to keep.
+    private func keepTranslations() {
+        for index in entries.indices where entries[index].translation == nil {
+            entries[index].translation = translator.translation(
+                of: entries[index].original, entries[index].pair
+            )
+        }
+    }
+
     @ViewBuilder
     private func translationCell(_ entry: ConversationEntry) -> some View {
-        if let translated = translator.translation(of: entry.original, entry.pair) {
+        if let translated = translation(for: entry) {
             VStack(alignment: .leading, spacing: Modernist.Space.s2) {
                 Text(translated)
                     .typeStyle(.translated)
@@ -566,6 +596,7 @@ struct TranslatorView: View {
             }
             entries.append(ConversationEntry(side: side, original: text, pair: pair))
             translator.request([text], pair)
+            keepTranslations()
             speakNewTranslations()
         }
     }
@@ -576,14 +607,14 @@ struct TranslatorView: View {
         // The newest line that has a translation and has not been read yet.
         // Anything older is skipped: reading it now would only be confusing.
         guard let index = entries.lastIndex(where: {
-            !spoken.contains($0.id) && translator.translation(of: $0.original, $0.pair) != nil
+            !spoken.contains($0.id) && translation(for: $0) != nil
         }) else { return }
         for entry in entries[...index] { spoken.insert(entry.id) }
         if autoSpeak { play(entries[index]) }
     }
 
     private func play(_ entry: ConversationEntry) {
-        guard let translated = translator.translation(of: entry.original, entry.pair) else { return }
+        guard let translated = translation(for: entry) else { return }
         speaker.speak(translated, languageCode: entry.pair.target.voiceLanguageCode, id: entry.id)
     }
 }

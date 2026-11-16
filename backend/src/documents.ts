@@ -8,6 +8,7 @@ import type {
   TaskStatus,
 } from './types.js';
 import { LANGUAGE_NAMES } from './prompt.js';
+import { READER_ADDRESS } from './summarizer.js';
 
 /**
  * The paperwork side of the secretary: the letters, messages, forms and
@@ -114,6 +115,7 @@ export async function processDocumentTask(
       `Write "summary" in ${LANGUAGE_NAMES[task.summaryLanguage]} — this is what the user reads.`,
       `Anything addressed to the other side ("result") goes in ${LANGUAGE_NAMES[task.language]}.`,
       `Write "todo" in ${LANGUAGE_NAMES[task.summaryLanguage]}, and "todoWhen" as a short human date or time, or null.`,
+      READER_ADDRESS,
     ].join('\n'),
   });
 

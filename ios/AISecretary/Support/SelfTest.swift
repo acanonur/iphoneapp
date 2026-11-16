@@ -95,11 +95,14 @@ final class SelfTest {
             model.errorMessage ?? "\(model.tasks.count) task(s)"
         )
 
-        await model.syncProfile(name: "Deniz Kaya", language: .en)
+        await model.syncProfile(name: "Deniz Kaya", language: .en, callLanguage: .de)
         check(
-            "tells the server who it works for",
-            server.session?.profile.name == "Deniz Kaya",
-            "name=\(server.session?.profile.name ?? "-")"
+            "tells the server who it works for, and which language callers speak",
+            server.session?.profile.name == "Deniz Kaya"
+                && server.session?.profile.language == .en
+                && server.session?.profile.callLanguage == .de,
+            "name=\(server.session?.profile.name ?? "-") "
+                + "callers=\(server.session?.profile.callLanguage?.rawValue ?? "-")"
         )
 
         await placeACall()

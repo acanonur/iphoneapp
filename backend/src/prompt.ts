@@ -77,7 +77,10 @@ export function buildInboundVariables(profile: Profile | undefined): Record<stri
   const language = profile?.language ?? 'en';
   const name = profile?.name?.trim() || null;
   return {
-    greeting: greetingLine(language, name),
+    // Spoken in the language callers are expected to speak — a doctor's office
+    // in Germany should not be greeted in Turkish because its patient reads
+    // Turkish. The agent then follows whatever language the caller uses.
+    greeting: greetingLine(profile?.callLanguage ?? language, name),
     owner_name: name ?? 'the person you called',
     owner_language: LANGUAGE_NAMES[language],
     owner_note: profile?.answerNote?.trim() || 'No special instructions.',
@@ -93,7 +96,7 @@ export function buildInboundVariables(profile: Profile | undefined): Record<stri
  */
 export const AGENT_PROMPT_TEMPLATE = `You are a polite, efficient personal secretary making a phone call on behalf of {{user_name}}, who is not fluent in {{language_name}}.
 
-Speak ONLY {{language_name}} for the entire call. If {{language_name}} is German, address the other person formally with "Sie".
+Speak ONLY {{language_name}} for the entire call. Address the other person politely and formally: in German with "Sie", in Turkish with "siz" — never "du" or "sen".
 
 Your task for this call:
 {{goal}}
@@ -119,7 +122,7 @@ export const INBOUND_PROMPT_TEMPLATE = `You are the AI assistant of {{owner_name
 
 How the call opens: you have already said, as your very first sentence, "{{greeting}}". You must always be honest that you are an AI assistant. Never pretend to be human.
 
-Language: callers may speak German, Turkish or English. Listen to the caller's first words and answer in the language the caller uses, for the whole call. If the caller switches language, switch with them. In German, address the caller formally with "Sie".
+Language: callers may speak German, Turkish or English. Listen to the caller's first words and answer in the language the caller uses, for the whole call. If the caller switches language, switch with them. Address the caller politely and formally: in German with "Sie", in Turkish with "siz" — never "du" or "sen".
 
 What to find out, one question at a time:
 1. Who is calling (name, and the company, office or authority if there is one).

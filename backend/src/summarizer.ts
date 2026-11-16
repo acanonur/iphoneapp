@@ -60,6 +60,10 @@ const ANSWERED_SCHEMA = {
 const ONLY_WHAT_WAS_SAID =
   'Report only what the transcript supports. A detail that was not said — a time, a price, a name, a promise — must not appear, and anything that was left open must be described as open.';
 
+/** How the reader is spoken to, so a report does not change its tone half-way. */
+export const READER_ADDRESS =
+  'Address the reader politely and formally throughout: in German with "Sie", in Turkish with "siz" — never "du" or "sen". That includes the to-do line: in German an infinitive phrase ("Versichertenkarte mitbringen"), in Turkish a polite imperative ("Sigorta kartınızı getirin"), in English an imperative ("Bring your insurance card").';
+
 function optionalText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -95,7 +99,7 @@ export async function summarizeCall(
       `The call was held in ${LANGUAGE_NAMES[task.language]}. In the transcript, the AI assistant is the secretary.`,
       `<transcript>\n${transcriptOf(task)}\n</transcript>`,
       '',
-      `Write every text field in ${language}.`,
+      `Write every text field in ${language}. ${READER_ADDRESS}`,
       '- "summary": two to four short sentences telling the reader what happened and what was agreed. Include every concrete detail they will need later: date, time, place, price, reference number, the name of the person spoken to.',
       '- "outcome": how far the request was met — "achieved", "partially_achieved", "not_achieved", "no_answer" (nobody who could help was reached) or "unknown" (the transcript does not tell).',
       '- "todo": the one thing the reader still has to do themselves (bring a document, call back, pay, turn up), as a short phrase; null if nothing is left for them to do.',
@@ -135,7 +139,7 @@ export async function summarizeAnsweredCall(
       `The assistant answered this call for ${owner}. In the transcript, the AI assistant is the one who answered; the other speaker is the caller.`,
       `<transcript>\n${transcriptOf(task)}\n</transcript>`,
       '',
-      `Write every text field in ${language}.`,
+      `Write every text field in ${language}. ${READER_ADDRESS}`,
       '- "subject": who called and why, in at most eight words. It is the headline in a list of calls, so lead with the caller. If the caller gave no name, describe them by what they wanted.',
       '- "summary": two to four short sentences: who called, what they wanted, and every concrete detail — callback number, date, time, amount, reference number.',
       '- "todo": what the reader should do next (usually: call back, with the number), as a short phrase; null if nothing is needed.',

@@ -81,6 +81,7 @@ const PROFILE_SCHEMA = {
     properties: {
       name: { type: ['string', 'null'], maxLength: 100 },
       language: { type: 'string', enum: LANGUAGE_ENUM },
+      callLanguage: { type: ['string', 'null'], enum: [...LANGUAGE_ENUM, null] },
       answerCalls: { type: 'boolean' },
       answerNote: { type: ['string', 'null'], maxLength: 600 },
     },
@@ -111,6 +112,7 @@ interface CreateTaskBody {
 interface ProfileBody {
   name?: string | null;
   language?: Language;
+  callLanguage?: Language | null;
   answerCalls?: boolean;
   answerNote?: string | null;
 }
@@ -388,6 +390,7 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
         deviceId,
         name: null,
         language: 'en',
+        callLanguage: null,
         answerCalls: false,
         answerNote: null,
         updatedAt: new Date(0).toISOString(),
@@ -490,6 +493,7 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
         deviceId,
         name: body.name === undefined ? current.name : cleanText(body.name),
         language: body.language ?? current.language,
+        callLanguage: body.callLanguage === undefined ? current.callLanguage : body.callLanguage,
         answerCalls: body.answerCalls ?? current.answerCalls,
         answerNote: body.answerNote === undefined ? current.answerNote : cleanText(body.answerNote),
       };
@@ -692,9 +696,7 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       // interesting case: it is the one the translation is for.
       const callerLanguage: Language = isLanguage(requested)
         ? requested
-        : profile.language === 'de'
-          ? 'tr'
-          : 'de';
+        : (profile.callLanguage ?? (profile.language === 'de' ? 'tr' : 'de'));
       const task = newTask({
         deviceId,
         kind: 'call',

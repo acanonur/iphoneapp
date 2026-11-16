@@ -7,6 +7,10 @@ import Translation
 struct TranslationPair: Hashable {
     let source: Language
     let target: Language
+
+    /// The two languages, whichever way round: both directions of a
+    /// conversation need the same download.
+    var languages: Set<Language> { [source, target] }
 }
 
 /// On-device translation for text that keeps arriving: the lines of a call as
@@ -58,6 +62,18 @@ final class LiveTranslator {
     private(set) var configurations: [TranslationPair: TranslationSession.Configuration] = [:]
 
     @ObservationIgnored private var cacheOrder: [String] = []
+    /// Translations of half-spoken sentences. There are several per second of
+    /// speech and each is needed only for a moment, so they are kept apart
+    /// from `results` — a handful at a time — and cannot push finished
+    /// sentences out of it.
+    @ObservationIgnored private var partials: [String: String] = [:]
+    @ObservationIgnored private var partialOrder: [String] = []
+    /// Language sets whose download the user said no to. The other direction
+    /// of the same conversation then does not ask again.
+    @ObservationIgnored private var declined: Set<Set<Language>> = []
+    /// One download question at a time (see `prepare`).
+    @ObservationIgnored private var isAsking = false
+    @ObservationIgnored private var askWaiters: [CheckedContinuation<Void, Never>] = []
     @ObservationIgnored private var queues: [TranslationPair: [String]] = [:]
     /// Text that is still changing (a sentence being spoken): only the newest
     /// version is worth translating.
@@ -72,6 +88,7 @@ final class LiveTranslator {
     @ObservationIgnored private var transcriptTexts: [TranslationPair: Set<String>] = [:]
 
     private static let cacheLimit = 600
+    private static let partialLimit = 40
     private static let batchSize = 8
 
     private func key(_ text: String, _ pair: TranslationPair) -> String {
@@ -81,7 +98,8 @@ final class LiveTranslator {
     // MARK: - Asking
 
     func translation(of text: String, _ pair: TranslationPair) -> String? {
-        results[key(text.trimmingCharacters(in: .whitespacesAndNewlines), pair)]
+        let entry = key(text.trimmingCharacters(in: .whitespacesAndNewlines), pair)
+        return results[entry] ?? partials[entry]
     }
 
     func state(_ pair: TranslationPair) -> LaneState {
@@ -94,9 +112,15 @@ final class LiveTranslator {
         var queue = queues[pair] ?? []
         for text in texts {
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty, results[key(trimmed, pair)] == nil, !queue.contains(trimmed),
-                  (failures[key(trimmed, pair)] ?? 0) < 2
-            else { continue }
+            let entry = key(trimmed, pair)
+            guard !trimmed.isEmpty, results[entry] == nil else { continue }
+            // The sentence ended exactly as it was last heard: its translation
+            // is already here, and now it is kept.
+            if let known = partials[entry] {
+                store(known, for: trimmed, pair)
+                continue
+            }
+            guard !queue.contains(trimmed), (failures[entry] ?? 0) < 2 else { continue }
             queue.append(trimmed)
         }
         queues[pair] = queue
@@ -116,7 +140,7 @@ final class LiveTranslator {
             turns[pair, default: 0] += 1
             return
         }
-        if let known = results[key(trimmed, pair)] {
+        if let known = translation(of: trimmed, pair) {
             volatile[pair] = nil
             live[pair] = known
             return
@@ -142,6 +166,7 @@ final class LiveTranslator {
     func retry(_ pair: TranslationPair) {
         #if !targetEnvironment(simulator)
         failures = failures.filter { !$0.key.hasPrefix("\(pair.source.rawValue)>\(pair.target.rawValue)|") }
+        declined.remove(pair.languages)
         if configurations[pair] == nil {
             open(pair)
         } else {
@@ -166,31 +191,29 @@ final class LiveTranslator {
     /// are there, then translates whatever is queued, and waits for more.
     func serve(_ pair: TranslationPair, session: TranslationSession) async {
         states[pair] = .preparing
-        do {
-            // Shows the system's download sheet if a language is missing.
-            try await session.prepareTranslation()
-        } catch {
-            states[pair] = Task.isCancelled ? .idle : .needsDownload
-            return
-        }
-
-        // "Prepared" can mean "downloading": wait until the pair is installed
-        // before translating, or every sentence would raise the sheet again.
-        while !Task.isCancelled {
-            let status = await LanguageAvailability().status(
-                from: pair.source.localeLanguage, to: pair.target.localeLanguage
-            )
-            if status == .installed { break }
-            if status == .unsupported {
-                states[pair] = .unavailable
-                return
-            }
-            // Agreed to and on its way: say so, rather than "translating…".
-            states[pair] = .downloading
-            try? await Task.sleep(for: .seconds(2))
-        }
-        guard !Task.isCancelled else {
+        switch await prepare(pair, session: session) {
+        case .ready:
+            break
+        case .cancelled:
             states[pair] = .idle
+            return
+        case .unavailable:
+            states[pair] = .unavailable
+            return
+        case .declined:
+            states[pair] = .needsDownload
+            // The download can still happen — it was started before the sheet
+            // was closed, or the languages are added in Settings. Look now and
+            // then, and start over by itself once they are there.
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3))
+                if Task.isCancelled { return }
+                if await installed(pair) == .installed {
+                    declined.remove(pair.languages)
+                    configurations[pair]?.invalidate()
+                    return
+                }
+            }
             return
         }
         states[pair] = .ready
@@ -214,12 +237,16 @@ final class LiveTranslator {
                         guard let identifier = response.clientIdentifier,
                               let index = Int(identifier), batch.indices.contains(index)
                         else { continue }
-                        store(response.targetText, for: batch[index], pair)
+                        if next.turn == nil {
+                            store(response.targetText, for: batch[index], pair)
+                        } else {
+                            storePartial(response.targetText, for: batch[index], pair)
+                        }
                     }
                     // The sentence in progress has got this far — unless its
                     // turn ended while this was being translated.
                     if let turn = next.turn, turn == turns[pair, default: 0],
-                       let text = batch.first, let translated = results[key(text, pair)] {
+                       let text = batch.first, let translated = translation(of: text, pair) {
                         live[pair] = translated
                     }
                     settle(batch, pair, translated: true)
@@ -228,6 +255,78 @@ final class LiveTranslator {
                     settle(batch, pair, translated: false)
                 }
             }
+        }
+    }
+
+    private enum Readiness {
+        case ready, declined, unavailable, cancelled
+    }
+
+    private func installed(_ pair: TranslationPair) async -> LanguageAvailability.Status {
+        await TranslationSetup.availability().status(
+            from: pair.source.localeLanguage, to: pair.target.localeLanguage
+        )
+    }
+
+    /// Sees to it that the languages are on the phone, asking for the download
+    /// if they are not.
+    ///
+    /// The two directions of a conversation need the same languages and are
+    /// opened together. They take turns here — the first waits for its
+    /// download before the second looks — so the system asks once, not twice;
+    /// and a "no" to one direction is not followed by the same question for
+    /// the other.
+    private func prepare(_ pair: TranslationPair, session: TranslationSession) async -> Readiness {
+        await beginAsking()
+        defer { endAsking() }
+        if Task.isCancelled { return .cancelled }
+
+        switch await installed(pair) {
+        case .installed:
+            return .ready
+        case .unsupported:
+            return .unavailable
+        default:
+            break
+        }
+        if declined.contains(pair.languages) { return .declined }
+
+        do {
+            // Shows the system's download sheet.
+            try await session.prepareTranslation()
+        } catch {
+            if Task.isCancelled { return .cancelled }
+            declined.insert(pair.languages)
+            return .declined
+        }
+
+        // "Prepared" can mean "downloading": wait until the pair is installed
+        // before translating, or every sentence would raise the sheet again.
+        while !Task.isCancelled {
+            let status = await installed(pair)
+            if status == .installed { return .ready }
+            if status == .unsupported { return .unavailable }
+            // Agreed to and on its way: say so, rather than "translating…".
+            states[pair] = .downloading
+            try? await Task.sleep(for: .seconds(2))
+        }
+        return .cancelled
+    }
+
+    private func beginAsking() async {
+        guard isAsking else {
+            isAsking = true
+            return
+        }
+        await withCheckedContinuation { askWaiters.append($0) }
+    }
+
+    private func endAsking() {
+        if askWaiters.isEmpty {
+            isAsking = false
+        } else {
+            // The turn passes straight to whoever waited longest.
+            askWaiters.removeFirst().resume()
         }
     }
 
@@ -244,7 +343,7 @@ final class LiveTranslator {
         if !waiting.isEmpty {
             return Batch(texts: Array(waiting.prefix(Self.batchSize)), turn: nil)
         }
-        if let latest = volatile[pair], results[key(latest, pair)] == nil {
+        if let latest = volatile[pair], translation(of: latest, pair) == nil {
             return Batch(texts: [latest], turn: turns[pair, default: 0])
         }
         return nil
@@ -267,6 +366,15 @@ final class LiveTranslator {
             let stale = cacheOrder.prefix(Self.cacheLimit / 3)
             for old in stale { results[old] = nil }
             cacheOrder.removeFirst(stale.count)
+        }
+    }
+
+    private func storePartial(_ translation: String, for text: String, _ pair: TranslationPair) {
+        let entry = key(text, pair)
+        if partials[entry] == nil { partialOrder.append(entry) }
+        partials[entry] = translation
+        if partialOrder.count > Self.partialLimit {
+            partials[partialOrder.removeFirst()] = nil
         }
     }
 
@@ -383,8 +491,21 @@ final class LiveTranslator {
     }
 }
 
-/// Builds sessions the same way everywhere.
+/// Builds sessions the same way everywhere, and asks about the same kind of
+/// translation the sessions use.
 enum TranslationSetup {
+    /// "Are the languages on the phone?" — for the strategy the sessions are
+    /// built with. From iOS 26.4 the plain check asks about another family of
+    /// models, with another set of languages, so the two must be made alike.
+    static func availability() -> LanguageAvailability {
+        #if compiler(>=6.3)
+        if #available(iOS 26.4, *) {
+            return LanguageAvailability(preferredStrategy: .lowLatency)
+        }
+        #endif
+        return LanguageAvailability()
+    }
+
     static func configuration(for pair: TranslationPair) -> TranslationSession.Configuration {
         // From iOS 26.4 a session can favour speed or polish. Words on a
         // screen while someone is talking need speed. The option only exists

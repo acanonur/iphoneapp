@@ -140,6 +140,12 @@ export interface Profile {
   name: string | null;
   /** The language the owner reads reports in. */
   language: Language;
+  /**
+   * The language most of the owner's callers speak — that of the country they
+   * live in, which is usually not their own. An answered call is greeted in
+   * it. Null: not said yet; the owner's own language is used.
+   */
+  callLanguage: Language | null;
   /** Whether the secretary should pick up calls the owner cannot take. */
   answerCalls: boolean;
   /** Anything the owner wants callers told, in their own words. */

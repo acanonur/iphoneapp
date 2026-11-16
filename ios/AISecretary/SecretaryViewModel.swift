@@ -176,15 +176,20 @@ final class SecretaryViewModel {
     // MARK: - Profile
 
     /// Tells the server who the secretary works for. It needs the name and the
-    /// language to answer calls and write notes when the app is not open.
-    func syncProfile(name: String, language: Language) async {
+    /// two languages to answer calls and write notes when the app is not open:
+    /// callers are greeted in the language calls are usually in, and the note
+    /// is written in the language the owner reads.
+    func syncProfile(name: String, language: Language, callLanguage: Language) async {
         guard !isStaged, server.isConnected, server.health?.isCurrent == true else { return }
         var profile = server.session?.profile ?? ServerProfile()
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let wanted: String? = trimmed.isEmpty ? nil : trimmed
-        guard profile.name != wanted || profile.language != language else { return }
+        guard profile.name != wanted || profile.language != language
+            || profile.callLanguage != callLanguage
+        else { return }
         profile.name = wanted
         profile.language = language
+        profile.callLanguage = callLanguage
         if let saved = try? await api.saveProfile(profile) {
             server.setSession(profile: saved)
         }
@@ -226,17 +231,29 @@ final class SecretaryViewModel {
     private func managePolling() {
         guard !isStaged, pollTask == nil, pollInterval != nil else { return }
         pollTask = Task { [weak self] in
+            // How many times in a row the server could not be found.
+            var misses = 0
             while let self, !Task.isCancelled, let interval = self.pollInterval {
                 try? await Task.sleep(for: interval)
                 if Task.isCancelled { break }
                 do {
                     self.tasks = try await self.api.listTasks()
                     self.errorMessage = nil
+                    misses = 0
                 } catch {
-                    // One missed poll is nothing; a server that has gone is
-                    // looked for, and the loop ends if it cannot be found.
-                    if let apiError = error as? APIError, apiError.isConnectionFailure {
-                        if !(await self.server.connect()) { break }
+                    // One missed poll is nothing. A server that has gone is
+                    // looked for — and looked for again, at a gentler pace,
+                    // for as long as there is something to follow: the Wi-Fi
+                    // that dropped during a call is usually back in a moment,
+                    // and the screen must pick the call up again by itself.
+                    guard let apiError = error as? APIError, apiError.isConnectionFailure else {
+                        continue
+                    }
+                    if await self.server.connect() {
+                        misses = 0
+                    } else {
+                        misses += 1
+                        try? await Task.sleep(for: .seconds(min(30, 5 * misses)))
                     }
                 }
             }

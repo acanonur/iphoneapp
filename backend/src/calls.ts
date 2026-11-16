@@ -305,7 +305,8 @@ export class CallEngine {
       direction: 'inbound',
       goal: '',
       phoneNumber: typeof call.from_number === 'string' ? call.from_number.slice(0, 32) : null,
-      language: owner?.language ?? 'en',
+      // Expected to be in the language callers speak; reported in the owner's.
+      language: owner?.callLanguage ?? owner?.language ?? 'en',
       summaryLanguage: owner?.language ?? 'en',
       userName: owner?.name ?? null,
       status: 'in_progress',

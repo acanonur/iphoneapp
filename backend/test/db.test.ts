@@ -167,7 +167,7 @@ describe('TaskStore', () => {
 
   it('answers incoming calls for whoever asked for it most recently', async () => {
     const store = new TaskStore(tempDbPath());
-    const base = { name: null, language: 'en' as const, answerNote: null };
+    const base = { name: null, language: 'en' as const, callLanguage: null, answerNote: null };
     store.saveProfile({ ...base, deviceId: 'a', answerCalls: true });
     await new Promise((resolve) => setTimeout(resolve, 5));
     store.saveProfile({ ...base, deviceId: 'b', answerCalls: false });
@@ -175,5 +175,28 @@ describe('TaskStore', () => {
     await new Promise((resolve) => setTimeout(resolve, 5));
     store.saveProfile({ ...base, deviceId: 'c', answerCalls: true });
     expect(store.inboundOwner()?.deviceId).toBe('c');
+  });
+
+  it('keeps the language callers speak, and gives a database from before it the column', () => {
+    const path = tempDbPath();
+    // A profiles table as the first version with profiles created it.
+    const old = new DatabaseSync(path);
+    old.exec(`CREATE TABLE profiles (
+      device_id TEXT PRIMARY KEY, name TEXT, language TEXT NOT NULL DEFAULT 'en',
+      answer_calls INTEGER NOT NULL DEFAULT 0, answer_note TEXT, updated_at TEXT NOT NULL
+    )`);
+    old.prepare(
+      "INSERT INTO profiles (device_id, name, language, answer_calls, updated_at) VALUES ('a', 'Deniz', 'tr', 1, '2026-01-01T00:00:00.000Z')",
+    ).run();
+    old.close();
+
+    const store = new TaskStore(path);
+    expect(store.getProfile('a')).toMatchObject({ name: 'Deniz', language: 'tr', callLanguage: null });
+    store.saveProfile({
+      deviceId: 'a', name: 'Deniz', language: 'tr', callLanguage: 'de', answerCalls: true, answerNote: null,
+    });
+    expect(store.getProfile('a')?.callLanguage).toBe('de');
+    store.close();
+    expect(new TaskStore(path).inboundOwner()?.callLanguage).toBe('de');
   });
 });

@@ -34,6 +34,10 @@ final class SpeechRecognizer {
     private var audioEngine: AVAudioEngine?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
+    /// Words from earlier in this turn that the recogniser has since let go
+    /// of, and the text it reported last (see the recognition handler).
+    private var earlier = ""
+    private var lastPart = ""
     /// Counts turns, so a late callback from an earlier one is ignored.
     private var turn = 0
     private var finalWaiter: CheckedContinuation<Void, Never>?
@@ -116,6 +120,8 @@ final class SpeechRecognizer {
         turn += 1
         let thisTurn = turn
         transcript = ""
+        earlier = ""
+        lastPart = ""
         problem = nil
         isRecording = true
         isOnDevice = request.requiresOnDeviceRecognition
@@ -128,7 +134,19 @@ final class SpeechRecognizer {
             let failure = error.flatMap(Self.explain)
             Task { @MainActor in
                 guard let self, self.turn == thisTurn else { return }
-                if let text, !text.isEmpty { self.transcript = text }
+                if let text, !text.isEmpty {
+                    // Some iOS 18 versions start the text afresh after a pause
+                    // instead of adding to it, which would drop every earlier
+                    // sentence of the turn. A text that suddenly shrinks to
+                    // less than half is taken to be such a restart, and what
+                    // was there is kept in front. A recogniser that keeps its
+                    // text never triggers this.
+                    if self.lastPart.count > 12, text.count * 2 < self.lastPart.count {
+                        self.earlier += self.lastPart + " "
+                    }
+                    self.lastPart = text
+                    self.transcript = self.earlier + text
+                }
                 if let failure { self.problem = failure }
                 if ended { self.recognitionEnded() }
             }
@@ -170,12 +188,15 @@ final class SpeechRecognizer {
     /// not worth an alert.
     nonisolated private static func explain(_ error: Error) -> String? {
         let failure = error as NSError
-        guard failure.domain == "kAFAssistantErrorDomain" else { return nil }
-        switch failure.code {
-        case 201:
+        // Apple files these under two different domains; the number alone
+        // does not say which failure it is.
+        switch (failure.domain, failure.code) {
+        case ("kLSRErrorDomain", 201):
             return L("Siri and Dictation are switched off on this iPhone. Switch them on in Settings to use the translator.")
-        case 102, 1101:
+        case ("kLSRErrorDomain", 102), ("kAFAssistantErrorDomain", 1101):
             return L("The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection.")
+        case ("kAFAssistantErrorDomain", 1700):
+            return L("Microphone and speech recognition access are needed. Please allow both in the iPhone’s Settings.")
         default:
             return nil
         }

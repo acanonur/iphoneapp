@@ -28,7 +28,11 @@ struct ServerHealth: Decodable, Equatable {
 /// What the secretary knows about the person it works for.
 struct ServerProfile: Codable, Equatable {
     var name: String?
+    /// The language the owner reads: reports and notes are written in it.
     var language: Language = .en
+    /// The language the owner's callers speak — that of the country they live
+    /// in. A call the secretary answers is greeted in it.
+    var callLanguage: Language?
     var answerCalls = false
     var answerNote: String?
 
@@ -38,6 +42,7 @@ struct ServerProfile: Codable, Equatable {
         var values = encoder.container(keyedBy: CodingKeys.self)
         try values.encode(name, forKey: .name)
         try values.encode(language, forKey: .language)
+        try values.encode(callLanguage, forKey: .callLanguage)
         try values.encode(answerCalls, forKey: .answerCalls)
         try values.encode(answerNote, forKey: .answerNote)
     }

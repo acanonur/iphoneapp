@@ -20,6 +20,17 @@ struct TranscriptSection: View {
     /// A line under the heading — what is and is not kept of the call.
     var note: String?
 
+    /// What each row last showed as its translation, and of which words.
+    /// While a line is still being spoken its text grows with every update;
+    /// the translation of the shorter version stays up until that of the
+    /// longer one is ready, instead of blinking away each time.
+    @State private var lastShown: [Int: Shown] = [:]
+
+    private struct Shown {
+        let text: String
+        let translation: String
+    }
+
     private var otherSpeaker: String {
         task.isInbound ? L("Caller") : L("Other side")
     }
@@ -66,21 +77,13 @@ struct TranscriptSection: View {
                     .padding(.top, 12)
             } else {
                 ForEach(Array(zip(lines, spoken)), id: \.0.id) { line, language in
-                    TranscriptRow(
-                        line: line,
-                        speaker: line.isAI ? Brand.name : otherSpeaker,
-                        translation: showTranslation
-                            ? translator.translation(
-                                of: line, spokenIn: language, into: readerLanguage
-                            )
-                            : nil,
-                        isTranslating: showTranslation
-                            && translator.isWorking(
-                                on: line, spokenIn: language, into: readerLanguage
-                            )
-                    )
+                    row(line, spokenIn: language)
                 }
             }
+        }
+        // Remember what each row shows, for the moment its line grows.
+        .onChange(of: translator.results.count, initial: true) {
+            remember(lines, spokenIn: spoken)
         }
         // Every time a line arrives, grows or is corrected, ask for what is
         // still missing.
@@ -91,6 +94,44 @@ struct TranscriptSection: View {
         ) {
             guard showTranslation else { return }
             translator.translate(lines, spokenIn: spoken, into: readerLanguage)
+        }
+    }
+
+    private func row(_ line: TranscriptLine, spokenIn language: Language) -> TranscriptRow {
+        guard showTranslation else {
+            return TranscriptRow(line: line, speaker: speaker(of: line))
+        }
+        let fresh = translator.translation(of: line, spokenIn: language, into: readerLanguage)
+        let working = translator.isWorking(on: line, spokenIn: language, into: readerLanguage)
+        // The line has grown since it was translated: keep the earlier
+        // translation up while the new one is on its way.
+        let earlier = fresh == nil && working ? earlierTranslation(of: line) : nil
+        return TranscriptRow(
+            line: line,
+            speaker: speaker(of: line),
+            translation: fresh ?? earlier,
+            isTranslating: working && fresh == nil && earlier == nil
+        )
+    }
+
+    private func speaker(of line: TranscriptLine) -> String {
+        line.isAI ? Brand.name : otherSpeaker
+    }
+
+    /// The translation this row showed before, if it was of an earlier
+    /// version of the same line — one that began with the same words.
+    private func earlierTranslation(of line: TranscriptLine) -> String? {
+        guard let shown = lastShown[line.id] else { return nil }
+        return line.text.hasPrefix(shown.text.prefix(12)) ? shown.translation : nil
+    }
+
+    private func remember(_ lines: [TranscriptLine], spokenIn languages: [Language]) {
+        for (line, language) in zip(lines, languages) {
+            if let translation = translator.translation(
+                of: line, spokenIn: language, into: readerLanguage
+            ), lastShown[line.id]?.text != line.text {
+                lastShown[line.id] = Shown(text: line.text, translation: translation)
+            }
         }
     }
 

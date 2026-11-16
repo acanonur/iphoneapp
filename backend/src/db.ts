@@ -147,10 +147,13 @@ function rowToTask(row: Row): SecretaryTask {
 
 function rowToProfile(row: Row): Profile {
   const language = text(row, 'language');
+  const callLanguage = text(row, 'call_language');
   return {
     deviceId: text(row, 'device_id') ?? '',
     name: text(row, 'name'),
     language: language === 'de' || language === 'tr' ? language : 'en',
+    callLanguage:
+      callLanguage === 'de' || callLanguage === 'tr' || callLanguage === 'en' ? callLanguage : null,
     answerCalls: row['answer_calls'] === 1,
     answerNote: text(row, 'answer_note'),
     updatedAt: text(row, 'updated_at') ?? '',
@@ -214,6 +217,11 @@ export class TaskStore {
         updated_at TEXT NOT NULL
       );
     `);
+    // Added after the table first shipped: an existing database gains the column.
+    const profileColumns = this.db.prepare('PRAGMA table_info(profiles)').all() as Row[];
+    if (!profileColumns.some((column) => column['name'] === 'call_language')) {
+      this.db.exec('ALTER TABLE profiles ADD COLUMN call_language TEXT');
+    }
   }
 
   // MARK: Tasks
@@ -355,11 +363,13 @@ export class TaskStore {
     if (this.closed) return saved;
     this.db
       .prepare(
-        `INSERT INTO profiles (device_id, name, language, answer_calls, answer_note, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)
+        `INSERT INTO profiles
+           (device_id, name, language, call_language, answer_calls, answer_note, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(device_id) DO UPDATE SET
            name = excluded.name,
            language = excluded.language,
+           call_language = excluded.call_language,
            answer_calls = excluded.answer_calls,
            answer_note = excluded.answer_note,
            updated_at = excluded.updated_at`,
@@ -368,6 +378,7 @@ export class TaskStore {
         saved.deviceId,
         saved.name,
         saved.language,
+        saved.callLanguage,
         saved.answerCalls ? 1 : 0,
         saved.answerNote,
         saved.updatedAt,

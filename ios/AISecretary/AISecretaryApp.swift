@@ -100,8 +100,17 @@ struct RootView: View {
         #endif
         // The server needs to know who it works for — to answer calls and
         // write notes while the app is closed.
-        .task(id: ProfileKey(name: userName, language: reportLanguageRaw, connected: model.server.isConnected)) {
-            await model.syncProfile(name: userName, language: reportLanguage.wrappedValue)
+        .task(
+            id: ProfileKey(
+                name: userName, language: reportLanguageRaw, callLanguage: callLanguageRaw,
+                connected: model.server.isConnected
+            )
+        ) {
+            await model.syncProfile(
+                name: userName,
+                language: reportLanguage.wrappedValue,
+                callLanguage: callLanguage.wrappedValue
+            )
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, hasOnboarded { Task { await model.refresh() } }
@@ -213,5 +222,6 @@ struct RootView: View {
 private struct ProfileKey: Equatable {
     let name: String
     let language: String
+    let callLanguage: String
     let connected: Bool
 }

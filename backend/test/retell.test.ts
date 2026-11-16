@@ -559,6 +559,36 @@ describe('answering calls for the owner', () => {
     expect(variables.greeting).toContain('yapay zekâ asistanıyım');
   });
 
+  it('greets callers in the language they speak, not the one the owner reads', async () => {
+    const { app: built } = retellApp(INBOUND);
+    await switchOn(built);
+    // The owner reads Turkish and lives in Germany: callers speak German.
+    const saved = await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: authed(built),
+      payload: { callLanguage: 'de' },
+    });
+    expect(saved.json()).toMatchObject({ language: 'tr', callLanguage: 'de', answerCalls: true });
+
+    const res = await deliver(built, {
+      event: 'call_inbound',
+      call_inbound: { agent_id: 'agent_inbound', from_number: '+4915112345678', to_number: '+493000000000' },
+    });
+    const variables = res.json().call_inbound.dynamic_variables;
+    expect(variables.greeting).toBe(
+      'Guten Tag! Hier ist der KI-Assistent von Ali. Ali ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?',
+    );
+
+    // The call is expected in German and reported in Turkish.
+    await deliver(built, {
+      event: 'call_started',
+      call: { call_id: 'call_in_lang', direction: 'inbound', from_number: '+4915112345678', to_number: '+493000000000' },
+    });
+    const task = built.store.listByDevice(DEVICE['x-device-id'])[0];
+    expect(task).toMatchObject({ direction: 'inbound', language: 'de', summaryLanguage: 'tr' });
+  });
+
   it('records an answered call for the owner, with who rang', async () => {
     const { app: built } = retellApp(INBOUND);
     await switchOn(built);
