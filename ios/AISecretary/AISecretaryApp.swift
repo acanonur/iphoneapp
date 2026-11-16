@@ -134,6 +134,7 @@ struct RootView: View {
         ) { request in
             Button(L("Connect")) {
                 Task {
+                    let before = model.server.baseURL
                     let paired = await model.server.pair(request)
                     if paired { await model.refresh() }
                     if hasOnboarded, route == .home {
@@ -144,7 +145,17 @@ struct RootView: View {
                         // are writing — it would be lost. But they must know
                         // that the app is still with the old server, and why:
                         // the reason is gone by the time Settings is opened.
-                        pairingFailure = Self.reason(for: model.server.status)
+                        pairingFailure = [
+                            Self.reason(for: model.server.status),
+                            // A server that answered but wants a key, say, is
+                            // the app's server now; one that did not answer
+                            // at all is not.
+                            model.server.baseURL == before
+                                ? L("Nothing has changed: your tasks still go to the server you used before.")
+                                : L("Yaver now uses this server. Settings shows what it still needs."),
+                        ]
+                        .filter { !$0.isEmpty }
+                        .joined(separator: " ")
                     }
                 }
             }
@@ -160,14 +171,7 @@ struct RootView: View {
         ) {
             Button(L("OK"), role: .cancel) {}
         } message: {
-            Text(
-                [
-                    pairingFailure ?? "",
-                    L("Nothing has changed: your tasks still go to the server you used before."),
-                ]
-                .filter { !$0.isEmpty }
-                .joined(separator: " ")
-            )
+            Text(pairingFailure ?? "")
         }
     }
 

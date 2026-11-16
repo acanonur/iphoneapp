@@ -147,6 +147,7 @@
 "Saved, but it will not ring" = "Saved, but it will not ring";
 "Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings." = "Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings.";
 "Connect to this server?" = "Connect to this server?";
+"Yaver now uses this server. Settings shows what it still needs." = "Yaver now uses this server. Settings shows what it still needs.";
 "Could not connect" = "Could not connect";
 "Nothing has changed: your tasks still go to the server you used before." = "Nothing has changed: your tasks still go to the server you used before.";
 "Yaver will send your tasks to %@. Only connect to a server you started yourself." = "Yaver will send your tasks to %@. Only connect to a server you started yourself.";

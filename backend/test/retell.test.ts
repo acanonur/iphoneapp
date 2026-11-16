@@ -296,6 +296,92 @@ describe('placing a call through Retell', () => {
     expect(ended).toMatchObject({ errorCode: 'cancelled', providerCallId: 'call_slow' });
   });
 
+  it('follows a call that exists although the request for it failed', async () => {
+    // Retell placed the call and said so in an event — but its answer to the
+    // request itself was lost. The call is the one that was asked for.
+    let answer: () => void = () => {};
+    const answered = new Promise<void>((resolve) => (answer = resolve));
+    const { app: built, requests } = retellApp({ RETELL_SEND_OVERRIDES: 'false' }, async (request) => {
+      if (request.url.endsWith('/v2/create-phone-call')) {
+        await answered;
+        return { status: 500, body: { message: 'timeout' } };
+      }
+      return undefined;
+    });
+    const placing = placeCall(built);
+    const task = await until(() => built.store.listByDevice(DEVICE['x-device-id'])[0]);
+    await deliver(built, {
+      event: 'call_started',
+      call: { call_id: 'call_A', call_status: 'ongoing', metadata: { task_id: task.id } },
+    });
+    answer();
+    const placed = await placing;
+    // Not "failed": that would leave it running unwatched, and invite a second call.
+    expect(placed.statusCode).toBe(201);
+    expect(placed.json()).toMatchObject({ status: 'in_progress', providerCallId: 'call_A', errorCode: null });
+    expect(requests.some((r) => r.url.includes('/v2/stop-call/'))).toBe(false);
+
+    // ... and it is followed to its end like any other.
+    await deliver(built, {
+      event: 'call_ended',
+      call: { call_id: 'call_A', metadata: { task_id: task.id }, disconnection_reason: 'user_hangup', transcript_object: conversation },
+    });
+    expect(built.store.get(task.id)).toMatchObject({ status: 'completed' });
+  });
+
+  it('ends such a call when the owner had already hung up', async () => {
+    let answer: () => void = () => {};
+    const answered = new Promise<void>((resolve) => (answer = resolve));
+    const { app: built, requests } = retellApp({ RETELL_SEND_OVERRIDES: 'false' }, async (request) => {
+      if (request.url.endsWith('/v2/create-phone-call')) {
+        await answered;
+        return { status: 500, body: { message: 'timeout' } };
+      }
+      if (request.url.includes('/v2/get-call/')) {
+        return { body: { call_id: 'call_A', call_status: 'ended', disconnection_reason: 'agent_hangup' } };
+      }
+      return undefined;
+    });
+    const placing = placeCall(built);
+    const task = await until(() => built.store.listByDevice(DEVICE['x-device-id'])[0]);
+    // Hung up before anything is known about a call ...
+    await built.fastify.inject({ method: 'POST', url: `/api/tasks/${task.id}/cancel`, headers: authed(built) });
+    // ... which then turns out to exist ...
+    await deliver(built, {
+      event: 'call_started',
+      call: { call_id: 'call_A', call_status: 'ongoing', metadata: { task_id: task.id } },
+    });
+    // ... while the request for it fails.
+    answer();
+    await placing;
+    expect(requests.some((r) => r.url.includes('/v2/stop-call/call_A'))).toBe(true);
+    const ended = await until(() => {
+      const current = built.store.get(task.id);
+      return current?.status === 'failed' ? current : null;
+    }, 5_000);
+    // The owner ended it: that is what the task says, not "the phone service failed".
+    expect(ended).toMatchObject({ errorCode: 'cancelled' });
+  });
+
+  it('says "ended by you", not "failed", when a call was hung up and then could not be placed', async () => {
+    let answer: () => void = () => {};
+    const answered = new Promise<void>((resolve) => (answer = resolve));
+    const { app: built } = retellApp({ RETELL_SEND_OVERRIDES: 'false' }, async (request) => {
+      if (request.url.endsWith('/v2/create-phone-call')) {
+        await answered;
+        return { status: 402, body: { message: 'Insufficient balance' } };
+      }
+      return undefined;
+    });
+    const placing = placeCall(built);
+    const task = await until(() => built.store.listByDevice(DEVICE['x-device-id'])[0]);
+    await built.fastify.inject({ method: 'POST', url: `/api/tasks/${task.id}/cancel`, headers: authed(built) });
+    answer();
+    const placed = await placing;
+    expect(placed.statusCode).toBe(502);
+    expect(placed.json()).toMatchObject({ status: 'failed', errorCode: 'cancelled', providerCallId: null });
+  });
+
   it('closes a hung-up call that nobody picked up as cancelled, not as "no answer"', async () => {
     const { app: built } = retellApp({}, (request) =>
       request.url.endsWith('/v2/get-call/call_1')

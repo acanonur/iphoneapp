@@ -678,10 +678,33 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       return reply.code(201).send(updated);
     } catch (error) {
       request.log.error({ err: error }, 'provider startCall failed');
+      // The request failed — but did the call? An event may have named it
+      // while the request was still waiting: then it exists, whatever became
+      // of the answer. Calling that "failed" would leave a call running that
+      // nobody watches, and invite a second one.
+      const now = store.get(task.id);
+      const hungUp = now?.errorCode === 'cancelled';
+      if (now?.providerCallId && CallEngine.isActive(now)) {
+        if (hungUp) {
+          try {
+            await provider.stopCall?.(now);
+          } catch (stopError) {
+            // The engine asks again while it waits for the call to end.
+            request.log.error({ err: stopError }, 'provider stopCall failed for a call hung up while it was placed');
+          }
+          engine.finishCancelled(task.id);
+        } else if (now.status === 'queued') {
+          // It is the call that was asked for: follow it.
+          store.update(task.id, { status: 'dialing' });
+        }
+        return reply.code(201).send(store.get(task.id) ?? now);
+      }
       const updated = store.update(task.id, {
         status: 'failed',
-        errorCode: 'provider_error',
-        error: describeError(error),
+        // Hung up before there was a call: that, not the phone service, is
+        // why there is none.
+        errorCode: hungUp ? 'cancelled' : 'provider_error',
+        error: hungUp ? 'Ended by the user' : describeError(error),
       });
       return reply.code(502).send(updated);
     }

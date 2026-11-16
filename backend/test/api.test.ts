@@ -226,8 +226,8 @@ describe('POST /api/calls', () => {
   it('never lets an allowed country undo what the owner refuses', async () => {
     // A whole country refused although it is on the allowed list; a range
     // typed without its "+"; one typed the way it is dialled from abroad.
-    const built = makeApp({ BLOCKED_NUMBER_PREFIXES: '+90, 4915, 0044 20' });
-    for (const phoneNumber of ['+905321234567', '+4915112345678', '+442071234567']) {
+    const built = makeApp({ BLOCKED_NUMBER_PREFIXES: '+90, 4915, 0044 20, +49 (0) 180, +, abc' });
+    for (const phoneNumber of ['+905321234567', '+4915112345678', '+442071234567', '+4918051234567']) {
       const res = await startCall(built, { ...validBody, phoneNumber });
       expect(res.statusCode, phoneNumber).toBe(400);
       expect(res.json().code, phoneNumber).toBe('number_not_allowed');

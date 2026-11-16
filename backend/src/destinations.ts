@@ -82,9 +82,17 @@ export function refusalFor(
   return deliberate ? null : 'special';
 }
 
-/** "+49180" from what an owner may type: "49180", "0049180", " +49 180 ". */
+/**
+ * "+49180" from what an owner may type: "49180", "0049180", " +49 180 ",
+ * "+49 (0) 180". Null for something that is no prefix at all.
+ */
 export function asPrefix(entry: string): string | null {
-  const digits = entry.replace(/[^\d+]/g, '').replace(/^00/, '+');
-  if (!/\d/.test(digits)) return null;
-  return digits.startsWith('+') ? digits : `+${digits}`;
+  const digits = entry
+    // The "(0)" written after a country code is not dialled.
+    .replace(/\(0\)/g, '')
+    .replace(/[^\d+]/g, '')
+    // "00" is how "+" is dialled; "+00" is both at once.
+    .replace(/^\+?00/, '+')
+    .replace(/^\++/, '');
+  return /^\d+$/.test(digits) ? `+${digits}` : null;
 }

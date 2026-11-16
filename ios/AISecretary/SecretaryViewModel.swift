@@ -28,7 +28,10 @@ final class SecretaryViewModel {
     }
 
     private var wantedProfile: WantedProfile?
-    private var isPushingProfile = false
+    /// The save that is under way, if one is. There is never a second: whoever
+    /// wants something saved waits for this one, which sends the newest
+    /// values before it ends.
+    private var profilePush: Task<Void, Never>?
 
     init(server: ServerStore? = nil, staged tasks: [SecretaryTask]? = nil) {
         self.server = server ?? .shared
@@ -97,7 +100,7 @@ final class SecretaryViewModel {
         }
         // A profile the server could not take earlier gets another chance —
         // without holding up whoever asked for the refresh.
-        Task { await pushProfile() }
+        _ = startProfilePush()
     }
 
     /// A request failed. If the server has gone quiet, look for it again — the
@@ -227,10 +230,22 @@ final class SecretaryViewModel {
     /// is written in the language the owner reads.
     func syncProfile(name: String, language: Language, callLanguage: Language) async {
         wantedProfile = WantedProfile(name: name, language: language, callLanguage: callLanguage)
-        // In a task of its own: whoever asks may be cancelled — typing a name
-        // cancels the asking task with every key — and a save that is under
-        // way must still finish, or the server is left with half a name.
-        await Task { await pushProfile() }.value
+        // Waited for — but in a task of its own: whoever asks may be
+        // cancelled (typing a name cancels the asking task with every key),
+        // and a save that is under way must still finish, or the server is
+        // left with half a name.
+        await startProfilePush().value
+    }
+
+    /// The save of the owner's details that is running, or a new one.
+    private func startProfilePush() -> Task<Void, Never> {
+        if let running = profilePush { return running }
+        let push = Task<Void, Never> { [weak self] in
+            guard let self else { return }
+            await self.pushProfile()
+        }
+        profilePush = push
+        return push
     }
 
     /// Sends the owner's name and languages if the server does not have them.
@@ -238,9 +253,10 @@ final class SecretaryViewModel {
     /// phone service — but it is not forgotten either: every refresh tries
     /// again until the server has what the app shows.
     private func pushProfile() async {
-        guard !isPushingProfile else { return }
-        isPushingProfile = true
-        defer { isPushingProfile = false }
+        // Given up in the same breath as the last look at what is wanted, so
+        // that whoever asks after that starts a save of their own instead of
+        // waiting for one that is already leaving.
+        defer { profilePush = nil }
         // One save at a time; again for as long as something else was asked
         // for while the last one was under way.
         while let wanted = wantedProfile,
