@@ -13,6 +13,7 @@ struct ReportView: View {
     var openTask: (SecretaryTask) -> Void = { _ in }
 
     @State private var isAddingReminder = false
+    @State private var reminderError: String?
     @State private var isRetrying = false
     @State private var retryError: String?
 
@@ -31,7 +32,8 @@ struct ReportView: View {
                         }
                         .buttonStyle(
                             ModernistButtonStyle(
-                                variant: .icon, horizontalPadding: 0, verticalPadding: 0
+                                variant: .icon, horizontalPadding: 0, verticalPadding: 0,
+                                hitSlop: 4
                             )
                         )
                         .accessibilityLabel(L("Share report"))
@@ -88,6 +90,9 @@ struct ReportView: View {
         .onChange(of: task?.status, initial: true) { _, _ in
             if let task { model.markSeen(task) }
         }
+        // A report can still change after the call is over: a better one
+        // replaces the first. Whoever opens this screen gets the latest.
+        .task { await model.refresh() }
     }
 
     // MARK: - Verdict
@@ -161,6 +166,9 @@ struct ReportView: View {
             return L("The call could not be completed. Nothing was agreed.")
         }
         if task.status.isActive { return L("Yaver is still working on this.") }
+        // The call is over a moment before its report is: say so, rather than
+        // "there is no report".
+        if task.isAwaitingReport { return L("The report is being written…") }
         if task.status == .scheduled { return L("This is on your list. Nothing else has to happen for it.") }
         return L("There is no report for this task.")
     }
@@ -319,8 +327,9 @@ struct ReportView: View {
                     } else if task.kind != .followup, task.kind != .reminder {
                         Button {
                             isAddingReminder = true
+                            reminderError = nil
                             Task {
-                                await model.addReminder(for: task)
+                                reminderError = await model.addReminder(for: task)
                                 isAddingReminder = false
                             }
                         } label: {
@@ -331,6 +340,11 @@ struct ReportView: View {
                     }
                 }
                 .padding(.top, 10)
+
+                if let reminderError {
+                    Notice(title: L("That did not work."), message: reminderError, tone: .accent)
+                        .padding(.top, 12)
+                }
             }
             .padding(.vertical, 14)
             Rule()

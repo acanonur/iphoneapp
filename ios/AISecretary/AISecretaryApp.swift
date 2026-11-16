@@ -128,7 +128,9 @@ struct RootView: View {
             Button(L("Connect")) {
                 Task {
                     if await model.server.pair(request) { await model.refresh() }
-                    if hasOnboarded { route = .settings }
+                    // Show the result where the server lives — but not by
+                    // pulling the user out of something they were writing.
+                    if hasOnboarded, route == .home { route = .settings }
                 }
             }
             Button(L("Cancel"), role: .cancel) {}

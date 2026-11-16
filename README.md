@@ -45,9 +45,23 @@ The whole app is in **English, German and Turkish** and follows the iPhone's lan
 Out of the box the server only *simulates* calls: you can place a call, have one answered
 and use the translator, and no real phone call is made. (Letters, messages and forms need
 an AI key — [see below](#reports-written-by-claude).) You need a Mac with Xcode, and
-[Node.js 22](https://nodejs.org).
+[Node.js](https://nodejs.org) 22.13 or newer (the "LTS" download is right).
 
-**1. Start the server** (Terminal):
+**Where the commands go.** Every block of commands on this page starts **in the project
+folder** (the `iphoneapp` folder with `backend` and `ios` inside). A new Terminal window
+does not start there. To get there: type `cd ` — c, d and a space — then drag the
+`iphoneapp` folder from the Finder into the Terminal window, and press Enter.
+
+If you do not have the folder yet:
+
+```bash
+cd ~/Desktop
+git clone https://github.com/acanonur/iphoneapp.git
+cd iphoneapp
+git checkout claude/ai-secretary-design-uyvh5i
+```
+
+**1. Start the server** (Terminal, in the project folder):
 
 ```bash
 cd backend
@@ -60,7 +74,7 @@ window says what happens in plain sentences — *An iPhone connected*, *Calling 
 *The call is over*. If the Mac asks whether "node" may accept incoming connections, click
 **Allow**.
 
-**2. Build the app** (another Terminal window, once):
+**2. Build the app** (another Terminal window — ⌘N — again in the project folder; once):
 
 ```bash
 brew install xcodegen
@@ -173,7 +187,9 @@ iPhone app (SwiftUI)            Server (Node · Fastify)             The phone c
   The first time, the iPhone asks to download the two languages — once.
 - **Answering.** Callers are greeted in the language your calls are usually in (the
   country's), and the assistant then follows whatever language the caller speaks; the note
-  it leaves you is written in the language you read.
+  it leaves you is written in the language you read. The phone service picks up whether
+  your computer is on or not: what it answered while the server was off is fetched as soon
+  as the server runs again.
 - **Translator.** Apple's Speech framework hears, Translation translates, and the system
   voice reads aloud — all on the device, offline once the languages are downloaded.
 - **Access.** As soon as real calls, a paid model or a public address are involved, the
@@ -202,7 +218,9 @@ server asks for a key.
 - **It says it is an AI.** The first sentence of every call — placed or answered — is the
   disclosure, spoken by the platform itself, word for word (EU AI Act, Article 50).
 - **The audio is not kept.** The app keeps a written transcript. The recording the phone
-  service makes is deleted there as soon as the report is saved.
+  service makes is deleted there as soon as the report is saved — and by the service
+  itself after one day at the latest (seven for an answered call your server has not
+  fetched yet).
 - **Calls only when you ask.** One request, one call, to a number you typed; only to the
   countries the server allows (`ALLOWED_COUNTRY_PREFIXES`), and no more than
   `MAX_CALLS_PER_DAY`.
@@ -253,12 +271,15 @@ Archivo, ink on a light ground, one red, no rounded corners, everything flush le
 
 ### Updating a copy you already have
 
+In the project folder (see [Where the commands go](#try-it-in-ten-minutes--no-accounts-no-keys)):
+
 ```bash
-cd iphoneapp
 git pull
-cd backend && npm install        # then start the server again: npm start
-cd ../ios && ./generate.sh       # then press ▶ in Xcode again
+cd backend && npm install
+cd ../ios && ./generate.sh
 ```
+
+Then start the server again (`cd ../backend`, then `npm start`) and press ▶ in Xcode.
 
 If you once changed `AppConfig.swift` to your Mac's address, leave it — it is only the
 first address the app tries now.

@@ -272,6 +272,19 @@ export class TaskStore {
     return rows.map(rowToTask);
   }
 
+  /** Finished calls that never got a report — the server stopped while it was being written. */
+  listUnreportedCalls(): SecretaryTask[] {
+    if (this.closed) return [];
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM tasks
+         WHERE kind = 'call' AND status = 'completed' AND summary_source IS NULL
+         ORDER BY created_at DESC LIMIT 20`,
+      )
+      .all() as unknown as Row[];
+    return rows.map(rowToTask);
+  }
+
   /** Letters, messages and forms that were accepted but never worked on. */
   listQueuedDocuments(): SecretaryTask[] {
     if (this.closed) return [];
@@ -383,12 +396,21 @@ export class TaskStore {
         saved.answerNote,
         saved.updatedAt,
       );
+    // One phone number, one person whose calls are answered: whoever switches
+    // answering on takes it over. Otherwise two phones would both show "on"
+    // while the notes go to only one of them.
+    if (saved.answerCalls) {
+      this.db
+        .prepare('UPDATE profiles SET answer_calls = 0 WHERE device_id != ? AND answer_calls = 1')
+        .run(saved.deviceId);
+    }
     return saved;
   }
 
   /**
-   * Who an answered call belongs to: the profile that most recently asked for
-   * its calls to be answered, or failing that the most recently saved one.
+   * Who an answered call belongs to: the profile that has answering switched
+   * on (there is at most one), or failing that the most recently saved one —
+   * a call can still be reported after its owner has switched answering off.
    */
   inboundOwner(): Profile | undefined {
     if (this.closed) return undefined;

@@ -15,9 +15,10 @@ function stop(lines) {
 var parts = process.versions.node.split('.');
 var major = Number(parts[0]);
 var minor = Number(parts[1]);
-if (major < 22 || (major === 22 && minor < 5)) {
+// 22.13 is the first version whose built-in database works without a flag.
+if (major < 22 || (major === 22 && minor < 13)) {
   stop([
-    'Yaver needs Node.js 22.5 or newer. This computer has ' + process.versions.node + '.',
+    'Yaver needs Node.js 22.13 or newer. This computer has ' + process.versions.node + '.',
     'Download the current version from https://nodejs.org (the "LTS" button), install it,',
     'open a new Terminal window, and run the command again.',
   ]);

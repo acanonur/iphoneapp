@@ -5,7 +5,12 @@ export interface Tunnel {
   stop(): void;
 }
 
-const TUNNEL_URL = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/;
+/**
+ * The address cloudflared announces. Its own service host is left out: when a
+ * tunnel cannot be had, the error message names "api.trycloudflare.com", and
+ * that must not be taken for the tunnel.
+ */
+const TUNNEL_URL = /https:\/\/(?!api\.)[a-z0-9-]+\.trycloudflare\.com/;
 
 /**
  * Gives this server an address on the public internet through a Cloudflare
@@ -16,7 +21,11 @@ const TUNNEL_URL = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/;
  * secretary places (each call is told the current address); a setup that
  * answers calls permanently should run on a server with a fixed address.
  */
-export function openTunnel(port: number, timeoutMs = 30_000): Promise<Tunnel> {
+export function openTunnel(
+  port: number,
+  options: { timeoutMs?: number; onStopped?: () => void } = {},
+): Promise<Tunnel> {
+  const timeoutMs = options.timeoutMs ?? 30_000;
   return new Promise((resolve, reject) => {
     let child: ChildProcess;
     try {
@@ -31,6 +40,7 @@ export function openTunnel(port: number, timeoutMs = 30_000): Promise<Tunnel> {
     }
 
     let settled = false;
+    let stoppedOnPurpose = false;
     const fail = (message: string) => {
       if (settled) return;
       settled = true;
@@ -48,7 +58,13 @@ export function openTunnel(port: number, timeoutMs = 30_000): Promise<Tunnel> {
       if (!match || settled) return;
       settled = true;
       clearTimeout(timer);
-      resolve({ url: match[0], stop: () => child.kill() });
+      resolve({
+        url: match[0],
+        stop: () => {
+          stoppedOnPurpose = true;
+          child.kill();
+        },
+      });
     };
     child.stdout?.on('data', scan);
     child.stderr?.on('data', scan);
@@ -59,6 +75,11 @@ export function openTunnel(port: number, timeoutMs = 30_000): Promise<Tunnel> {
           : `The tunnel could not start: ${error.message}`,
       );
     });
-    child.on('exit', (code) => fail(`The tunnel stopped (exit code ${code ?? 'unknown'})`));
+    child.on('exit', (code) => {
+      // Before the address was known this is a failure to start; after it,
+      // the address has gone dead and whoever relies on it has to be told.
+      if (!settled) fail(`The tunnel stopped (exit code ${code ?? 'unknown'})`);
+      else if (!stoppedOnPurpose) options.onStopped?.();
+    });
   });
 }

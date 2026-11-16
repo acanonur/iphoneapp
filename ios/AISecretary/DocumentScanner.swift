@@ -63,11 +63,14 @@ enum DocumentText {
 /// The system document camera. Available on devices with a camera; the photo
 /// library stands in for it elsewhere.
 struct DocumentCamera: UIViewControllerRepresentable {
+    /// The scan is kept and its text is now being read — which takes a few
+    /// seconds, during which the camera is already gone from the screen.
+    var onBegin: () -> Void = {}
     var onFinish: (String) -> Void
 
     static var isSupported: Bool { VNDocumentCameraViewController.isSupported }
 
-    func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
+    func makeCoordinator() -> Coordinator { Coordinator(onBegin: onBegin, onFinish: onFinish) }
 
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
         let controller = VNDocumentCameraViewController()
@@ -78,9 +81,11 @@ struct DocumentCamera: UIViewControllerRepresentable {
     func updateUIViewController(_: VNDocumentCameraViewController, context _: Context) {}
 
     final class Coordinator: NSObject, VNDocumentCameraViewControllerDelegate {
+        private let onBegin: () -> Void
         private let onFinish: (String) -> Void
 
-        init(onFinish: @escaping (String) -> Void) {
+        init(onBegin: @escaping () -> Void, onFinish: @escaping (String) -> Void) {
+            self.onBegin = onBegin
             self.onFinish = onFinish
         }
 
@@ -90,6 +95,7 @@ struct DocumentCamera: UIViewControllerRepresentable {
         ) {
             let images = (0 ..< scan.pageCount).compactMap { scan.imageOfPage(at: $0).cgImage }
             controller.dismiss(animated: true)
+            onBegin()
 
             let callback = onFinish
             DispatchQueue.global(qos: .userInitiated).async {

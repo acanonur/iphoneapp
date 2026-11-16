@@ -113,7 +113,6 @@
 "The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection." = "The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection.";
 "For this language, the iPhone sends the audio to Apple to recognise it." = "For this language, the iPhone sends the audio to Apple to recognise it.";
 "Call my dentist and book a check-up appointment for next week, mornings preferred." = "Call my dentist and book a check-up appointment for next week, mornings preferred.";
-"Start with the country code, for example +49 for Germany or +90 for Türkiye." = "Start with the country code, for example +49 for Germany or +90 for Türkiye.";
 "Your server only calls numbers starting with %@." = "Your server only calls numbers starting with %@.";
 "Cancel" = "Cancel";
 "New task" = "New task";
@@ -124,6 +123,16 @@
 "What should Yaver do?" = "What should Yaver do?";
 "e.g. %@" = "e.g. %@";
 "Who to call" = "Who to call";
+"The phone service did not accept this. Try again in a moment." = "The phone service did not accept this. Try again in a moment.";
+"Yaver also answers while your computer is off. The messages appear here as soon as the server is running again." = "Yaver also answers while your computer is off. The messages appear here as soon as the server is running again.";
+"Your server does not call premium-rate, special or emergency numbers." = "Your server does not call premium-rate, special or emergency numbers.";
+"Ending the call…" = "Ending the call…";
+"Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye." = "Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye.";
+"No text could be read from the photo. Try again, flat and in good light." = "No text could be read from the photo. Try again, flat and in good light.";
+"The call could not be ended." = "The call could not be ended.";
+"The report is being written…" = "The report is being written…";
+"Callers are greeted in %@, the language your calls are usually in. After that, Yaver answers in whatever language the caller speaks." = "Callers are greeted in %@, the language your calls are usually in. After that, Yaver answers in whatever language the caller speaks.";
+"Use %@" = "Use %@";
 "“%@”" = "“%@”";
 "Call language" = "Call language";
 "Language to write in" = "Language to write in";

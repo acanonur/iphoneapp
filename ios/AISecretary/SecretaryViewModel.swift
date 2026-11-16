@@ -110,20 +110,50 @@ final class SecretaryViewModel {
     @discardableResult
     func create(_ request: NewTaskRequest) async throws -> SecretaryTask {
         if !server.isConnected { _ = await server.connect() }
-        let task = try await api.createTask(request)
+        let known = Set(tasks.map(\.id))
+        let task: SecretaryTask
+        do {
+            task = try await api.createTask(request)
+        } catch let error as APIError where error.isConnectionFailure {
+            // The answer got lost — which does not mean the request did. A
+            // call may be ringing by now, and "could not reach the server"
+            // would invite a second one. Look before saying so.
+            guard let placed = await taskCreated(by: request, besides: known) else { throw error }
+            task = placed
+        }
         tasks.removeAll { $0.id == task.id }
         tasks.insert(task, at: 0)
         managePolling()
         return task
     }
 
-    /// Hangs up a call that is under way.
-    func endCall(_ task: SecretaryTask) async {
+    /// The task a request made on the server, if it made one: the same kind,
+    /// wording and number, new since the request was sent.
+    private func taskCreated(
+        by request: NewTaskRequest, besides known: Set<String>
+    ) async -> SecretaryTask? {
+        guard let fresh = try? await api.listTasks() else { return nil }
+        tasks = fresh
+        return fresh.first { task in
+            !known.contains(task.id)
+                && task.kind == request.kind
+                && task.goal.trimmingCharacters(in: .whitespacesAndNewlines)
+                    == request.goal.trimmingCharacters(in: .whitespacesAndNewlines)
+                && task.phoneNumber == request.phoneNumber
+                && (task.createdDate.map { Date().timeIntervalSince($0) < 300 } ?? false)
+        }
+    }
+
+    /// Hangs up a call that is under way. Returns nil when it is done, or the
+    /// reason it could not be — for the screen the button was on to show.
+    @discardableResult
+    func endCall(_ task: SecretaryTask) async -> String? {
         do {
             let ended = try await api.cancelTask(id: task.id)
             replace(ended)
+            return nil
         } catch {
-            errorMessage = error.localizedDescription
+            return error.localizedDescription
         }
     }
 
@@ -151,8 +181,10 @@ final class SecretaryViewModel {
 
     /// Turns a report's "still to do" line into a reminder of its own, which is
     /// what the design's *Add reminder* button does.
-    func addReminder(for task: SecretaryTask) async {
-        guard let todo = task.todo, !todo.isEmpty else { return }
+    /// Returns nil when it is done, or the reason it could not be.
+    @discardableResult
+    func addReminder(for task: SecretaryTask) async -> String? {
+        guard let todo = task.todo, !todo.isEmpty else { return nil }
         do {
             try await create(
                 NewTaskRequest(
@@ -162,8 +194,9 @@ final class SecretaryViewModel {
                     todoWhen: task.todoWhen
                 )
             )
+            return nil
         } catch {
-            errorMessage = error.localizedDescription
+            return error.localizedDescription
         }
     }
 
@@ -246,8 +279,14 @@ final class SecretaryViewModel {
                     // for as long as there is something to follow: the Wi-Fi
                     // that dropped during a call is usually back in a moment,
                     // and the screen must pick the call up again by itself.
-                    guard let apiError = error as? APIError, apiError.isConnectionFailure else {
-                        continue
+                    //
+                    // A server that suddenly wants a key, or another one, is
+                    // lost in the same way: asking it again as before changes
+                    // nothing, while reconnecting puts the reason on screen.
+                    guard let apiError = error as? APIError else { continue }
+                    switch apiError {
+                    case .unreachable, .keyRequired, .keyInvalid: break
+                    default: continue
                     }
                     if await self.server.connect() {
                         misses = 0

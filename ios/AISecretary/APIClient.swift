@@ -130,8 +130,12 @@ enum APIError: LocalizedError {
             return L("Answering calls is not set up on your server yet.")
         case "public_address_needed":
             return L("Answering calls needs a server that can be reached from the internet.")
+        case "provider_failed":
+            return L("The phone service did not accept this. Try again in a moment.")
         case "not_simulated":
             return L("This is only available while calls are simulated.")
+        case "number_not_allowed":
+            return L("Your server does not call premium-rate, special or emergency numbers.")
         case "invalid_request":
             return L("The server could not use this request. Check what you entered and try again.")
         case "too_large":
@@ -160,22 +164,56 @@ struct APIClient {
         self.endpoint = endpoint
     }
 
-    /// Stable anonymous id for this install; identifies the device to the server.
-    static var deviceID: String {
-        let key = "aisecretary.deviceId"
-        if let existing = UserDefaults.standard.string(forKey: key) {
-            return existing
-        }
-        let fresh = UUID().uuidString
-        UserDefaults.standard.set(fresh, forKey: key)
-        return fresh
-    }
+    /// Stable anonymous id for this phone; identifies it to the server.
+    ///
+    /// Kept in the Keychain as well as in the app's own settings: the tasks —
+    /// and whose calls are answered — hang on this id, and the app's settings
+    /// are gone when the app is deleted. An install that already has an id
+    /// keeps it.
+    static let deviceID: String = {
+        let settingsKey = "aisecretary.deviceId"
+        let kept = Keychain.read("deviceId")
+        let id = !kept.isEmpty
+            ? kept
+            : UserDefaults.standard.string(forKey: settingsKey) ?? UUID().uuidString
+        if kept.isEmpty { Keychain.save(id, as: "deviceId") }
+        UserDefaults.standard.set(id, forKey: settingsKey)
+        return id
+    }()
 
     /// A session that gives up quickly: a call is live, and a person is
     /// looking at the screen.
     private static let transport: URLSession = {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 12
+        configuration.waitsForConnectivity = false
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
+    }()
+
+    /// A session that waits for the network to become usable. The first time
+    /// the app reaches for the home network, iOS asks whether it may — and
+    /// refuses the request at once while the question is still on screen.
+    /// This session holds the request until the answer is in.
+    private static let patientTransport: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.waitsForConnectivity = true
+        // Up to half a minute for the question to be answered; ten seconds
+        // for an address that is simply not there.
+        configuration.timeoutIntervalForResource = 30
+        configuration.timeoutIntervalForRequest = 10
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
+    }()
+
+    /// A session for the one request that may take long: placing a call. The
+    /// server answers once the phone service has taken the call, and that can
+    /// take most of a minute on a bad day. Giving up sooner would say "no
+    /// answer" about a call that is being placed — and invite a second one.
+    private static let callTransport: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 95
+        configuration.timeoutIntervalForResource = 100
         configuration.waitsForConnectivity = false
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         return URLSession(configuration: configuration)
@@ -191,16 +229,21 @@ struct APIClient {
     /// The `challenge` is a random string; a server that holds the access key
     /// answers with a proof of it (see `ServerStore.trust`), so the app can
     /// tell its own server from anything else before it sends the key there.
+    ///
+    /// `patient` is for the one address a person asked for — typed, or handed
+    /// over by a pairing link: that probe waits out the local-network question
+    /// instead of failing behind it.
     static func probe(
-        _ baseURL: URL, challenge: String
+        _ baseURL: URL, challenge: String, patient: Bool = false
     ) async -> Result<ServerHealth, ProbeFailure> {
         var request = URLRequest(
             url: baseURL.appending(path: "/health")
                 .appending(queryItems: [URLQueryItem(name: "challenge", value: challenge)])
         )
-        request.timeoutInterval = 4
+        if !patient { request.timeoutInterval = 4 }
         do {
-            let (data, response) = try await transport.data(for: request)
+            let session = patient ? patientTransport : transport
+            let (data, response) = try await session.data(for: request)
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                   let health = try? JSONDecoder().decode(ServerHealth.self, from: data),
                   health.service == "yaver" || health.provider != nil
@@ -226,7 +269,10 @@ struct APIClient {
     // MARK: - Tasks
 
     func createTask(_ request: NewTaskRequest) async throws -> SecretaryTask {
-        try await send(path: "/api/tasks", method: "POST", body: request)
+        try await send(
+            path: "/api/tasks", method: "POST", body: request,
+            over: request.kind == .call ? Self.callTransport : Self.transport
+        )
     }
 
     func listTasks() async throws -> [SecretaryTask] {
@@ -261,7 +307,8 @@ struct APIClient {
     private func send<Body: Encodable, Response: Decodable>(
         path: String,
         method: String,
-        body: Body?
+        body: Body?,
+        over session: URLSession = APIClient.transport
     ) async throws -> Response {
         let url = endpoint.baseURL.appending(path: path)
         var request = URLRequest(url: url)
@@ -278,7 +325,7 @@ struct APIClient {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await Self.transport.data(for: request)
+            (data, response) = try await session.data(for: request)
         } catch {
             throw APIError.unreachable(ConnectionProblem(error), endpoint.baseURL)
         }

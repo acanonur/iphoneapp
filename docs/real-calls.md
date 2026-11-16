@@ -14,18 +14,23 @@ reports every sentence back.
 | 1 | A Retell account and its API key | free to open; calls are billed per minute |
 | 2 | A phone number in that account | monthly fee — see [A phone number](#a-phone-number) |
 | 3 | *Optional:* an Anthropic API key (`npm run claude:setup` asks for it) | for reports written by Claude |
-| 4 | *Optional for placing calls, needed for answering them:* an address on the internet for your server | free with a tunnel |
+| 4 | *Optional:* an address on the internet for your server — to see a call's sentences while they are spoken, and to use the app away from home | free with a tunnel |
 
-Allow an hour the first time. Everything below is typed in the Terminal, in the `backend`
-folder.
+Allow an hour the first time.
+
+**Where the commands go.** Everything below is typed in the Terminal, in the project's
+`backend` folder. The server keeps one Terminal window busy, so open a second one (⌘N)
+for these commands. A new window does not start in the right folder: type `cd ` — c, d and
+a space — drag the `backend` folder from the Finder into the window, and press Enter.
 
 ---
 
 ## 1. The account and the key
 
 1. Open an account at <https://dashboard.retellai.com> and add a payment method.
-2. In the dashboard, open **Settings → API Keys** and copy a key (it starts with `key_`).
-   You paste it in the next step.
+2. In the dashboard, open **Settings → API Keys** and copy the key (it starts with
+   `key_`). If there are several, take the one marked **Webhook** — Retell signs what it
+   sends to your server with that one. You paste it in the next step.
 
 ## 2. Create the two voice agents
 
@@ -49,7 +54,8 @@ their ids into `.env` for you:
 
 The script prints which voice it chose and a link to listen to it. To use another voice,
 copy its id from the Retell dashboard into `.env` as `RETELL_VOICE_ID=…` and run the
-script again — it updates the existing agents rather than making new ones.
+script again — it updates the existing agents rather than making new ones. (In `.env`, a
+line that starts with `#` is switched off: delete the `# ` in front of `RETELL_VOICE_ID`.)
 
 If the script ends with *"One thing is still missing: a phone number"*, continue with the
 next section and then run it once more.
@@ -72,12 +78,15 @@ which countries you can call.
 
 Whichever you choose, the number then appears in the Retell dashboard. Run
 `npm run retell:setup` again: with exactly one number in the account it is picked up by
-itself; with several, the script lists them and you copy one into `.env` as
-`RETELL_FROM_NUMBER=+49…`.
+itself. With several, the script lists them: copy the one to use into `.env` as
+`RETELL_FROM_NUMBER=+49…` and run `npm run retell:setup` once more — that is what switches
+real calls on.
 
 The server only calls the countries listed in `.env` under `ALLOWED_COUNTRY_PREFIXES`
 (Germany, Türkiye, the UK and the US by default), at most `MAX_CALLS_PER_DAY` calls a day
-(20), each at most `MAX_CALL_MINUTES` long (10).
+(20), each at most `MAX_CALL_MINUTES` long (10). Inside those countries it still refuses
+the expensive kinds of number — premium-rate, televoting, directory enquiries — and
+emergency numbers.
 
 ## 3. Start the server and place a test call
 
@@ -101,8 +110,9 @@ spoken, give the server an address on the internet (next section).
 
 ## An address on the internet
 
-Needed for three things: the live transcript during a call, answering your calls, and
-using the app when the iPhone is not on your home Wi-Fi.
+Needed for two things: the live transcript during a call (yours, and the ones Yaver
+answers), and using the app when the iPhone is not on your home Wi-Fi. Placing calls and
+answering them work without it.
 
 **The quick way — a tunnel from your Mac.** Free, no account, no router settings:
 
@@ -115,28 +125,55 @@ The server's window then shows a line **From anywhere: https://….trycloudflare
 the QR code carries that address. Scan it again with the iPhone. The address is a new one
 every time you start the server, and the Mac has to stay on and awake.
 
-**The lasting way — a small server on the internet.** For a setup that answers your calls
-day and night, run the `backend` folder on a hosting service that gives it a fixed
-`https://` address and keeps its `data` folder (Railway, Fly.io, Render with a disk, or
-any small Linux server — a `Dockerfile` is included). Put that address in `.env` as
-`PUBLIC_BASE_URL=https://…` and the access key you want as `API_KEY=…`.
+**The lasting way — a small server on the internet.** For a server that is always there,
+run the `backend` folder on a hosting service that gives it a fixed `https://` address
+(Railway, Fly.io, Render, or any small Linux server — a `Dockerfile` is included). Three
+things to know:
+
+- **Your `.env` file does not travel with the code** — on purpose, it holds your keys. On
+  the hosting service, enter the settings on its *Variables* (or *Environment*) page
+  instead: `CALL_PROVIDER`, the `RETELL_…` lines and `ANTHROPIC_API_KEY` as they are in
+  your `.env`, plus `PUBLIC_BASE_URL=https://…` with the address the service gave you. Do
+  not enter `PORT`, `HOST` or `DB_PATH` there.
+- **Give it a disk that lasts** (a "volume"), attached at `/data`. That is where your calls
+  and the access key are kept; without it they are gone at every restart.
+- **The access key** is made by the server on its first start and shown in the service's
+  log. Scan the QR code from the log, or type the address and the key into the app under
+  *Settings → Server*.
+
+On a Linux server of your own: `docker run --env-file backend/.env -v yaver-data:/data …`
+(the `Dockerfile` has the full line).
 
 ## 4. Have Yaver answer your calls
 
-1. The server needs an address on the internet (above), and the answering agent from
-   step 2.
-2. In the app: **Settings → Answer my calls → On**. The server then tells Retell to answer
-   calls to your Retell number with the answering agent. Switching it **Off** takes the
-   agent off the number again.
-3. The app shows the number. **Forward the calls you do not answer** to it — on most
+1. In the app: **Settings → Answer my calls → On**. The server then tells Retell to answer
+   calls to your Retell number with the answering agent, and hands it your name, your
+   note for callers and the greeting. Switching it **Off** takes the agent off the number
+   again.
+2. The app shows the number. **Forward the calls you do not answer** to it — on most
    mobile networks by dialling `**61*` + the number + `#` and pressing call (`##61#`
    switches it off again), or in the phone's call settings.
+
+   Forwarding is paid for by **your own mobile contract**, as a call from you to that
+   number. To a number in your own country that is usually included; to a US or Canadian
+   number it is usually billed as an international call, every time. For answering, use a
+   number in your own country (see [A phone number](#a-phone-number)).
 
 From then on, a call you do not pick up rings through to Yaver. It answers, says it is
 your AI assistant, takes the message, and the call appears in the app as an **Answered
 call** — with who rang, why, what to do next, a **Call back** button and the conversation
 with its translation. The app shows new calls when you open it; it does not yet ring or
 send a notification.
+
+**Your computer does not have to be on.** Retell answers day and night. Your server
+collects what was answered: when it starts, every two minutes while it runs, and whenever
+you open the app. So a message left at night is in the app soon after you start the server
+in the morning. Retell keeps a call your server has not collected for **seven days**; if
+the computer will be off for longer than that, switch *Answer my calls* off first (and
+dial `##61#`), or callers will leave messages nobody receives. With an address on the
+internet the server hears of a call at once, and you can read along while it is going on.
+
+Answering belongs to **one iPhone at a time**: the one that switched it on last.
 
 In *Settings* you can leave a **note for callers** ("I am at work until six") that the
 assistant may pass on.
@@ -146,9 +183,11 @@ assistant may pass on.
 ## What happens to the recording
 
 Retell records calls by default. Yaver's server asks Retell to **delete each call —
-recording included — as soon as the report is saved**, and additionally sets Retell's
-automatic deletion to one day in case the server is switched off at the wrong moment.
-What is kept is the written transcript, on your own server.
+recording included — as soon as the report is saved**. In case the server is switched off
+at the wrong moment, Retell's own automatic deletion is set as well: after one day for a
+call Yaver placed, after seven days for a call it answered (a message left while your
+computer was off has to be there when you switch it on again). What is kept is the
+written transcript, on your own server.
 
 ## If something does not work
 
@@ -166,11 +205,18 @@ What is kept is the written transcript, on your own server.
 - **Retell rejects the call with a message about "agent_override".** The server then
   places the call with the agent's own settings by itself. If that keeps happening, set
   `RETELL_SEND_OVERRIDES=false` in `.env`.
-- **Webhooks are refused (the server's window shows "Webhook not authorised").** Retell
-  signs its messages with an API key; if your account has several, put the one marked for
-  webhooks in `.env` as `RETELL_WEBHOOK_KEY`. As a last resort
-  `RETELL_VERIFY_SIGNATURE=false` falls back to the secret that is part of the webhook
-  address.
+- **The server's window says "A message from the phone service was refused".** It also
+  says why. Usually Retell signed the message with another key than the one in `.env`: if
+  your account has several API keys, use the one marked **Webhook** as `RETELL_API_KEY`
+  (or put it in `.env` as `RETELL_WEBHOOK_KEY`). As a last resort
+  `RETELL_VERIFY_SIGNATURE=false` falls back to the secret that is part of the address
+  Retell sends to. Until this is fixed, calls still work; the conversation just arrives
+  when the call is over.
+- **An answered call does not show up.** Open the app and pull the list down, or wait two
+  minutes: the server asks Retell for answered calls at that pace. The server's window
+  says so if Retell could not be asked.
+- **A setting in `.env` seems to be ignored.** A line that starts with `#` is switched
+  off — delete the `# ` at its start. Then stop the server (Ctrl-C) and start it again.
 
 ## The first real call is also a test of this guide
 

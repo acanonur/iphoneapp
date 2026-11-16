@@ -331,9 +331,13 @@ struct SecretaryTask: Decodable, Identifiable, Equatable {
 
     /// A call that has just ended, whose report is still being written. The
     /// call is over before the report exists, so the app must keep asking.
+    ///
+    /// The phone service's own short summary counts as "still being written":
+    /// it arrives first and stands in until the real report replaces it.
     var isAwaitingReport: Bool {
         guard kind == .call, status == .completed else { return false }
-        guard summary == nil || summarySource == "placeholder" else { return false }
+        guard summary == nil || summarySource == "placeholder" || summarySource == "provider"
+        else { return false }
         guard let updated = updatedDate else { return false }
         return Date().timeIntervalSince(updated) < 90
     }

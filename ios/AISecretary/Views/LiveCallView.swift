@@ -15,6 +15,8 @@ struct LiveCallView: View {
 
     @State private var confirmingHangUp = false
     @State private var isHangingUp = false
+    /// Why the call could not be ended, if hanging up failed.
+    @State private var hangUpError: String?
 
     private var railLabels: [String] {
         [L("Queued"), L("Dialing"), L("On the call"), L("Report")]
@@ -42,6 +44,16 @@ struct LiveCallView: View {
                                 Notice(
                                     title: L("The connection to your server is lost."),
                                     message: L("The call itself may still be going on. What you see here stops updating until the server is back."),
+                                    tone: .accent
+                                )
+                                .padding(.top, 14)
+                            }
+                            if let hangUpError, task.status.isActive {
+                                // The call is still running: the owner has
+                                // to know the tap did not end it.
+                                Notice(
+                                    title: L("The call could not be ended."),
+                                    message: hangUpError,
                                     tone: .accent
                                 )
                                 .padding(.top, 14)
@@ -97,7 +109,7 @@ struct LiveCallView: View {
                                     foreground: Modernist.Accent.s700
                                 )
                             )
-                            .disabled(isHangingUp)
+                            .disabled(isHangingUp || task.problem == .cancelled)
 
                             Button(action: goHome) {
                                 ButtonLabel(title: L("Continue in the background"), icon: .chevronRight)
@@ -138,8 +150,9 @@ struct LiveCallView: View {
     private func hangUp() {
         guard let task, !isHangingUp else { return }
         isHangingUp = true
+        hangUpError = nil
         Task {
-            await model.endCall(task)
+            hangUpError = await model.endCall(task)
             isHangingUp = false
         }
     }
@@ -192,6 +205,9 @@ struct LiveCallView: View {
 
     private func statusWord(_ task: SecretaryTask) -> String {
         if task.status == .failed || task.status == .completed { return task.verdict }
+        // Asked to end: the line is being taken down, and what was said is
+        // on its way from the phone service.
+        if task.problem == .cancelled { return L("Ending the call…") }
         if task.isInbound { return L("Answering…") }
         return task.status.label
     }

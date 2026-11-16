@@ -41,6 +41,10 @@ struct ModernistButtonStyle: ButtonStyle {
     /// Overrides the variant's ink — the design sets a couple of ghost buttons
     /// in the text colour rather than the accent.
     var foreground: Color?
+    /// How far the tappable area reaches beyond what is drawn. The design's
+    /// header icons are 36 pt and its text links smaller still; a finger
+    /// needs 44.
+    var hitSlop: CGFloat = 0
 
     func makeBody(configuration: Configuration) -> some View {
         StyledLabel(style: self, configuration: configuration)
@@ -82,7 +86,7 @@ struct ModernistButtonStyle: ButtonStyle {
                         .strokeBorder(style.variant.borderColor, lineWidth: Modernist.hairlineWidth)
                 }
                 .opacity(isEnabled ? 1 : 0.45)
-                .contentShape(Rectangle())
+                .contentShape(Rectangle().inset(by: -style.hitSlop))
         }
     }
 
@@ -126,7 +130,12 @@ struct IconButton: View {
             Icon(glyph: glyph, size: glyphSize)
                 .frame(width: size, height: size)
         }
-        .buttonStyle(ModernistButtonStyle(variant: .icon, horizontalPadding: 0, verticalPadding: 0))
+        .buttonStyle(
+            ModernistButtonStyle(
+                variant: .icon, horizontalPadding: 0, verticalPadding: 0,
+                hitSlop: max(0, (44 - size) / 2)
+            )
+        )
         .accessibilityLabel(accessibilityLabel)
     }
 }

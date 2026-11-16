@@ -1,3 +1,4 @@
+import { DEFAULT_BLOCKED_PREFIXES } from './destinations.js';
 import type { Language } from './types.js';
 
 export interface RetellConfig {
@@ -43,6 +44,8 @@ export interface Config {
   publicBaseUrl: string | null;
   /** Destinations the backend is willing to dial, by E.164 prefix. */
   allowedCountryPrefixes: string[];
+  /** Numbers refused although their country is allowed: premium rate and the like. */
+  blockedPrefixes: string[];
   /** Real outbound calls allowed per rolling 24 hours. 0 switches the cap off. */
   maxCallsPerDay: number;
   /** Hard time limit for one call. */
@@ -72,6 +75,25 @@ function positiveNumber(value: string | undefined, fallback: number): number {
   if (value === undefined || value.trim() === '') return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+/**
+ * An access key the owner chose themselves. Anyone can ask the server to
+ * prove it holds the key (that is how the app tells its own server from a
+ * stranger's), and a proof can be tested against guesses at leisure — so a
+ * short or guessable key is no key. The one the server makes up is 24 random
+ * characters; a chosen one has to be in that league.
+ */
+function chosenKey(value: string | undefined): string | null {
+  const key = value?.trim();
+  if (!key) return null;
+  if (key.length < 20) {
+    throw new Error(
+      'API_KEY is too short to be safe: it needs at least 20 characters. ' +
+        'Easiest is to remove it — the server then makes up a strong key itself, keeps it, and shows it when it starts.',
+    );
+  }
+  return key;
 }
 
 function cleanUrl(value: string | undefined): string | null {
@@ -117,7 +139,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     host: env.HOST ?? '0.0.0.0',
     dbPath: env.DB_PATH ?? './data/calls.db',
     provider,
-    apiKey: env.API_KEY?.trim() || null,
+    apiKey: chosenKey(env.API_KEY),
     requireKey,
     webhookSecret: env.WEBHOOK_SECRET?.trim() || null,
     publicBaseUrl: cleanUrl(env.PUBLIC_BASE_URL),
@@ -125,6 +147,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .split(',')
       .map((p) => p.trim())
       .filter(Boolean),
+    // Unset: the built-in list. Set (even to nothing): exactly what it says.
+    blockedPrefixes:
+      env.BLOCKED_NUMBER_PREFIXES === undefined
+        ? DEFAULT_BLOCKED_PREFIXES
+        : env.BLOCKED_NUMBER_PREFIXES.split(',')
+            .map((p) => p.trim())
+            .filter(Boolean),
     maxCallsPerDay: Math.floor(positiveNumber(env.MAX_CALLS_PER_DAY, 20)),
     maxCallMinutes: Math.min(120, Math.max(1, positiveNumber(env.MAX_CALL_MINUTES, 10))),
     retell,

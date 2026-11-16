@@ -151,7 +151,8 @@ struct TranscriptSection: View {
                 }
                 .buttonStyle(
                     ModernistButtonStyle(
-                        variant: .ghost, fontSize: 12, horizontalPadding: 4, verticalPadding: 2
+                        variant: .ghost, fontSize: 12, horizontalPadding: 4, verticalPadding: 2,
+                        hitSlop: 12
                     )
                 )
                 .padding(.trailing, -4)

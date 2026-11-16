@@ -525,7 +525,19 @@ struct TranslatorView: View {
             if isActive {
                 finishListening()
             } else if phase == .idle {
-                startListening(side: side)
+                if permissionsGranted {
+                    startListening(side: side)
+                } else {
+                    // Access may have been allowed in Settings since this
+                    // screen opened: look again before saying it is missing.
+                    Task {
+                        permissionsGranted = await SpeechRecognizer.requestPermissions()
+                        // The answer can take a while (a prompt); do not start
+                        // a turn on top of one that began meanwhile.
+                        guard phase == .idle else { return }
+                        startListening(side: side)
+                    }
+                }
             }
         } label: {
             VStack(alignment: .leading, spacing: 0) {

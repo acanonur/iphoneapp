@@ -51,7 +51,7 @@ the Mac version cheap, and it is what would make an Android port tractable.
 
 ### How this differs from the other app in the repo
 
-`ios/` + `backend/` is **AI Secretary**: a SwiftUI client that talks to a
+`ios/` + `backend/` is **Yaver** (the AI secretary): a SwiftUI client that talks to a
 Node/Fastify server, which in turn calls a telephony provider. It needs a
 server running. KnitStudio needs nothing but the device.
 

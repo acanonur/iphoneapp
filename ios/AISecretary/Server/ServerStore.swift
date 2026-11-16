@@ -126,6 +126,10 @@ final class ServerStore {
     /// The system's error number and the address it was for, when the server
     /// did not answer — shown small in Settings.
     private(set) var failureDetail: String?
+    /// True when the last thing tried was an address a person gave — typed or
+    /// scanned — and it did not work. What went wrong with *that* address is
+    /// then worth keeping on screen, rather than replacing it by a search.
+    private(set) var lastAttemptWasExplicit = false
 
     private let defaults: UserDefaults
     private let persists: Bool
@@ -180,6 +184,7 @@ final class ServerStore {
     private func establish(searchNetwork: Bool) async -> Bool {
         status = .checking
         failureDetail = nil
+        lastAttemptWasExplicit = false
         var lastProblem: ConnectionProblem?
 
         var candidates: [URL] = []
@@ -223,11 +228,15 @@ final class ServerStore {
                 }
             }
             if found.permissionDenied {
+                keyTrusted = false
                 status = .unreachable(.localNetworkDenied)
                 return false
             }
         }
 
+        // No server has proved itself: until one does, the key goes nowhere —
+        // least of all to whatever now answers at the old address.
+        keyTrusted = false
         if sawStranger {
             status = .wrongKey
         } else {
@@ -334,6 +343,7 @@ final class ServerStore {
         connecting = attempt
         let result = await attempt.value
         if connecting == attempt { connecting = nil }
+        lastAttemptWasExplicit = !result
         return result
     }
 
@@ -353,7 +363,9 @@ final class ServerStore {
         status = .checking
         failureDetail = nil
         let challenge = Self.challenge()
-        switch await APIClient.probe(url, challenge: challenge) {
+        // Patient: this may be the app's first reach into the home network,
+        // with the iPhone's question about it still on screen.
+        switch await APIClient.probe(url, challenge: challenge, patient: true) {
         case let .failure(failure):
             failureDetail = Self.detail(failure, url)
             status = .unreachable(failure.problem)

@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Backend for Yaver, the AI phone secretary: places and answers phone calls through a voice provider, reports back in the user's language, and handles letters, messages and forms.",
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.13"
   },
   "scripts": {
     "predev": "node scripts/check-node.cjs",

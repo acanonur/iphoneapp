@@ -13,7 +13,11 @@
 import '../src/env.js';
 import Retell from 'retell-sdk';
 import { AGENT_PROMPT_TEMPLATE, INBOUND_PROMPT_TEMPLATE, greetingLine } from '../src/prompt.js';
-import { WEBHOOK_EVENTS, describeError } from '../src/providers/retell.js';
+import {
+  ANSWERED_CALLS_KEPT_DAYS,
+  WEBHOOK_EVENTS,
+  describeError,
+} from '../src/providers/retell.js';
 import { ask, saveToEnv, say } from './terminal.js';
 
 const END_CALL_TOOL: Retell.LlmCreateParams.EndCallTool = {
@@ -72,6 +76,9 @@ const OUTBOUND_AGENT: AgentSettings = {
 const INBOUND_AGENT: AgentSettings = {
   ...SHARED_AGENT,
   agent_name: 'Yaver — answers calls',
+  // Calls are answered while the server is off, too: a message has to wait
+  // for it longer than a day. The server deletes each call once it has it.
+  data_storage_retention_days: ANSWERED_CALLS_KEPT_DAYS,
   // Callers may speak any of the three; the agent follows the caller.
   language: ['de-DE', 'tr-TR', 'en-US'],
 };
@@ -129,7 +136,8 @@ async function main(): Promise<void> {
     // Nobody should have to edit a settings file to get started.
     say('Real phone calls go through Retell AI. Yaver needs a key from your account there:');
     say('  1. Open https://dashboard.retellai.com and sign in (or create an account).');
-    say('  2. Go to Settings → API Keys and copy a key. It starts with "key_".');
+    say('  2. Go to Settings → API Keys and copy the key. It starts with "key_".');
+    say('     (If there are several, take the one marked "Webhook".)');
     say();
     apiKey = await ask('Paste the key here and press Enter (or just press Enter to stop): ');
     if (apiKey) {
@@ -191,9 +199,9 @@ async function main(): Promise<void> {
   if (fromNumber) {
     say(`Calls will be placed from ${fromNumber}. Restart the server (npm start) to use it.`);
   } else if (numbers.length > 1) {
-    say('This account has several phone numbers. Put the one to call from in backend/.env:');
+    say('This account has several phone numbers. Put the one to use in backend/.env, as one of:');
     for (const number of numbers) say(`  RETELL_FROM_NUMBER=${number.phone_number}`);
-    say('then set CALL_PROVIDER=retell and restart the server.');
+    say('Then run "npm run retell:setup" once more — that switches real calls on.');
   } else {
     say('One thing is still missing: a phone number.');
     say('Real calls need a number in your Retell account — see docs/real-calls.md,');

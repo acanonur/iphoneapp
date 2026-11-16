@@ -49,6 +49,42 @@ describe('when the access key is needed', () => {
 });
 
 describe('the access key', () => {
+  it('cannot be walked around by writing the address differently', async () => {
+    const app = makeApp({ REQUIRE_KEY: 'always' });
+    const { fastify } = app;
+    const call = { goal: 'Book a table for two', phoneNumber: '+493012345678', language: 'de' };
+
+    // The router reads "%61pi" as "api". The guard has to read it the same way.
+    for (const url of ['/%61pi/tasks', '/%61%70%69/tasks', '/api/%74asks', '/%61pi/session', '/api/../%61pi/tasks']) {
+      const read = await fastify.inject({ method: 'GET', url, headers: DEVICE });
+      expect([401, 404], url).toContain(read.statusCode);
+      if (read.statusCode === 401) expect(read.json().code).toBe('key_required');
+    }
+    const placed = await fastify.inject({ method: 'POST', url: '/%61pi/tasks', headers: DEVICE, payload: call });
+    expect(placed.statusCode).toBe(401);
+    const profile = await fastify.inject({
+      method: 'PUT',
+      url: '/%61pi/profile',
+      headers: DEVICE,
+      payload: { answerCalls: true },
+    });
+    expect(profile.statusCode).toBe(401);
+    expect(app.store.listByDevice(DEVICE['x-device-id'])).toHaveLength(0);
+
+    // And an open server still wants to know which device is asking.
+    const open = makeApp();
+    const anonymous = await open.fastify.inject({ method: 'GET', url: '/%61pi/tasks' });
+    expect(anonymous.statusCode).toBe(400);
+    expect(anonymous.json().code).toBe('device_required');
+  });
+
+  it('refuses a key of the owner’s choosing that could be guessed', () => {
+    expect(() => testConfig({ API_KEY: '1234' })).toThrow(/at least 20 characters/);
+    expect(() => testConfig({ API_KEY: 'yaver2026' })).toThrow(/too short/);
+    expect(testConfig({ API_KEY: '  ' }).apiKey).toBeNull();
+    expect(testConfig({ API_KEY: 'a-long-enough-key-for-this' }).apiKey).toBe('a-long-enough-key-for-this');
+  });
+
   it('guards every /api route but leaves /health open', async () => {
     const app = makeApp({ REQUIRE_KEY: 'always' });
     const { fastify } = app;
@@ -80,15 +116,15 @@ describe('the access key', () => {
 
   it('proves it holds the key without revealing it', async () => {
     const { createHmac } = await import('node:crypto');
-    const app = makeApp({ REQUIRE_KEY: 'always', API_KEY: 'the-real-key' });
+    const app = makeApp({ REQUIRE_KEY: 'always', API_KEY: 'the-real-key-of-this-server' });
     const challenge = 'a-random-challenge-0123456789';
     const health = (
       await app.fastify.inject({ method: 'GET', url: `/health?challenge=${challenge}` })
     ).json();
     expect(health.proof).toBe(
-      createHmac('sha256', 'the-real-key').update(challenge).digest('hex'),
+      createHmac('sha256', 'the-real-key-of-this-server').update(challenge).digest('hex'),
     );
-    expect(JSON.stringify(health)).not.toContain('the-real-key');
+    expect(JSON.stringify(health)).not.toContain('the-real-key-of-this-server');
 
     // No challenge, or a trivially short one: no proof.
     const plain = (await app.fastify.inject({ method: 'GET', url: '/health' })).json();
@@ -107,8 +143,8 @@ describe('the access key', () => {
   });
 
   it('uses the key from the environment when one is given', () => {
-    const app = makeApp({ REQUIRE_KEY: 'always', API_KEY: 'chosen-by-the-owner' });
-    expect(app.accessKey).toBe('chosen-by-the-owner');
+    const app = makeApp({ REQUIRE_KEY: 'always', API_KEY: 'chosen-by-the-owner-with-care' });
+    expect(app.accessKey).toBe('chosen-by-the-owner-with-care');
   });
 
   it('is made up once and survives a restart', async () => {

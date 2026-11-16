@@ -51,10 +51,15 @@ struct SettingsView: View {
             address = server.baseURL.absoluteString
             accessKey = server.accessKey
             loadAnswering()
-            if !server.isConnected { _ = await server.connect() }
+            // Not after an address that was typed or scanned and failed: what
+            // went wrong with it should stay on screen, not be searched away.
+            if !server.isConnected, !server.lastAttemptWasExplicit { _ = await server.connect() }
             loadAnswering()
         }
         .onChange(of: server.baseURL) { _, url in address = url.absoluteString }
+        // A pairing link can change the key while this screen is open; the
+        // field must not keep — and later send — the old one.
+        .onChange(of: server.accessKey) { _, key in accessKey = key }
     }
 
     // MARK: - Server
@@ -86,8 +91,12 @@ struct SettingsView: View {
                     Button {
                         isConnecting = true
                         Task {
-                            await server.use(address: address, key: accessKey)
-                            await model.refresh()
+                            // Only on success: a refresh after a failure would
+                            // search for the old server and write its result
+                            // over what was wrong with this address.
+                            if await server.use(address: address, key: accessKey) {
+                                await model.refresh()
+                            }
                             loadAnswering()
                             isConnecting = false
                         }
@@ -255,6 +264,19 @@ struct SettingsView: View {
             .typeStyle(.bodyTight)
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            // Which language a caller hears first is decided two fields up;
+            // say so here, where it matters.
+            Text(
+                Lf(
+                    "Callers are greeted in %@, the language your calls are usually in. After that, Yaver answers in whatever language the caller speaks.",
+                    callLanguage.localizedName
+                )
+            )
+            .typeStyle(.smallTight)
+            .foregroundStyle(Modernist.Neutral.s700)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
+
             if canAnswer {
                 SegmentedControl(
                     values: [false, true],
@@ -274,6 +296,18 @@ struct SettingsView: View {
                 if let answerError {
                     Notice(title: L("That did not work."), message: answerError, tone: .accent)
                         .padding(.top, 12)
+                }
+
+                if !server.isSimulated {
+                    // The phone service picks up, not this server: say what
+                    // that means for a computer that is not always on.
+                    Text(
+                        L("Yaver also answers while your computer is off. The messages appear here as soon as the server is running again.")
+                    )
+                    .typeStyle(.smallTight)
+                    .foregroundStyle(Modernist.Neutral.s700)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 12)
                 }
 
                 if let number = server.session?.answerNumber, !number.isEmpty {

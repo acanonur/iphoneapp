@@ -19,6 +19,15 @@ export const WEBHOOK_EVENTS = [
   'transcript_updated',
 ] as const;
 
+/**
+ * How long Retell keeps a call the answering agent took, if this server does
+ * not fetch it sooner. A message somebody left must survive a weekend with
+ * the computer off; once fetched and reported on, the call is deleted there.
+ */
+export const ANSWERED_CALLS_KEPT_DAYS = 7;
+/** How many answered calls are looked at in one go, newest first. */
+const ANSWERED_CALLS_PER_LOOK = 50;
+
 export interface RetellProviderOptions {
   /** Where Retell should deliver this call's events, if this server is reachable. */
   webhookUrl: () => string | null;
@@ -51,6 +60,11 @@ export class RetellProvider implements CallProvider {
     this.options = options;
     this.client = new Retell({
       apiKey: cfg.apiKey,
+      // The app waits for the answer when a call is placed. The library's own
+      // patience (a minute, three times over) would outlast it — and a person
+      // who sees "no answer" taps Call again while the first call still rings.
+      timeout: 20_000,
+      maxRetries: 1,
       ...(options.fetch ? { fetch: options.fetch } : {}),
     });
   }
@@ -150,21 +164,85 @@ export class RetellProvider implements CallProvider {
   /**
    * Points the phone number at the answering agent, or takes the agent off it.
    * With no agent bound, Retell does not pick up calls to the number.
+   *
+   * Answering must not depend on this server being awake when the phone
+   * rings — it usually runs on somebody's laptop. So everything the agent
+   * needs is handed to Retell here, ahead of time:
+   * - `defaults`: who it answers for and what it says first. Kept with the
+   *   agent, so nobody has to be asked when a call comes in. (Retell could
+   *   ask this server before each call instead; a server that is asleep
+   *   would then cost the caller the call, so that is switched off.)
+   * - `eventsUrl`: where Retell reports the call as it happens, if it can
+   *   reach this server at all. What it cannot deliver is fetched later
+   *   (`listAnsweredCalls`).
+   * - how long Retell keeps a call nobody has fetched yet.
    */
-  async setInboundAnswering(enabled: boolean, inboundWebhookUrl: string | null): Promise<void> {
-    if (!this.cfg.inboundAgentId) {
+  async setInboundAnswering(
+    enabled: boolean,
+    options: { eventsUrl?: string | null; defaults?: Record<string, string> } = {},
+  ): Promise<void> {
+    const agentId = this.cfg.inboundAgentId;
+    if (!agentId) {
       throw new Error('No answering agent is configured (RETELL_INBOUND_AGENT_ID)');
     }
-    await this.client.phoneNumber.update(this.cfg.fromNumber, {
-      inbound_agents: enabled ? [{ agent_id: this.cfg.inboundAgentId, weight: 1 }] : null,
-      inbound_webhook_url: enabled ? inboundWebhookUrl : null,
-    });
-    if (enabled && inboundWebhookUrl) {
-      await this.client.agent.update(this.cfg.inboundAgentId, {
-        webhook_url: inboundWebhookUrl,
+    if (enabled) {
+      if (options.defaults) await this.setInboundDefaults(options.defaults);
+      await this.client.agent.update(agentId, {
+        webhook_url: options.eventsUrl ?? null,
         webhook_events: [...WEBHOOK_EVENTS],
+        ...(this.cfg.deleteAfterCall
+          ? { data_storage_retention_days: ANSWERED_CALLS_KEPT_DAYS }
+          : {}),
       });
     }
+    await this.client.phoneNumber.update(this.cfg.fromNumber, {
+      inbound_agents: enabled ? [{ agent_id: agentId, weight: 1 }] : null,
+      inbound_webhook_url: null,
+    });
+  }
+
+  /**
+   * What the answering agent says and knows: the owner's greeting, name and
+   * note for callers. Stored with the agent's prompt at Retell.
+   */
+  async setInboundDefaults(defaults: Record<string, string>): Promise<void> {
+    const agentId = this.cfg.inboundAgentId;
+    if (!agentId) return;
+    const agent = await this.client.agent.retrieve(agentId);
+    const engine = agent.response_engine;
+    if (engine.type !== 'retell-llm') {
+      // Set up by hand with another kind of agent: its wording is its owner's.
+      this.options.log?.(
+        `The answering agent ${agentId} was not made by "npm run retell:setup", so its greeting is left as it is`,
+      );
+      return;
+    }
+    await this.client.llm.update(engine.llm_id, {
+      default_dynamic_variables: defaults,
+      // The first sentence says that an AI is answering. It is given to Retell
+      // word for word, not left to a placeholder being filled in.
+      ...(defaults.greeting ? { begin_message: defaults.greeting } : {}),
+    });
+  }
+
+  /**
+   * The calls the answering agent took since `sinceMs`, newest first — to
+   * find the ones this server never heard about because it was off, asleep
+   * or unreachable when they came in. A listing says that a call happened
+   * and how it ended, not what was said: that is in `getCall`.
+   */
+  async listAnsweredCalls(sinceMs: number): Promise<RetellCall[]> {
+    const agentId = this.cfg.inboundAgentId;
+    if (!agentId) return [];
+    const page = await this.client.call.list({
+      filter_criteria: {
+        agent: [{ agent_id: agentId }],
+        start_timestamp: { op: 'bt', type: 'range', value: [sinceMs, Date.now() + 60_000] },
+      },
+      sort_order: 'descending',
+      limit: ANSWERED_CALLS_PER_LOOK,
+    });
+    return (page.items ?? []) as RetellCall[];
   }
 
   get canAnswerCalls(): boolean {

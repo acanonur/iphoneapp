@@ -29,6 +29,8 @@ struct BriefView: View {
     @State private var dueDate = Date().addingTimeInterval(24 * 3600)
     /// True while a photograph is being read into text.
     @State private var isReadingDocument = false
+    /// Set when a photo was taken but no text could be read from it.
+    @State private var documentUnreadable = false
 
     /// What the server accepts.
     /// The name as the server takes it: trimmed, of a sensible length, or none.
@@ -87,19 +89,62 @@ struct BriefView: View {
     }
 
     /// The number as the server wants it: international, digits only.
-    /// A number typed the national way ("030 1234567") is not guessed at —
-    /// the country it belongs to is not ours to assume.
+    /// "+49 (0)30 123 45 67" and "0049 30 1234567" are both +49301234567.
     private var normalizedPhone: String {
-        var digits = phone.filter { $0.isNumber || $0 == "+" }
+        // The "(0)" some people write after the country code is not dialled.
+        let cleaned = phone.replacingOccurrences(of: "(0)", with: "")
+        var digits = cleaned.filter { ($0.isASCII && $0.isNumber) || $0 == "+" }
         if digits.hasPrefix("00") { digits = "+" + digits.dropFirst(2) }
+        // "+49 0151 …": the 0 a number starts with inside the country is
+        // dropped once the country code stands in front. (Not everywhere —
+        // Italy keeps it — so only for the countries where that is the rule.)
+        for code in Self.trunkZeroCodes where digits.hasPrefix(code + "0") {
+            digits = code + digits.dropFirst(code.count + 1)
+            break
+        }
         return digits
+    }
+
+    private static let trunkZeroCodes = ["+49", "+90", "+44", "+43", "+41", "+31", "+33", "+32"]
+
+    /// The international prefixes of the countries a number is most likely
+    /// meant for, by the region the iPhone is set to.
+    private static let callingCodes = [
+        "DE": "49", "TR": "90", "AT": "43", "CH": "41", "GB": "44", "NL": "31",
+        "FR": "33", "BE": "32", "US": "1", "CA": "1",
+    ]
+
+    /// A number typed the way it is dialled inside a country ("0151 2345678"),
+    /// with the country the iPhone is set to put in front. The country a
+    /// number belongs to is not ours to assume — so this is offered for one
+    /// tap, not applied.
+    private var suggestedPhone: String? {
+        let digits = normalizedPhone
+        guard isCall, !digits.hasPrefix("+"), !digits.contains("+"),
+              let region = Locale.current.region?.identifier,
+              let code = Self.callingCodes[region]
+        else { return nil }
+        let national: Substring
+        if code == "1" {
+            guard digits.count == 10 else { return nil }
+            national = digits[...]
+        } else {
+            guard digits.hasPrefix("0"), digits.count >= 7 else { return nil }
+            national = digits.dropFirst()
+        }
+        let candidate = "+" + code + national
+        let allowed = model.server.session?.allowedCountryPrefixes ?? []
+        guard allowed.isEmpty || allowed.contains(where: { candidate.hasPrefix($0) }) else {
+            return nil
+        }
+        return candidate
     }
 
     /// Why the number cannot be called, if the server would refuse it.
     private var phoneProblem: String? {
         guard isCall, !phone.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         guard normalizedPhone.hasPrefix("+") else {
-            return L("Start with the country code, for example +49 for Germany or +90 for Türkiye.")
+            return L("Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye.")
         }
         let allowed = model.server.session?.allowedCountryPrefixes ?? []
         if !allowed.isEmpty, !allowed.contains(where: { normalizedPhone.hasPrefix($0) }) {
@@ -168,18 +213,28 @@ struct BriefView: View {
             }
         }
         .fullScreenCover(isPresented: $showingCamera) {
-            DocumentCamera { text in
-                if !text.isEmpty { documentText = text }
-            }
+            // Reading the text takes a few seconds after the camera has gone:
+            // say so, and do not let the task go without its document meanwhile.
+            DocumentCamera(
+                onBegin: {
+                    isReadingDocument = true
+                    documentUnreadable = false
+                },
+                onFinish: { text in
+                    isReadingDocument = false
+                    keepDocument(text)
+                }
+            )
             .ignoresSafeArea()
         }
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             isReadingDocument = true
+            documentUnreadable = false
             Task {
                 let text = await DocumentText.recognize(in: item)
-                if !text.isEmpty { documentText = text }
+                keepDocument(text)
                 photoItem = nil
                 isReadingDocument = false
             }
@@ -253,6 +308,22 @@ struct BriefView: View {
                     .typeStyle(.captionSmall)
                     .foregroundStyle(Modernist.Accent.s700)
             }
+            if let suggestedPhone {
+                Button {
+                    phone = suggestedPhone
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(Lf("Use %@", suggestedPhone))
+                        Icon(glyph: .arrowRight, size: 14)
+                    }
+                }
+                .buttonStyle(
+                    ModernistButtonStyle(
+                        variant: .ghost, fontSize: 14, horizontalPadding: 0, verticalPadding: 8,
+                        hitSlop: 6
+                    )
+                )
+            }
         }
     }
 
@@ -299,11 +370,26 @@ struct BriefView: View {
             )
             .disabled(isReadingDocument)
 
-            if !documentText.isEmpty {
+            if documentUnreadable {
+                Text(L("No text could be read from the photo. Try again, flat and in good light."))
+                    .typeStyle(.captionSmall)
+                    .foregroundStyle(Modernist.Accent.s700)
+            } else if !documentText.isEmpty {
                 Text(L("Only the text is sent — the photograph stays on your phone."))
                     .typeStyle(.captionSmall)
                     .foregroundStyle(Modernist.Neutral.s700)
             }
+        }
+    }
+
+    /// Takes the text read from a photo — or says that there was none, rather
+    /// than leaving the screen looking as if nothing had happened.
+    private func keepDocument(_ text: String) {
+        if text.isEmpty {
+            documentUnreadable = true
+        } else {
+            documentText = text
+            documentUnreadable = false
         }
     }
 

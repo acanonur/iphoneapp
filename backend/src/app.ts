@@ -9,6 +9,7 @@ import { CallEngine } from './calls.js';
 import type { ClaudeSettings } from './claude.js';
 import { keyRequired, type Config } from './config.js';
 import { TaskStore } from './db.js';
+import { refusalFor } from './destinations.js';
 import { computerName, lanUrls } from './discovery.js';
 import {
   isDocumentKind,
@@ -17,6 +18,7 @@ import {
   unworkedDocumentResult,
 } from './documents.js';
 import { landingPage, pairPage } from './pairing.js';
+import { buildInboundVariables } from './prompt.js';
 import { MockProvider, type MockTimings } from './providers/mock.js';
 import { RetellProvider, describeError, type RetellWebhookBody } from './providers/retell.js';
 import { verifyRetellSignature } from './retell-signature.js';
@@ -128,6 +130,8 @@ export interface AppOptions {
   retellFetch?: typeof fetch;
   /** Receives one plain sentence for each thing a person would want to know happened. */
   announce?: (line: string) => void;
+  /** When to ask the phone service for a finished call's summary (used by tests). */
+  analysisDelaysMs?: number[];
 }
 
 function minutesAndSeconds(seconds: number): string {
@@ -195,8 +199,9 @@ export interface App {
   /** Tells the server its public address once a tunnel is up. */
   setPublicBaseUrl(url: string | null): void;
   /**
-   * Points the phone number's incoming calls at this server's current address.
-   * Needed after every start when the public address is not a fixed one.
+   * Brings call answering up to date after a start or a change of address:
+   * fetches the calls that were answered while the server was not running,
+   * and tells the phone company where this server is now.
    */
   refreshCallAnswering(): Promise<void>;
 }
@@ -276,6 +281,7 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
     config,
     claude,
     webhookSecret,
+    ...(options.analysisDelaysMs ? { analysisDelaysMs: options.analysisDelaysMs } : {}),
     log: {
       info: (message) => fastify.log.info(message),
       warn: (message) => fastify.log.warn(message),
@@ -366,8 +372,13 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
   }
 
   // Every /api route needs the access key (when one is required) and a device.
+  //
+  // Which routes those are is decided by the route that matched, never by the
+  // address as it was written: the router reads "/%61pi/tasks" as "/api/tasks",
+  // so a check on the written address could simply be walked around.
   fastify.addHook('onRequest', async (request, reply) => {
-    if (!request.url.startsWith('/api/')) return;
+    const route = request.routeOptions.url ?? '';
+    if (!route.startsWith('/api/')) return;
     if (accessKey) {
       const key = presentedKey(request);
       if (!key) {
@@ -498,23 +509,34 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
         answerNote: body.answerNote === undefined ? current.answerNote : cleanText(body.answerNote),
       };
 
-      // Switching answering on or off is a change at the phone company, not
-      // just a flag here: the answering agent goes on, or comes off, the number.
-      if (next.answerCalls !== current.answerCalls && retell) {
-        if (!retell.canAnswerCalls) {
-          return reply.code(409).send({
-            error: 'Answering calls is not set up on this server yet',
-            code: 'answering_not_set_up',
-          });
-        }
-        if (next.answerCalls && !engine.webhookUrl()) {
-          return reply.code(409).send({
-            error: 'Answering calls needs a server the phone company can reach from the internet',
-            code: 'public_address_needed',
-          });
-        }
+      // Callers are answered by the phone company, whether this server is
+      // running or not. So what they hear — and whether anyone answers at
+      // all — is kept there, and a change goes there before it is saved here:
+      // the app must never show something callers do not get.
+      const answeringChanged = next.answerCalls !== current.answerCalls;
+      const wordingChanged =
+        next.name !== current.name ||
+        next.language !== current.language ||
+        next.callLanguage !== current.callLanguage ||
+        next.answerNote !== current.answerNote;
+      if (retell && answeringChanged && next.answerCalls && !retell.canAnswerCalls) {
+        return reply.code(409).send({
+          error: 'Answering calls is not set up on this server yet',
+          code: 'answering_not_set_up',
+        });
+      }
+      if (retell?.canAnswerCalls && (answeringChanged || (next.answerCalls && wordingChanged))) {
         try {
-          await retell.setInboundAnswering(next.answerCalls, engine.webhookUrl());
+          if (!next.answerCalls) {
+            await retell.setInboundAnswering(false);
+          } else if (answeringChanged) {
+            await retell.setInboundAnswering(true, {
+              eventsUrl: engine.webhookUrl(),
+              defaults: buildInboundVariables(next),
+            });
+          } else {
+            await retell.setInboundDefaults(buildInboundVariables(next));
+          }
         } catch (error) {
           request.log.error({ err: error }, 'could not change call answering at the provider');
           return reply.code(502).send({
@@ -523,7 +545,19 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
           });
         }
       }
-      return store.saveProfile(next);
+      const saved = store.saveProfile(next);
+      if (answeringChanged) {
+        announce(
+          next.answerCalls
+            ? `Answering calls for ${next.name ?? 'the owner'} is switched on`
+            : 'Answering calls is switched off',
+        );
+        // Just switched on: there may be calls from before. Just switched
+        // off: whatever was taken up to now is still collected.
+        if (next.answerCalls) void engine.importAnsweredCalls();
+        else engine.answeringSwitchedOff();
+      }
+      return saved;
     },
   );
 
@@ -549,11 +583,19 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
           .code(400)
           .send({ error: 'A phone call needs a phoneNumber', code: 'number_required' });
       }
-      if (!config.allowedCountryPrefixes.some((prefix) => number.startsWith(prefix))) {
+      const refusal = refusalFor(number, config.allowedCountryPrefixes, config.blockedPrefixes);
+      if (refusal === 'country') {
         return reply.code(400).send({
           error: `Destination not allowed. Allowed country prefixes: ${config.allowedCountryPrefixes.join(', ')}`,
           code: 'destination_not_allowed',
           allowed: config.allowedCountryPrefixes,
+        });
+      }
+      if (refusal === 'special') {
+        return reply.code(400).send({
+          error:
+            'This is a premium-rate, special or emergency number, or one charged as an international call. The server does not dial those.',
+          code: 'number_not_allowed',
         });
       }
       if (
@@ -618,6 +660,10 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
   }
 
   function listTasks(request: FastifyRequest) {
+    // Somebody is looking: a good moment to ask the phone company whether it
+    // answered a call this server has not heard about. Not waited for — the
+    // call shows up in the next list.
+    engine.lookForAnsweredCallsSoon();
     return store.listByDevice(deviceIdOf(request)!);
   }
 
@@ -737,31 +783,48 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       },
     );
 
-    function authorised(request: FastifyRequest, token: string | undefined): boolean {
+    /** Why a delivery was turned away, or null if it may come in. */
+    function refusal(request: FastifyRequest, token: string | undefined): string | null {
       const tokenOk = token !== undefined && safeEqual(token, webhookSecret);
       if (config.provider === 'retell' && config.retell?.verifySignature) {
         // Retell signs every delivery with the API key. A secret in the
         // address, when present, must match as well.
-        if (token !== undefined && !tokenOk) return false;
-        return (
+        if (token !== undefined && !tokenOk) return 'the secret in its address is not this server’s';
+        const signed =
           request.rawBody != null &&
           verifyRetellSignature(
             request.rawBody,
             config.retell.webhookKey,
             request.headers['x-retell-signature'],
-          )
-        );
+          );
+        return signed
+          ? null
+          : 'its signature does not match the Retell key in .env. Retell signs with the key marked for webhooks ' +
+              '(dashboard → Settings → API Keys): use that one as RETELL_API_KEY, or put it in RETELL_WEBHOOK_KEY';
       }
       // No signature to check (the simulator, or checking switched off): the
       // secret in the address is the only thing standing in the way.
-      return tokenOk;
+      return tokenOk ? null : 'the secret in its address is not this server’s';
+    }
+
+    // Said once a minute at most: a refused delivery means live transcripts
+    // and answered calls are not arriving, and the owner has to be able to
+    // see why — but a stranger knocking must not fill the window.
+    let lastRefusalNote = 0;
+    function noteRefusal(reason: string): void {
+      const now = Date.now();
+      if (now - lastRefusalNote < 60_000) return;
+      lastRefusalNote = now;
+      announce(`A message from the phone service was refused: ${reason}.`);
     }
 
     async function receive(
       request: FastifyRequest<{ Params: { token?: string }; Body: RetellWebhookBody }>,
       reply: FastifyReply,
     ) {
-      if (!authorised(request, request.params.token)) {
+      const refused = refusal(request, request.params.token);
+      if (refused) {
+        noteRefusal(refused);
         return reply.code(401).send({ error: 'Webhook not authorised' });
       }
       // Answer at once: the provider waits ten seconds at most, and the slow
@@ -804,9 +867,14 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       engine.publicBaseUrl = url;
     },
     async refreshCallAnswering() {
-      const url = engine.webhookUrl();
-      if (!retell?.canAnswerCalls || !url || !store.inboundOwner()?.answerCalls) return;
-      await retell.setInboundAnswering(true, url);
+      const owner = store.inboundOwner();
+      if (!retell?.canAnswerCalls || !owner?.answerCalls) return;
+      // First of all, whatever was answered while this server was not running.
+      void engine.importAnsweredCalls();
+      await retell.setInboundAnswering(true, {
+        eventsUrl: engine.webhookUrl(),
+        defaults: buildInboundVariables(owner),
+      });
     },
   };
 }

@@ -73,7 +73,9 @@ export function buildAgentVariables(task: SecretaryTask): Record<string, string>
 }
 
 /** Dynamic variables for a call the secretary answers on the owner's behalf. */
-export function buildInboundVariables(profile: Profile | undefined): Record<string, string> {
+export function buildInboundVariables(
+  profile: Pick<Profile, 'name' | 'language' | 'callLanguage' | 'answerNote'> | undefined,
+): Record<string, string> {
   const language = profile?.language ?? 'en';
   const name = profile?.name?.trim() || null;
   return {

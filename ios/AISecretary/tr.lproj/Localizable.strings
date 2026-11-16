@@ -113,7 +113,6 @@
 "The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection." = "Konuşma tanıma dili henüz indirilmedi. İnternet bağlantısıyla birazdan yeniden deneyin.";
 "For this language, the iPhone sends the audio to Apple to recognise it." = "Bu dilde iPhone, sesi tanınması için Apple’a gönderir.";
 "Call my dentist and book a check-up appointment for next week, mornings preferred." = "Diş hekimimi ara ve gelecek hafta için bir kontrol randevusu al, tercihen öğleden önce.";
-"Start with the country code, for example +49 for Germany or +90 for Türkiye." = "Ülke koduyla başlayın; örneğin Almanya için +49, Türkiye için +90.";
 "Your server only calls numbers starting with %@." = "Sunucunuz yalnızca %@ ile başlayan numaraları arar.";
 "Cancel" = "Vazgeç";
 "New task" = "Yeni görev";
@@ -124,6 +123,16 @@
 "What should Yaver do?" = "Yaver ne yapsın?";
 "e.g. %@" = "örn. %@";
 "Who to call" = "Kim aransın?";
+"The phone service did not accept this. Try again in a moment." = "Telefon hizmeti bunu kabul etmedi. Birazdan yeniden deneyin.";
+"Yaver also answers while your computer is off. The messages appear here as soon as the server is running again." = "Yaver, bilgisayarınız kapalıyken de aramaları yanıtlar. Mesajlar, sunucu yeniden çalışır çalışmaz burada görünür.";
+"Your server does not call premium-rate, special or emergency numbers." = "Sunucunuz ücretli, özel ve acil durum numaralarını aramaz.";
+"Ending the call…" = "Arama sonlandırılıyor…";
+"Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye." = "Numarayı baştaki 0 yerine ülke koduyla yazın; örneğin Almanya için +49, Türkiye için +90.";
+"No text could be read from the photo. Try again, flat and in good light." = "Fotoğraftan metin okunamadı. Belgeyi düz bir yere koyup iyi ışıkta yeniden deneyin.";
+"The call could not be ended." = "Arama sonlandırılamadı.";
+"The report is being written…" = "Rapor yazılıyor…";
+"Callers are greeted in %@, the language your calls are usually in. After that, Yaver answers in whatever language the caller speaks." = "Arayanlar %@ olarak karşılanır; bu, aramalarınızın genellikle yapıldığı dildir. Sonrasında Yaver, arayan hangi dilde konuşuyorsa o dilde yanıt verir.";
+"Use %@" = "Şunu kullan: %@";
 "“%@”" = "“%@”";
 "Call language" = "Arama dili";
 "Language to write in" = "Yazı dili";

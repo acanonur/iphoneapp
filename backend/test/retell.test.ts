@@ -34,6 +34,7 @@ function retellApp(
     undefined,
 ) {
   let created = 0;
+  const said: string[] = [];
   const net = fakeFetch((request) => {
     const custom = respond(request);
     if (custom) return custom;
@@ -41,10 +42,21 @@ function retellApp(
       created += 1;
       return { status: 201, body: { call_id: `call_${created}`, call_status: 'registered' } };
     }
+    // The answering agent as "npm run retell:setup" makes it.
+    if (request.url.includes('/get-agent/')) {
+      return {
+        body: { agent_id: 'agent_inbound', response_engine: { type: 'retell-llm', llm_id: 'llm_inbound' } },
+      };
+    }
+    if (request.url.endsWith('/v3/list-calls')) return { body: { has_more: false, items: [] } };
     return { body: {} };
   });
-  app = buildApp(testConfig({ ...RETELL_ENV, ...env }), { retellFetch: net.fetch });
-  return { app, requests: net.requests };
+  app = buildApp(testConfig({ ...RETELL_ENV, ...env }), {
+    retellFetch: net.fetch,
+    analysisDelaysMs: [10, 20],
+    announce: (line) => said.push(line),
+  });
+  return { app, requests: net.requests, said };
 }
 
 function authed(built: App) {
@@ -190,18 +202,61 @@ describe('placing a call through Retell', () => {
     expect(third.json().code).toBe('limit_reached');
   });
 
-  it('hangs up through Retell when the user ends the call', async () => {
-    const { app: built, requests } = retellApp();
+  it('hangs up through Retell, and keeps the conversation the phone service hands over afterwards', async () => {
+    // No public address: nothing has been heard of the call yet when the user
+    // hangs up. The whole conversation arrives with the provider's record.
+    let ended = false;
+    const { app: built, requests } = retellApp({}, (request) => {
+      if (request.url.endsWith('/v2/stop-call/call_1')) {
+        ended = true;
+        return { body: {} };
+      }
+      if (request.url.endsWith('/v2/get-call/call_1')) {
+        return {
+          body: ended
+            ? {
+                call_id: 'call_1',
+                call_status: 'ended',
+                disconnection_reason: 'user_hangup',
+                duration_ms: 42_000,
+                transcript_object: conversation,
+              }
+            : { call_id: 'call_1', call_status: 'ongoing' },
+        };
+      }
+      return undefined;
+    });
     const { id } = (await placeCall(built)).json();
+
     const res = await built.fastify.inject({
       method: 'POST',
       url: `/api/tasks/${id}/cancel`,
       headers: authed(built),
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ status: 'failed', errorCode: 'cancelled' });
     const stop = requests.find((r) => r.url.endsWith('/v2/stop-call/call_1'));
     expect(stop?.method).toBe('POST');
+    // Asked to end, not yet closed: closing it now would lose what was said.
+    expect(res.json().errorCode).toBe('cancelled');
+    expect(['queued', 'dialing', 'in_progress']).toContain(res.json().status);
+
+    await built.engine.refreshFromProvider(id);
+    const task = built.store.get(id);
+    expect(task).toMatchObject({ status: 'completed', errorCode: 'cancelled', durationSeconds: 42 });
+    expect(task?.lines).toHaveLength(4);
+    expect(task?.transcript).toContain('Dienstag um 10:30 Uhr');
+  });
+
+  it('closes a hung-up call that nobody picked up as cancelled, not as "no answer"', async () => {
+    const { app: built } = retellApp({}, (request) =>
+      request.url.endsWith('/v2/get-call/call_1')
+        ? { body: { call_id: 'call_1', call_status: 'ended', disconnection_reason: 'dial_no_answer' } }
+        : undefined,
+    );
+    const { id } = (await placeCall(built)).json();
+    await built.fastify.inject({ method: 'POST', url: `/api/tasks/${id}/cancel`, headers: authed(built) });
+    await built.engine.refreshFromProvider(id);
+    expect(built.store.get(id)).toMatchObject({ status: 'failed', errorCode: 'cancelled' });
   });
 });
 
@@ -505,11 +560,17 @@ describe('answering calls for the owner', () => {
     expect(bind.method).toBe('PATCH');
     expect(decodeURIComponent(bind.url)).toContain('+493000000000');
     expect(bind.body.inbound_agents).toEqual([{ agent_id: 'agent_inbound', weight: 1 }]);
-    expect(bind.body.inbound_webhook_url).toBe(
-      `https://yaver.example.com/webhooks/retell/${built.webhookSecret}`,
-    );
+    // Nobody is asked before a call is answered: a server that is asleep must
+    // not cost the caller the call.
+    expect(bind.body.inbound_webhook_url).toBeNull();
+
     const agent = requests.find((r) => r.url.includes('/update-agent/agent_inbound'))!;
     expect(agent.body.webhook_events).toContain('transcript_updated');
+    expect(agent.body.webhook_url).toBe(
+      `https://yaver.example.com/webhooks/retell/${built.webhookSecret}`,
+    );
+    // A message has to survive a weekend with the computer off.
+    expect(agent.body.data_storage_retention_days).toBe(7);
 
     await built.fastify.inject({
       method: 'PUT',
@@ -522,26 +583,146 @@ describe('answering calls for the owner', () => {
     expect(unbind.body.inbound_webhook_url).toBeNull();
   });
 
+  it('gives the agent its greeting ahead of time, so it can answer while this server is off', async () => {
+    const { app: built, requests } = retellApp(INBOUND);
+    await switchOn(built);
+    const told = requests.find((r) => r.url.includes('/update-retell-llm/llm_inbound'))!;
+    expect(told.method).toBe('PATCH');
+    expect(told.body.default_dynamic_variables).toMatchObject({
+      owner_name: 'Ali',
+      owner_note: 'Back after six.',
+      owner_language: 'Turkish',
+    });
+    // The greeting says at once that an AI is answering — and is what the
+    // agent opens with, word for word.
+    expect(told.body.default_dynamic_variables.greeting).toContain('yapay zekâ asistanıyım');
+    expect(told.body.begin_message).toBe(told.body.default_dynamic_variables.greeting);
+    // The agent knows before the number rings.
+    const order = requests.map((r) => r.url.split('/').slice(3, 4)[0]);
+    expect(order.indexOf('update-retell-llm')).toBeLessThan(order.indexOf('update-phone-number'));
+  });
+
+  it('tells the agent again when the name, the note or a language changes', async () => {
+    const { app: built, requests } = retellApp(INBOUND);
+    await switchOn(built);
+    const before = requests.filter((r) => r.url.includes('/update-retell-llm/')).length;
+
+    await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: authed(built),
+      payload: { answerNote: 'On holiday until Monday.', callLanguage: 'de' },
+    });
+    const updates = requests.filter((r) => r.url.includes('/update-retell-llm/'));
+    expect(updates).toHaveLength(before + 1);
+    expect(updates.at(-1)!.body.default_dynamic_variables).toMatchObject({
+      owner_note: 'On holiday until Monday.',
+      greeting:
+        'Guten Tag! Hier ist der KI-Assistent von Ali. Ali ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?',
+    });
+    // The number itself was not touched again.
+    expect(requests.filter((r) => r.url.includes('/update-phone-number/'))).toHaveLength(1);
+
+    // Saving the same thing again says nothing to anyone.
+    await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: authed(built),
+      payload: { answerNote: 'On holiday until Monday.' },
+    });
+    expect(requests.filter((r) => r.url.includes('/update-retell-llm/'))).toHaveLength(before + 1);
+  });
+
+  it('keeps the name to itself while answering is off', async () => {
+    const { app: built, requests } = retellApp(INBOUND);
+    const saved = await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: authed(built),
+      payload: { name: 'Ali', language: 'tr' },
+    });
+    expect(saved.statusCode).toBe(200);
+    expect(requests).toHaveLength(0);
+  });
+
+  it('does not save a note the phone service did not take', async () => {
+    let refuse = false;
+    const { app: built } = retellApp(INBOUND, (request) =>
+      refuse && request.url.includes('/update-retell-llm/')
+        ? { status: 400, body: { message: 'no' } }
+        : undefined,
+    );
+    await switchOn(built);
+    refuse = true;
+    const res = await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: authed(built),
+      payload: { answerNote: 'Call my office instead.' },
+    });
+    expect(res.statusCode).toBe(502);
+    expect(res.json().code).toBe('provider_failed');
+    const profile = (
+      await built.fastify.inject({ method: 'GET', url: '/api/profile', headers: authed(built) })
+    ).json();
+    // What the app shows is what callers hear.
+    expect(profile.answerNote).toBe('Back after six.');
+  });
+
   it('explains what is missing instead of pretending it worked', async () => {
     const noAgent = retellApp({ PUBLIC_BASE_URL: 'https://yaver.example.com' });
     const first = await switchOn(noAgent.app);
     expect(first.statusCode).toBe(409);
     expect(first.json().code).toBe('answering_not_set_up');
-    await noAgent.app.fastify.close();
-
-    const noAddress = retellApp({ RETELL_INBOUND_AGENT_ID: 'agent_inbound' });
-    const second = await switchOn(noAddress.app);
-    expect(second.statusCode).toBe(409);
-    expect(second.json().code).toBe('public_address_needed');
     // Nothing was saved as switched on.
     const profile = (
-      await noAddress.app.fastify.inject({
+      await noAgent.app.fastify.inject({
         method: 'GET',
         url: '/api/profile',
-        headers: authed(noAddress.app),
+        headers: authed(noAgent.app),
       })
     ).json();
     expect(profile.answerCalls).toBe(false);
+  });
+
+  it('answers calls for a server nobody can reach from outside, too', async () => {
+    // The usual case: a laptop at home, no public address.
+    const { app: built, requests } = retellApp({ RETELL_INBOUND_AGENT_ID: 'agent_inbound' });
+    const res = await switchOn(built);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().answerCalls).toBe(true);
+    const agent = requests.find((r) => r.url.includes('/update-agent/agent_inbound'))!;
+    // No address to report to: the calls are fetched instead.
+    expect(agent.body.webhook_url).toBeNull();
+    const bind = requests.find((r) => r.url.includes('/update-phone-number/'))!;
+    expect(bind.body.inbound_agents).toEqual([{ agent_id: 'agent_inbound', weight: 1 }]);
+  });
+
+  it('answers for one phone at a time: whoever switches it on takes it over', async () => {
+    const { app: built } = retellApp(INBOUND);
+    await switchOn(built);
+    const other = { 'x-device-id': 'device-ipad', authorization: `Bearer ${built.accessKey}` };
+    const taken = await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: other,
+      payload: { name: 'Ayşe', language: 'de', answerCalls: true },
+    });
+    expect(taken.json()).toMatchObject({ answerCalls: true, name: 'Ayşe' });
+
+    const first = (
+      await built.fastify.inject({ method: 'GET', url: '/api/profile', headers: authed(built) })
+    ).json();
+    expect(first.answerCalls).toBe(false);
+    expect(built.store.inboundOwner()?.deviceId).toBe('device-ipad');
+
+    // A call that comes in now is hers.
+    await deliver(built, {
+      event: 'call_started',
+      call: { call_id: 'call_for_her', direction: 'inbound', from_number: '+4915112345678' },
+    });
+    expect(built.store.listByDevice('device-ipad')).toHaveLength(1);
+    expect(built.store.listByDevice(DEVICE['x-device-id'])).toHaveLength(0);
   });
 
   it('tells Retell who it is answering for when a call comes in', async () => {
@@ -661,6 +842,276 @@ describe('answering calls for the owner', () => {
       call: { call_id: 'not_ours', direction: 'outbound' },
     });
     expect(res.json()).toEqual({ ok: true, ignored: true });
+  });
+});
+
+describe('calls answered while the server was not listening', () => {
+  const INBOUND = { RETELL_INBOUND_AGENT_ID: 'agent_inbound' };
+  const HOUR = 3_600_000;
+
+  /** An answered call the way Retell lists it: that it happened, not what was said. */
+  function listed(id: string, startedAgoMs: number, extra: Record<string, unknown> = {}) {
+    const start = Date.now() - startedAgoMs;
+    return {
+      call_id: id,
+      call_type: 'phone_call',
+      direction: 'inbound',
+      agent_id: 'agent_inbound',
+      from_number: '+4915112345678',
+      to_number: '+493000000000',
+      call_status: 'ended',
+      start_timestamp: start,
+      end_timestamp: start + 40_000,
+      duration_ms: 40_000,
+      disconnection_reason: 'user_hangup',
+      call_analysis: { call_summary: `Summary of ${id}`, call_successful: true },
+      ...extra,
+    };
+  }
+
+  const said = [
+    { role: 'agent', content: 'Merhaba! Ben Ali adına telefona bakan yapay zekâ asistanıyım.' },
+    { role: 'user', content: 'Guten Tag, hier ist die Praxis Dr. Weber. Bitte rufen Sie zurück.' },
+  ];
+
+  /** A server whose phone service has these answered calls on record. */
+  function withCalls(calls: () => Array<Record<string, unknown>>, env: NodeJS.ProcessEnv = {}) {
+    return retellApp({ ...INBOUND, ...env }, (request) => {
+      if (request.url.endsWith('/v3/list-calls')) {
+        return { body: { has_more: false, items: calls() } };
+      }
+      const fetched = /\/v2\/get-call\/([^/?]+)/.exec(request.url);
+      if (fetched) {
+        const call = calls().find((entry) => entry.call_id === fetched[1]);
+        return call ? { body: { ...call, transcript_object: said } } : { status: 404, body: {} };
+      }
+      return undefined;
+    });
+  }
+
+  async function switchOn(built: App) {
+    return built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: authed(built),
+      payload: { name: 'Ali', language: 'tr', callLanguage: 'de', answerCalls: true },
+    });
+  }
+
+  const mine = (built: App) => built.store.listByDevice(DEVICE['x-device-id']);
+
+  it('fetches them when it starts, each under the time it came in', async () => {
+    const calls = [listed('call_night', 9 * HOUR), listed('call_morning', 2 * HOUR)];
+    // Retell lists the newest first, and other kinds of calls with them.
+    const onRecord = [
+      { call_id: 'web_1', call_type: 'web_call', call_status: 'ended' },
+      calls[1]!,
+      { ...listed('call_out', HOUR), direction: 'outbound' },
+      calls[0]!,
+    ];
+    const { app: built, requests, said: lines } = withCalls(() => onRecord);
+    await switchOn(built);
+    await until(() => mine(built).length === 2);
+
+    const asked = requests.find((r) => r.url.endsWith('/v3/list-calls'))!;
+    expect(asked.method).toBe('POST');
+    expect(asked.body.filter_criteria.agent).toEqual([{ agent_id: 'agent_inbound' }]);
+    expect(asked.body.filter_criteria.start_timestamp).toMatchObject({ op: 'bt', type: 'range' });
+    // As far back as Retell keeps a call: seven days.
+    const [from, to] = asked.body.filter_criteria.start_timestamp.value;
+    expect(to - from).toBeGreaterThan(6.9 * 24 * HOUR);
+    expect(to - from).toBeLessThan(7.1 * 24 * HOUR);
+
+    const tasks = mine(built);
+    expect(tasks.map((task) => task.providerCallId)).toEqual(['call_morning', 'call_night']);
+    const night = tasks[1]!;
+    expect(night).toMatchObject({
+      direction: 'inbound',
+      status: 'completed',
+      phoneNumber: '+4915112345678',
+      durationSeconds: 40,
+      language: 'de',
+      summaryLanguage: 'tr',
+      summary: 'Summary of call_night',
+      summarySource: 'provider',
+    });
+    expect(night.createdAt).toBe(new Date(calls[0]!.start_timestamp as number).toISOString());
+    expect(night.transcript).toContain('Praxis Dr. Weber');
+    // Fetched and filed: Retell has no reason to keep them.
+    await until(() => requests.filter((r) => r.url.includes('/v2/delete-call/')).length === 2);
+    // The window says what came in.
+    expect(lines.join('\n')).toContain('+4915112345678');
+  });
+
+  it('takes each call once, however often it looks', async () => {
+    const onRecord = [listed('call_once', HOUR)];
+    const { app: built, requests } = withCalls(() => onRecord, { RETELL_DELETE_AFTER_CALL: 'false' });
+    await switchOn(built);
+    // Switching on looks by itself.
+    await until(() => mine(built).length === 1);
+    await pause(10);
+    expect(await built.engine.importAnsweredCalls()).toBe(0);
+    expect(await built.engine.importAnsweredCalls()).toBe(0);
+    expect(mine(built)).toHaveLength(1);
+    expect(requests.filter((r) => r.url.includes('/v2/get-call/'))).toHaveLength(1);
+  });
+
+  it('leaves a call that has only just ended until its summary is there', async () => {
+    const justOver = listed('call_fresh', 45_000, { call_analysis: undefined });
+    let onRecord: Array<Record<string, unknown>> = [justOver];
+    const { app: built } = withCalls(() => onRecord);
+    await switchOn(built);
+    await pause(20);
+    expect(await built.engine.importAnsweredCalls()).toBe(0);
+    expect(mine(built)).toHaveLength(0);
+
+    onRecord = [{ ...justOver, call_analysis: { call_summary: 'They want a call back.' } }];
+    expect(await built.engine.importAnsweredCalls()).toBe(1);
+    expect(mine(built)[0]).toMatchObject({ summary: 'They want a call back.', status: 'completed' });
+  });
+
+  it('shows a call that is still going on, and follows it', async () => {
+    const onRecord = [
+      listed('call_live', 20_000, {
+        call_status: 'ongoing',
+        end_timestamp: undefined,
+        duration_ms: undefined,
+        disconnection_reason: undefined,
+        call_analysis: undefined,
+      }),
+    ];
+    const { app: built } = withCalls(() => onRecord);
+    await switchOn(built);
+    const task = await until(() => mine(built)[0]);
+    expect(task).toMatchObject({ status: 'in_progress', direction: 'inbound' });
+    expect(task.lines).toHaveLength(2);
+  });
+
+  it('looks when the app opens its list — but only while answering is on', async () => {
+    const onRecord = [listed('call_seen', HOUR)];
+    const { app: built, requests } = withCalls(() => onRecord);
+    const list = () =>
+      built.fastify.inject({ method: 'GET', url: '/api/tasks', headers: authed(built) });
+
+    await list();
+    await pause(20);
+    expect(requests.filter((r) => r.url.endsWith('/v3/list-calls'))).toHaveLength(0);
+
+    await switchOn(built);
+    // Switching on looks once; the list asks again only after a while.
+    await until(() => mine(built).length === 1);
+    const looks = requests.filter((r) => r.url.endsWith('/v3/list-calls')).length;
+    await list();
+    await list();
+    await pause(20);
+    expect(requests.filter((r) => r.url.endsWith('/v3/list-calls'))).toHaveLength(looks);
+    expect((await list()).json()).toHaveLength(1);
+  });
+
+  it('collects what was taken up to the moment answering is switched off', async () => {
+    let onRecord: Array<Record<string, unknown>> = [];
+    const { app: built } = withCalls(() => onRecord);
+    await switchOn(built);
+    await pause(20);
+    onRecord = [listed('call_last', 5 * 60_000)];
+    await built.fastify.inject({
+      method: 'PUT',
+      url: '/api/profile',
+      headers: authed(built),
+      payload: { answerCalls: false },
+    });
+    const task = await until(() => mine(built)[0]);
+    expect(task.providerCallId).toBe('call_last');
+  });
+
+  it('brings answering up to date at every start, and fetches first', async () => {
+    const onRecord = [listed('call_weekend', 30 * HOUR)];
+    const { app: built, requests } = withCalls(() => onRecord);
+    await switchOn(built);
+    await until(() => mine(built).length === 1);
+    requests.length = 0;
+
+    await built.refreshCallAnswering();
+    const paths = requests.map((r) => new URL(r.url).pathname.split('/').filter(Boolean)[0]);
+    // The agent is told again who it answers for and where this server is now.
+    expect(paths).toContain('update-retell-llm');
+    expect(paths).toContain('update-agent');
+    expect(paths).toContain('update-phone-number');
+  });
+
+  it('says nothing to the phone service at start while answering is off', async () => {
+    const { app: built, requests } = withCalls(() => []);
+    await built.refreshCallAnswering();
+    expect(requests).toHaveLength(0);
+  });
+
+  it('keeps going when the phone service cannot be asked', async () => {
+    const { app: built } = retellApp(INBOUND, (request) =>
+      request.url.endsWith('/v3/list-calls') ? { status: 500, body: { message: 'down' } } : undefined,
+    );
+    await switchOn(built);
+    await pause(20);
+    expect(await built.engine.importAnsweredCalls()).toBe(0);
+    expect(mine(built)).toHaveLength(0);
+  });
+});
+
+describe('the summary of a call nobody reported on', () => {
+  it('is asked for when no event brings it', async () => {
+    // No public address: Retell cannot say that its summary is ready.
+    let analysed = false;
+    const { app: built, requests } = retellApp({}, (request) => {
+      if (!request.url.includes('/v2/get-call/')) return undefined;
+      return {
+        body: {
+          call_id: 'call_1',
+          call_status: 'ended',
+          disconnection_reason: 'user_hangup',
+          transcript_object: conversation,
+          ...(analysed
+            ? { call_analysis: { call_summary: 'An appointment on Tuesday at 9:30 was agreed.', call_successful: true } }
+            : {}),
+        },
+      };
+    });
+    const { id } = (await placeCall(built)).json();
+    built.engine.applySnapshot(built.store.get(id)!, {
+      call_id: 'call_1',
+      call_status: 'ended',
+      disconnection_reason: 'user_hangup',
+      duration_ms: 61_000,
+      transcript_object: conversation,
+    });
+    // Without a report writer there is only the plain note that there is none.
+    expect(built.store.get(id)).toMatchObject({ status: 'completed', summarySource: 'placeholder' });
+
+    analysed = true;
+    const task = await until(() => {
+      const current = built.store.get(id);
+      return current?.summarySource === 'provider' ? current : null;
+    });
+    expect(task.summary).toBe('An appointment on Tuesday at 9:30 was agreed.');
+    expect(task.outcome).toBe('achieved');
+    // With its summary read, the call is deleted at Retell.
+    await until(() => requests.some((r) => r.url.includes('/v2/delete-call/call_1')));
+  });
+
+  it('stops asking after a few tries', async () => {
+    const { app: built, requests } = retellApp({}, (request) =>
+      request.url.includes('/v2/get-call/')
+        ? { body: { call_id: 'call_1', call_status: 'ended', transcript_object: conversation } }
+        : undefined,
+    );
+    const { id } = (await placeCall(built)).json();
+    built.engine.applySnapshot(built.store.get(id)!, {
+      call_id: 'call_1',
+      call_status: 'ended',
+      disconnection_reason: 'user_hangup',
+      transcript_object: conversation,
+    });
+    await pause(120);
+    expect(requests.filter((r) => r.url.includes('/v2/get-call/'))).toHaveLength(2);
+    expect(built.store.get(id)?.summarySource).toBe('placeholder');
   });
 });
 

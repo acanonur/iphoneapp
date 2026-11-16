@@ -161,6 +161,40 @@ describe('POST /api/calls', () => {
     expect(typeof res.json().error).toBe('string');
   });
 
+  it('does not dial premium-rate, emergency or costly "+1" numbers inside an allowed country', async () => {
+    const built = makeApp();
+    for (const phoneNumber of [
+      '+4990012345678', // German 0900
+      '+4913712345678', // televoting
+      '+49118331234', // directory enquiries
+      '+4911200000', // 112
+      '+90900123456',
+      '+449012345678', // UK premium
+      '+447012345678', // UK personal numbering
+      '+19005551234',
+      '+18765551234', // Jamaica: the classic "call me back" number
+      '+12425551234', // Bahamas
+    ]) {
+      const res = await startCall(built, { ...validBody, phoneNumber });
+      expect(res.statusCode, phoneNumber).toBe(400);
+      expect(res.json().code, phoneNumber).toBe('number_not_allowed');
+    }
+    // Ordinary numbers in the same countries still go through.
+    for (const phoneNumber of ['+4915112345678', '+493012345678', '+905321234567', '+442071234567', '+12125551234', '+14165551234', '+49116117000']) {
+      const res = await startCall(built, { ...validBody, phoneNumber });
+      expect(res.statusCode, phoneNumber).toBe(201);
+    }
+  });
+
+  it('lets the owner open up a "+1" place on purpose, or change the refused list', async () => {
+    const jamaica = makeApp({ ALLOWED_COUNTRY_PREFIXES: '+49,+1876' });
+    expect((await startCall(jamaica, { ...validBody, phoneNumber: '+18765551234' })).statusCode).toBe(201);
+    await jamaica.fastify.close();
+
+    const nothingRefused = makeApp({ BLOCKED_NUMBER_PREFIXES: '' });
+    expect((await startCall(nothingRefused, { ...validBody, phoneNumber: '+4990012345678' })).statusCode).toBe(201);
+  });
+
   it('rejects destinations outside the allowlist', async () => {
     const built = makeApp();
     const res = await startCall(built, { ...validBody, phoneNumber: '+33123456789' });
@@ -349,6 +383,54 @@ describe('after a restart', () => {
       const second = makeApp({ DB_PATH: join(dir, 'a.db') });
       const task = second.store.get(id);
       expect(task).toMatchObject({ status: 'failed', errorCode: 'technical' });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('gives a finished call its report, and ends a real call that was never placed', async () => {
+    const { mkdtempSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { TaskStore } = await import('../src/db.js');
+    const { newTask } = await import('../src/tasks.js');
+    const dir = mkdtempSync(join(tmpdir(), 'yaver-test-'));
+    try {
+      // What a server leaves behind when it is stopped at the wrong moment.
+      const before = new TaskStore(join(dir, 'b.db'));
+      const unreported = newTask({
+        deviceId: DEVICE['x-device-id'],
+        kind: 'call',
+        goal: 'Book a check-up',
+        phoneNumber: '+493012345678',
+        status: 'completed',
+        providerCallId: 'call_done',
+        lines: [
+          { role: 'other', text: 'Praxis am Park, guten Tag.' },
+          { role: 'assistant', text: 'Guten Tag! Ich möchte einen Termin vereinbaren.' },
+        ],
+      });
+      const neverPlaced = newTask({
+        deviceId: DEVICE['x-device-id'],
+        kind: 'call',
+        goal: 'Ask about opening hours',
+        phoneNumber: '+493012345678',
+        status: 'queued',
+        createdAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+      });
+      before.create(unreported);
+      before.create(neverPlaced);
+      before.close();
+
+      const after = makeApp({ DB_PATH: join(dir, 'b.db') });
+      expect(after.store.get(neverPlaced.id)).toMatchObject({ status: 'failed', errorCode: 'technical' });
+      // No report writer is set up here: the plain fallback is still a report.
+      const reported = await until(() => {
+        const task = after.store.get(unreported.id);
+        return task?.summary ? task : null;
+      });
+      expect(reported.summarySource).toBe('placeholder');
+      expect(reported.status).toBe('completed');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

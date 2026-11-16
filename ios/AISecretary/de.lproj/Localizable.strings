@@ -113,7 +113,6 @@
 "The language for speech recognition has not been downloaded yet. Try again in a moment, with an internet connection." = "Die Sprache für die Spracherkennung ist noch nicht geladen. Versuchen Sie es gleich noch einmal, mit Internetverbindung.";
 "For this language, the iPhone sends the audio to Apple to recognise it." = "Bei dieser Sprache sendet das iPhone den Ton zur Erkennung an Apple.";
 "Call my dentist and book a check-up appointment for next week, mornings preferred." = "Meinen Zahnarzt anrufen und für nächste Woche einen Kontrolltermin vereinbaren, am liebsten vormittags.";
-"Start with the country code, for example +49 for Germany or +90 for Türkiye." = "Beginnen Sie mit der Ländervorwahl, zum Beispiel +49 für Deutschland oder +90 für die Türkei.";
 "Your server only calls numbers starting with %@." = "Ihr Server ruft nur Nummern an, die mit %@ beginnen.";
 "Cancel" = "Abbrechen";
 "New task" = "Neue Aufgabe";
@@ -124,6 +123,16 @@
 "What should Yaver do?" = "Was soll Yaver tun?";
 "e.g. %@" = "z. B. %@";
 "Who to call" = "Wen soll Yaver anrufen?";
+"The phone service did not accept this. Try again in a moment." = "Der Telefondienst hat das nicht angenommen. Versuchen Sie es gleich noch einmal.";
+"Yaver also answers while your computer is off. The messages appear here as soon as the server is running again." = "Yaver nimmt Anrufe auch an, wenn Ihr Computer aus ist. Die Nachrichten erscheinen hier, sobald der Server wieder läuft.";
+"Your server does not call premium-rate, special or emergency numbers." = "Ihr Server ruft keine Sonder-, Mehrwert- oder Notrufnummern an.";
+"Ending the call…" = "Anruf wird beendet …";
+"Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye." = "Schreiben Sie die Nummer mit der Ländervorwahl statt der ersten 0 – zum Beispiel +49 für Deutschland oder +90 für die Türkei.";
+"No text could be read from the photo. Try again, flat and in good light." = "Auf dem Foto war kein Text zu erkennen. Versuchen Sie es noch einmal – flach hingelegt und bei gutem Licht.";
+"The call could not be ended." = "Der Anruf konnte nicht beendet werden.";
+"The report is being written…" = "Der Bericht wird gerade geschrieben …";
+"Callers are greeted in %@, the language your calls are usually in. After that, Yaver answers in whatever language the caller speaks." = "Anrufer werden auf %@ begrüßt – in der Sprache, in der Ihre Anrufe meist geführt werden. Danach antwortet Yaver in der Sprache, die der Anrufer spricht.";
+"Use %@" = "%@ verwenden";
 "“%@”" = "„%@“";
 "Call language" = "Gesprächssprache";
 "Language to write in" = "Sprache des Textes";
