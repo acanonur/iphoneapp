@@ -57,6 +57,9 @@ struct RootView: View {
     @State private var route: Route
     /// A pairing link that arrived, waiting for the user to say yes.
     @State private var pairing: ServerStore.Pairing?
+    /// A pairing link did not work, and the screen in front does not show the
+    /// server's state.
+    @State private var pairingFailed = false
 
     init(stage: Stage?) {
         self.stage = stage
@@ -129,16 +132,27 @@ struct RootView: View {
                 Task {
                     let paired = await model.server.pair(request)
                     if paired { await model.refresh() }
-                    // Show the result where the server lives. A success is
-                    // not worth pulling the user out of something they were
-                    // writing; a failure is — otherwise nothing would say
-                    // that the app is still with the old server.
-                    if hasOnboarded, !paired || route == .home { route = .settings }
+                    if hasOnboarded, route == .home {
+                        // Show the result where the server lives.
+                        route = .settings
+                    } else if hasOnboarded, !paired, route != .settings {
+                        // Not worth taking the user away from something they
+                        // are writing — it would be lost. But they must know
+                        // that the app is still with the old server.
+                        pairingFailed = true
+                    }
                 }
             }
             Button(L("Cancel"), role: .cancel) {}
         } message: { request in
             Text(Lf("Yaver will send your tasks to %@. Only connect to a server you started yourself.", request.host))
+        }
+        .alert(L("Could not connect"), isPresented: $pairingFailed) {
+            Button(L("OK"), role: .cancel) {}
+        } message: {
+            Text(
+                L("Yaver could not connect to that server, so nothing has changed: your tasks still go to the server you used before. Settings shows what went wrong.")
+            )
         }
     }
 

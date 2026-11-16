@@ -424,8 +424,16 @@ struct SettingsView: View {
         answerError = nil
         Task {
             answerError = await model.saveAnswering(enabled: answering, note: answerNote)
-            // Whatever the server now says is the truth, also after a failure.
-            loadAnswering()
+            if answerError == nil {
+                loadAnswering()
+            } else {
+                // After a failure the server may still have done it — the
+                // app only stopped waiting. So ask what it does now, and let
+                // the switch show that. A note that could not be saved stays
+                // in its field, to be tried again.
+                await server.refreshSession()
+                answering = server.session?.profile.answerCalls ?? false
+            }
             isSavingAnswer = false
         }
     }

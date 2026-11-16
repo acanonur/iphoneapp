@@ -147,6 +147,8 @@
 "Saved, but it will not ring" = "Gespeichert, aber Sie werden nicht erinnert";
 "Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings." = "Mitteilungen sind für Yaver ausgeschaltet. Die Wiedervorlage steht auf Ihrer Liste; um erinnert zu werden, erlauben Sie Mitteilungen in den iPhone-Einstellungen.";
 "Connect to this server?" = "Mit diesem Server verbinden?";
+"Could not connect" = "Verbindung nicht möglich";
+"Yaver could not connect to that server, so nothing has changed: your tasks still go to the server you used before. Settings shows what went wrong." = "Yaver konnte sich nicht mit diesem Server verbinden. Es hat sich nichts geändert: Ihre Aufgaben gehen weiterhin an den bisherigen Server. In den Einstellungen sehen Sie, was nicht geklappt hat.";
 "Yaver will send your tasks to %@. Only connect to a server you started yourself." = "Yaver sendet Ihre Aufgaben dann an %@. Verbinden Sie sich nur mit einem Server, den Sie selbst gestartet haben.";
 "Settings" = "Einstellungen";
 "Brief Yaver" = "Yaver beauftragen";
