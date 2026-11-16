@@ -83,7 +83,7 @@ enum Fixtures {
             ]
         }
         return [
-            (.other, "Ege Diş Kliniği, buyurun.", "Zahnklinik Ege, bitte schön."),
+            (.other, "Ege Diş Kliniği, buyurun.", "Zahnklinik Ege, guten Tag."),
             (.assistant,
              "Merhaba! Ben Jonas Becker adına arayan bir yapay zekâ asistanıyım. Gelecek hafta için bir kontrol randevusu almak istiyorum, tercihen öğleden önce.",
              "Guten Tag! Ich bin ein KI-Assistent und rufe im Auftrag von Jonas Becker an. Ich möchte für nächste Woche einen Kontrolltermin vereinbaren, am liebsten vormittags."),
@@ -99,7 +99,7 @@ enum Fixtures {
     private static var callGoal: String {
         text(
             "Call my doctor and book a check-up for next week, mornings preferred.",
-            "Ruf meinen Zahnarzt an und vereinbare für nächste Woche einen Kontrolltermin, am liebsten vormittags.",
+            "Meinen Zahnarzt anrufen und für nächste Woche einen Kontrolltermin vereinbaren, am liebsten vormittags.",
             "Doktorumu ara ve gelecek hafta için bir kontrol randevusu al, tercihen öğleden önce."
         )
     }
@@ -132,7 +132,7 @@ enum Fixtures {
                 ? text(
                     "Bring your insurance card to the appointment",
                     "Ausweis zum Termin mitbringen",
-                    "Randevuya sigorta kartını getir"
+                    "Randevuya sigorta kartınızı götürün"
                 )
                 : nil,
             todoWhen: done ? text("Tuesday, 10:30", "Dienstag, 10:30 Uhr", "Salı, 10.30") : nil,
@@ -215,7 +215,7 @@ enum Fixtures {
             todo: text(
                 "Be at home on Thursday morning, or call back",
                 "Am Donnerstagvormittag zu Hause sein oder zurückrufen",
-                "Perşembe sabahı evde ol ya da geri ara"
+                "Perşembe sabahı evde olun ya da geri arayın"
             ),
             todoWhen: text("Thursday, 8–10", "Donnerstag, 8–10 Uhr", "Perşembe, 8–10"),
             outcome: .achieved,

@@ -124,6 +124,7 @@
 "What should Yaver do?" = "What should Yaver do?";
 "e.g. %@" = "e.g. %@";
 "Who to call" = "Who to call";
+"“%@”" = "“%@”";
 "Call language" = "Call language";
 "Language to write in" = "Language to write in";
 "Only the text is sent — the photograph stays on your phone." = "Only the text is sent — the photograph stays on your phone.";
@@ -156,6 +157,7 @@
 "%d tasks in progress" = "%d tasks in progress";
 "%d completed" = "%d completed";
 "%d waiting for you" = "%d waiting for you";
+"1 waiting for you" = "1 waiting for you";
 "Tasks" = "Tasks";
 "Nothing yet. Brief Yaver and it appears here." = "Nothing yet. Brief Yaver and it appears here.";
 "Dialing" = "Dialing";

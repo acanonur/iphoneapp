@@ -188,11 +188,18 @@ struct HomeView: View {
             }
         } else {
             Text(
-                "\(Lf("%d completed", model.completedCount)) · \(Lf("%d waiting for you", model.waitingCount))"
+                "\(Lf("%d completed", model.completedCount)) · \(waitingLabel)"
             )
             .typeStyle(TypeStyle(size: 13, weight: .regular, lineHeight: 1.4, tabularNumbers: true))
             .foregroundStyle(Modernist.Neutral.s700)
         }
+    }
+
+    /// "1 waits", "2 wait": the verb changes with the number in German.
+    private var waitingLabel: String {
+        model.waitingCount == 1
+            ? L("1 waiting for you")
+            : Lf("%d waiting for you", model.waitingCount)
     }
 
     // MARK: - New task

@@ -67,7 +67,7 @@
 "The call was rejected on the other side. They may not accept calls from unknown numbers." = "Arama karşı tarafta reddedildi. Bilinmeyen numaralardan gelen aramaları kabul etmiyor olabilirler.";
 "An answering machine or phone menu picked up, not a person. No message was left." = "Telefonu bir kişi değil, telesekreter ya da sesli menü açtı. Mesaj bırakılmadı.";
 "The phone company does not recognise this number. Check it, including the country code." = "Telefon şirketi bu numarayı tanımıyor. Ülke kodu dahil numarayı kontrol edin.";
-"The phone company refused to connect this call. The number you are calling from may not be allowed to call this country." = "Telefon şirketi bu aramayı bağlamadı. Aradığınız numaranın bu ülkeyi araması engellenmiş olabilir.";
+"The phone company refused to connect this call. The number you are calling from may not be allowed to call this country." = "Telefon şirketi bu aramayı bağlamadı. Arama yaparken kullandığınız numaranın bu ülkeyi aramasına izin verilmiyor olabilir.";
 "The phone service account cannot place calls right now — usually credit or a limit. Check the account of whoever runs your server." = "Telefon hizmeti hesabı şu anda arama yapamıyor; genellikle bakiye bitmiştir ya da bir sınıra ulaşılmıştır. Sunucunuzu işleten kişinin hesabını kontrol edin.";
 "The phone service could not place the call. Try again; if it keeps happening, check the server." = "Telefon hizmeti aramayı yapamadı. Yeniden deneyin; sorun sürerse sunucuyu kontrol edin.";
 "A technical problem cut the call off. Whatever was said until then is below." = "Teknik bir sorun aramayı kesti. O ana kadar konuşulanlar aşağıda.";
@@ -88,11 +88,11 @@
 "Live translator" = "Canlı çevirmen";
 "Voice output on" = "Sesli okuma açık";
 "Voice output off" = "Sesli okuma kapalı";
-"You speak" = "Siz konuşuyorsunuz";
+"You speak" = "Siz";
 "Swap languages" = "Dilleri değiştir";
-"They speak" = "Karşı taraf konuşuyor";
+"They speak" = "Karşı taraf";
 "Hold a conversation across languages." = "Farklı dillerde sohbet edin.";
-"Tap “I speak” and talk. The translation is written on the other side while you are still speaking, and read aloud when you finish. Tap “They speak” for their turn." = "“Ben konuşuyorum”a dokunun ve konuşun. Çeviri, siz daha konuşurken karşı tarafa yazılır ve bitirdiğinizde sesli okunur. Sıra karşı taraftayken “Karşı taraf konuşuyor”a dokunun.";
+"Tap “I speak” and talk. The translation is written on the other side while you are still speaking, and read aloud when you finish. Tap “They speak” for their turn." = "“Ben konuşuyorum”a dokunup konuşun. Çeviri, siz daha konuşurken karşı tarafa yazılır ve bitirdiğinizde sesli okunur. Sıra karşı taraftayken “Karşı taraf”a dokunun.";
 "Translation needs a language download" = "Çeviri için dil indirmesi gerekiyor";
 "%1$@ and %2$@ are translated on your iPhone. The languages have to be downloaded once." = "%1$@ ve %2$@ iPhone’unuzda çevrilir. Dillerin bir kez indirilmesi gerekir.";
 "Download languages" = "Dilleri indir";
@@ -106,7 +106,7 @@
 "Translating as they speak…" = "Karşı taraf konuşurken çevriliyor…";
 "I speak" = "Ben konuşuyorum";
 "Works face-to-face and over speakerphone. iOS does not let apps listen to your own phone call." = "Yüz yüze ve hoparlör üzerinden çalışır. iOS, uygulamaların kendi telefon görüşmenizi dinlemesine izin vermez.";
-"Listening" = "Dinliyor";
+"Listening" = "Dinleniyor";
 "Tap when done" = "Bitince dokunun";
 "Microphone and speech recognition access are needed. Please allow both in the iPhone’s Settings." = "Mikrofon ve konuşma tanıma izni gerekiyor. Lütfen iPhone’un Ayarlar bölümünden ikisine de izin verin.";
 "Siri and Dictation are switched off on this iPhone. Switch them on in Settings to use the translator." = "Bu iPhone’da Siri ve Dikte kapalı. Çevirmeni kullanmak için ikisini de Ayarlar’dan açın.";
@@ -123,7 +123,8 @@
 "Type" = "Tür";
 "What should Yaver do?" = "Yaver ne yapsın?";
 "e.g. %@" = "örn. %@";
-"Who to call" = "Kim aransın";
+"Who to call" = "Kim aransın?";
+"“%@”" = "“%@”";
 "Call language" = "Arama dili";
 "Language to write in" = "Yazı dili";
 "Only the text is sent — the photograph stays on your phone." = "Yalnızca metin gönderilir; fotoğraf telefonunuzda kalır.";
@@ -151,11 +152,12 @@
 "Find automatically" = "Otomatik bul";
 "Server settings" = "Sunucu ayarları";
 "Simulation" = "Simülasyon";
-"Nothing in progress" = "Süren bir iş yok";
+"Nothing in progress" = "Süren görev yok";
 "1 task in progress" = "1 görev sürüyor";
 "%d tasks in progress" = "%d görev sürüyor";
 "%d completed" = "%d tamamlandı";
 "%d waiting for you" = "%d sizi bekliyor";
+"1 waiting for you" = "1 sizi bekliyor";
 "Tasks" = "Görevler";
 "Nothing yet. Brief Yaver and it appears here." = "Henüz bir şey yok. Yaver’e görev verin, burada görünür.";
 "Dialing" = "Aranıyor";
@@ -219,7 +221,7 @@
 "Number" = "Numara";
 "Duration" = "Süre";
 "Report in" = "Rapor dili";
-"Call back %@" = "%@ numarasını geri ara";
+"Call back %@" = "Geri ara: %@";
 "Call again" = "Yeniden ara";
 "German" = "Almanca";
 "English" = "İngilizce";
@@ -250,7 +252,7 @@
 "Access key (only if the server shows one)" = "Erişim anahtarı (yalnızca sunucu gösteriyorsa)";
 "Connecting…" = "Bağlanıyor…";
 "Connect" = "Bağlan";
-"The server runs on your computer. Start it, then point the iPhone’s Camera at the code it shows — or stay on the same Wi-Fi and tap “Find automatically”." = "Sunucu bilgisayarınızda çalışır. Onu başlatın, sonra iPhone’un Kamera uygulamasını gösterdiği koda tutun; ya da aynı Wi-Fi ağında kalıp “Otomatik bul”a dokunun.";
+"The server runs on your computer. Start it, then point the iPhone’s Camera at the code it shows — or stay on the same Wi-Fi and tap “Find automatically”." = "Sunucu bilgisayarınızda çalışır. Sunucuyu başlatın, sonra iPhone’un Kamera uygulamasını sunucunun gösterdiği koda tutun; ya da aynı Wi-Fi ağında kalıp “Otomatik bul”a dokunun.";
 "Calls are simulated — no real phone call is made." = "Aramalar simüle ediliyor; gerçek bir telefon araması yapılmaz.";
 "Reports are written by Claude." = "Raporları Claude yazar.";
 "Reports are basic: no AI summary is set up." = "Raporlar yalın: yapay zekâ özeti kurulmamış.";
@@ -262,7 +264,7 @@
 "When you cannot pick up, Yaver answers for you. It says at once that it is your AI assistant, takes a message in German, Turkish or English, and writes down who called and why." = "Siz açamadığınızda aramayı Yaver yanıtlar. Yapay zekâ asistanınız olduğunu hemen söyler, Almanca, Türkçe veya İngilizce mesaj alır ve kimin, neden aradığını not eder.";
 "On" = "Açık";
 "Off" = "Kapalı";
-"That did not work." = "Bu işe yaramadı.";
+"That did not work." = "İşlem tamamlanamadı.";
 "Note for callers (optional)" = "Arayanlar için not (isteğe bağlı)";
 "e.g. I am at work until six." = "örn. Saat altıya kadar işteyim.";
 "Save note" = "Notu kaydet";

@@ -205,7 +205,8 @@ struct OnboardingView: View {
                 Rule()
                     .padding(.bottom, 14)
                 Kicker(text: L("Required disclosure"))
-                Text("“\(Disclosure.line(callLanguage, name: userName))”")
+                // The quotation marks are those of the language the reader reads.
+                Text(Lf("“%@”", Disclosure.line(callLanguage, name: userName)))
                     .typeStyle(.quote)
                     .padding(.vertical, 10)
                 Text(

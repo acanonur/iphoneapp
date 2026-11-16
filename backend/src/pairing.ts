@@ -73,6 +73,8 @@ export function pairPage(): string {
 <p class="muted">Düğmeye dokunun. Yaver uygulaması açılır ve bu sunucunun adresini kaydeder.</p>
 <a class="button" id="open" href="#">Open Yaver →</a>
 <p class="muted">The first time, the iPhone asks whether Yaver may find devices on your local network. Say yes — without it the app cannot reach this server, even though this page can.</p>
+<p class="muted">Beim ersten Mal fragt das iPhone, ob Yaver Geräte in Ihrem lokalen Netzwerk finden darf. Erlauben Sie es – sonst erreicht die App diesen Server nicht, obwohl diese Seite ihn erreicht.</p>
+<p class="muted">İlk seferde iPhone, Yaver’in yerel ağınızdaki aygıtları bulmasına izin verilip verilmeyeceğini sorar. İzin verin; yoksa bu sayfa açılsa bile uygulama bu sunucuya ulaşamaz.</p>
 <p class="muted">Nothing happens? Open the app, go to Settings → Server, and enter:</p>
 <div class="box"><code id="address"></code></div>
 <div class="box" id="keybox" hidden><span class="muted">Access key</span><br><code id="key"></code></div>

@@ -122,5 +122,8 @@ A photographed letter or form is read **on the phone** with Vision, and only the
 recognised text is sent — the photograph never leaves the device. That keeps the "no
 stored audio" promise the app makes about calls true of paperwork as well.
 
-With no `ANTHROPIC_API_KEY` set, the paperwork kinds still resolve into the same states
-with an honest placeholder summary, so the whole app is demoable with no keys at all.
+With no Anthropic key on the server (`npm run claude:setup` sets one), a letter, message
+or form is not pretended to be done: it ends as `failed` with the reason `reports_off`,
+which the app shows as *Not set up yet* with the one command that switches it on — and
+the brief screen says so before anything is typed. Calls, the answered-call demo, the
+reminders and the translator need no key at all.

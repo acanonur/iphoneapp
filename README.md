@@ -170,6 +170,10 @@ iPhone app (SwiftUI)            Server (Node · Fastify)             The phone c
   then arrives at the end.
 - **Translation.** Each line that is not in your language is translated by the iPhone
   itself (Apple's Translation framework) as it arrives. Nothing is sent anywhere for that.
+  The first time, the iPhone asks to download the two languages — once.
+- **Answering.** Callers are greeted in the language your calls are usually in (the
+  country's), and the assistant then follows whatever language the caller speaks; the note
+  it leaves you is written in the language you read.
 - **Translator.** Apple's Speech framework hears, Translation translates, and the system
   voice reads aloud — all on the device, offline once the languages are downloaded.
 - **Access.** As soon as real calls, a paid model or a public address are involved, the
@@ -182,7 +186,7 @@ iPhone app (SwiftUI)            Server (Node · Fastify)             The phone c
 |---|---|---|
 | `GET` | `/health` | Is a Yaver server here, and what does it need from the app? (open) |
 | `GET` | `/api/session` | What this server can do, and the owner's profile |
-| `GET` `PUT` | `/api/profile` | Name, report language, answer calls on/off, note for callers |
+| `GET` `PUT` | `/api/profile` | Name, the language you read, the language callers speak, answer calls on/off, note for callers |
 | `POST` | `/api/tasks` | Start a task: `call`, `letter`, `message`, `form`, `followup`, `reminder` |
 | `GET` | `/api/tasks`, `/api/tasks/:id` | The ledger; one task with its `lines`, `summary`, `todo` |
 | `POST` | `/api/tasks/:id/cancel` | Hang up a call that is under way |
@@ -208,7 +212,7 @@ server asks for a key.
 ## Repository layout
 
 ```
-backend/              the server: src/, test/ (94 tests), scripts/retell-setup.ts
+backend/              the server: src/, test/, scripts/ (retell-setup, claude-setup)
 ios/                  the iPhone app
   AISecretary/        Swift sources (the target keeps the project's first name)
     Server/           where the server is: saved address, discovery, access key
@@ -217,7 +221,8 @@ ios/                  the iPhone app
     Views/            the screens
     DesignSystem/     Modernist: Archivo, the palette, the Lucide icons, the mark
     de.lproj tr.lproj en.lproj   the interface in three languages
-  scripts/            check-strings.py (nothing ships untranslated), screenshots.sh
+  scripts/            check-strings.py (nothing ships untranslated), screenshots.sh,
+                      selftest.sh (the app run against a real server)
 docs/                 real-calls.md, ai-secretary-design.md, brand/
 ```
 
@@ -233,6 +238,14 @@ photographed in all three languages; the pictures land on the
 [`ci-screenshots`](../../tree/ci-screenshots) branch. To look at one screen over sample
 data yourself, add the launch argument `-yaverStage report` (or `home`, `call`,
 `answered`, `translator`, `settings`, …) in Xcode's scheme.
+
+The same run also *uses* the app: it starts the server, launches the app in the simulator
+with nobody touching it, and the app has to find the server on the network, place a call
+and follow it line by line, hang up, take an answered call, and get past a server that
+asks for its key ([`ios/scripts/selftest.sh`](ios/scripts/selftest.sh),
+[`SelfTest.swift`](ios/AISecretary/Support/SelfTest.swift)). What that cannot check is
+what the simulator does not have: Apple's on-device translation and speech recognition,
+the iPhone's permission prompts, and a real phone line.
 
 The interface is the **Modernist** system from [Claude Design](https://claude.ai/design) —
 Archivo, ink on a light ground, one red, no rounded corners, everything flush left. See

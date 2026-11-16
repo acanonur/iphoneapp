@@ -103,7 +103,7 @@ const OUTBOUND_REPORT: Record<Language, ScriptedReport> = {
   tr: {
     summary:
       'Simüle arama: Karşı taraf salı günü saat 10.30 için randevu önerdi ve randevu onaylandı. Lütfen sigorta kartınızı yanınızda getirin.',
-    todo: 'Randevuya sigorta kartını getir',
+    todo: 'Randevuya sigorta kartınızı götürün',
     todoWhen: 'Salı, 10.30',
     outcome: 'achieved',
   },
@@ -167,7 +167,7 @@ const INBOUND_REPORT: Record<Language, ScriptedReport> = {
     subject: 'Dr. Weber muayenehanesi: randevu ertelenecek',
     summary:
       'Simüle arama: Dr. Weber muayenehanesi aradı. Perşembe saat 9.00’daki randevunun ertelenmesi gerekiyor; cuma saat 11.00’i öneriyorlar. Lütfen bugün saat 17.00’ye kadar 030 1234567 numarasını geri arayın.',
-    todo: 'Dr. Weber muayenehanesini 030 1234567’den geri ara',
+    todo: 'Dr. Weber muayenehanesini 030 1234567 numarasından geri arayın',
     todoWhen: 'Bugün, 17.00’ye kadar',
     outcome: 'achieved',
   },

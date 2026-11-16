@@ -164,7 +164,7 @@ export async function summarizeAnsweredCall(
 export function fallbackSummary(language: Language): string {
   switch (language) {
     case 'de':
-      return 'Der Anruf ist beendet. Ein KI-Bericht ist gerade nicht verfügbar — das vollständige Gesprächsprotokoll steht unten.';
+      return 'Der Anruf ist beendet. Ein KI-Bericht ist gerade nicht verfügbar – die vollständige Mitschrift steht unten.';
     case 'tr':
       return 'Arama tamamlandı. Yapay zekâ özeti şu anda kullanılamıyor — görüşmenin tam dökümü aşağıdadır.';
     case 'en':
@@ -175,7 +175,7 @@ export function fallbackSummary(language: Language): string {
 export function answeredFallbackSummary(language: Language): string {
   switch (language) {
     case 'de':
-      return 'Ein Anruf wurde für Sie angenommen. Eine KI-Zusammenfassung ist gerade nicht verfügbar — das vollständige Gespräch steht unten.';
+      return 'Ein Anruf wurde für Sie angenommen. Eine KI-Zusammenfassung ist gerade nicht verfügbar – die vollständige Mitschrift steht unten.';
     case 'tr':
       return 'Sizin adınıza bir arama yanıtlandı. Yapay zekâ özeti şu anda kullanılamıyor — görüşmenin tamamı aşağıdadır.';
     case 'en':
