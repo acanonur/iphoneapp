@@ -273,6 +273,32 @@ struct APIClient {
         try await send(path: "/api/profile", method: "PUT", body: profile, over: Self.profileTransport)
     }
 
+    /// Who the owner is and which languages they use — and nothing else. The
+    /// answering switch is left out on purpose: the server keeps what it has,
+    /// so a save made behind the scenes can never switch call answering, or
+    /// take it back from another phone.
+    struct OwnerDetails: Encodable {
+        var name: String?
+        var language: Language
+        var callLanguage: Language
+
+        private enum CodingKeys: String, CodingKey {
+            case name, language, callLanguage
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var values = encoder.container(keyedBy: CodingKeys.self)
+            // Written even when empty: "no name" has to replace an old name.
+            try values.encode(name, forKey: .name)
+            try values.encode(language, forKey: .language)
+            try values.encode(callLanguage, forKey: .callLanguage)
+        }
+    }
+
+    func saveOwner(_ details: OwnerDetails) async throws -> ServerProfile {
+        try await send(path: "/api/profile", method: "PUT", body: details, over: Self.profileTransport)
+    }
+
     // MARK: - Tasks
 
     func createTask(_ request: NewTaskRequest) async throws -> SecretaryTask {

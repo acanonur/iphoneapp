@@ -593,7 +593,12 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
           .code(400)
           .send({ error: 'A phone call needs a phoneNumber', code: 'number_required' });
       }
-      const refusal = refusalFor(number, config.allowedCountryPrefixes, config.blockedPrefixes);
+      const refusal = refusalFor(
+        number,
+        config.allowedCountryPrefixes,
+        config.blockedPrefixes,
+        config.alwaysBlockedPrefixes,
+      );
       if (refusal === 'country') {
         return reply.code(400).send({
           error: `Destination not allowed. Allowed country prefixes: ${config.allowedCountryPrefixes.join(', ')}`,

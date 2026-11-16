@@ -223,6 +223,28 @@ describe('POST /api/calls', () => {
     );
   });
 
+  it('never lets an allowed country undo what the owner refuses', async () => {
+    // A whole country refused although it is on the allowed list; a range
+    // typed without its "+"; one typed the way it is dialled from abroad.
+    const built = makeApp({ BLOCKED_NUMBER_PREFIXES: '+90, 4915, 0044 20' });
+    for (const phoneNumber of ['+905321234567', '+4915112345678', '+442071234567']) {
+      const res = await startCall(built, { ...validBody, phoneNumber });
+      expect(res.statusCode, phoneNumber).toBe(400);
+      expect(res.json().code, phoneNumber).toBe('number_not_allowed');
+    }
+    // Everything else in those countries still goes through.
+    for (const phoneNumber of ['+493012345678', '+4916012345678', '+441612345678']) {
+      expect((await startCall(built, { ...validBody, phoneNumber })).statusCode, phoneNumber).toBe(201);
+    }
+    await built.fastify.close();
+
+    // Naming a refused range on the allowed list does not open it either.
+    const both = makeApp({ ALLOWED_COUNTRY_PREFIXES: '+49,+49180', BLOCKED_NUMBER_PREFIXES: '+49180' });
+    expect((await startCall(both, { ...validBody, phoneNumber: '+4918051234567' })).json().code).toBe(
+      'number_not_allowed',
+    );
+  });
+
   it('rejects destinations outside the allowlist', async () => {
     const built = makeApp();
     const res = await startCall(built, { ...validBody, phoneNumber: '+33123456789' });
@@ -438,20 +460,36 @@ describe('after a restart', () => {
           { role: 'assistant', text: 'Guten Tag! Ich möchte einen Termin vereinbaren.' },
         ],
       });
+      // Being placed when the server stopped — a moment ago, not long ago:
+      // the request that was placing it is gone either way.
       const neverPlaced = newTask({
         deviceId: DEVICE['x-device-id'],
         kind: 'call',
         goal: 'Ask about opening hours',
         phoneNumber: '+493012345678',
         status: 'queued',
-        createdAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+        createdAt: new Date(Date.now() - 5_000).toISOString(),
+      });
+      // The same, but the owner had already hung up.
+      const hungUp = newTask({
+        deviceId: DEVICE['x-device-id'],
+        kind: 'call',
+        goal: 'Cancel the appointment',
+        phoneNumber: '+493012345678',
+        status: 'queued',
+        errorCode: 'cancelled',
+        error: 'Ended by the user',
+        createdAt: new Date(Date.now() - 5_000).toISOString(),
       });
       before.create(unreported);
       before.create(neverPlaced);
+      before.create(hungUp);
       before.close();
 
       const after = makeApp({ DB_PATH: join(dir, 'b.db') });
       expect(after.store.get(neverPlaced.id)).toMatchObject({ status: 'failed', errorCode: 'technical' });
+      // Nothing is left looking like a call that is still going on.
+      expect(after.store.get(hungUp.id)).toMatchObject({ status: 'failed', errorCode: 'cancelled' });
       // No report writer is set up here: the plain fallback is still a report.
       const reported = await until(() => {
         const task = after.store.get(unreported.id);

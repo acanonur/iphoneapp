@@ -148,7 +148,7 @@
 "Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings." = "Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings.";
 "Connect to this server?" = "Connect to this server?";
 "Could not connect" = "Could not connect";
-"Yaver could not connect to that server, so nothing has changed: your tasks still go to the server you used before. Settings shows what went wrong." = "Yaver could not connect to that server, so nothing has changed: your tasks still go to the server you used before. Settings shows what went wrong.";
+"Nothing has changed: your tasks still go to the server you used before." = "Nothing has changed: your tasks still go to the server you used before.";
 "Yaver will send your tasks to %@. Only connect to a server you started yourself." = "Yaver will send your tasks to %@. Only connect to a server you started yourself.";
 "Settings" = "Settings";
 "Brief Yaver" = "Brief Yaver";

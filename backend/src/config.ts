@@ -1,4 +1,4 @@
-import { DEFAULT_BLOCKED_PREFIXES } from './destinations.js';
+import { DEFAULT_BLOCKED_PREFIXES, asPrefix } from './destinations.js';
 import type { Language } from './types.js';
 
 export interface RetellConfig {
@@ -46,6 +46,8 @@ export interface Config {
   allowedCountryPrefixes: string[];
   /** Numbers refused although their country is allowed: premium rate and the like. */
   blockedPrefixes: string[];
+  /** Ranges the owner refuses in addition (BLOCKED_NUMBER_PREFIXES). */
+  alwaysBlockedPrefixes: string[];
   /** Real outbound calls allowed per rolling 24 hours. 0 switches the cap off. */
   maxCallsPerDay: number;
   /** Hard time limit for one call. */
@@ -147,16 +149,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .split(',')
       .map((p) => p.trim())
       .filter(Boolean),
-    // The built-in list, plus whatever the owner adds. Nothing set here can
-    // take a built-in entry away: a list copied half would otherwise unblock
-    // the emergency numbers without anyone noticing.
-    blockedPrefixes: [
-      ...DEFAULT_BLOCKED_PREFIXES,
-      ...(env.BLOCKED_NUMBER_PREFIXES ?? '')
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean),
-    ],
+    // The built-in list stays whatever is set: a list copied half would
+    // otherwise unblock the emergency numbers without anyone noticing.
+    blockedPrefixes: DEFAULT_BLOCKED_PREFIXES,
+    // What the owner refuses on top of it — always, whatever else is allowed.
+    alwaysBlockedPrefixes: (env.BLOCKED_NUMBER_PREFIXES ?? '')
+      .split(',')
+      .map(asPrefix)
+      .filter((prefix): prefix is string => prefix !== null),
     maxCallsPerDay: Math.floor(positiveNumber(env.MAX_CALLS_PER_DAY, 20)),
     maxCallMinutes: Math.min(120, Math.max(1, positiveNumber(env.MAX_CALL_MINUTES, 10))),
     retell,

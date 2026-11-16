@@ -91,6 +91,7 @@ export class CallEngine {
   private readonly lastPolled = new Map<string, number>();
   private readonly polling = new Set<string>();
   private readonly warnedShapes = new Set<string>();
+  private readonly unwatched = new Set<string>();
   private readonly analysisTimers = new Set<NodeJS.Timeout>();
   private readonly analysisDelaysMs: number[];
   private lookFailed = false;
@@ -278,10 +279,18 @@ export class CallEngine {
       return { ok: true, ignored: true };
     }
 
-    const task = this.taskFor(call);
+    // An event that reports the end of a call leaves nothing to end.
+    const over = event === 'call_ended' || event === 'call_analyzed';
+    const task = this.taskFor(call, { over });
     if (!task) {
       this.warnOnce(`unknown:${call.call_id}`, `Webhook for a call this server does not know (${call.call_id})`);
       return { ok: true, ignored: true };
+    }
+
+    // The owner hung up and the task was closed without the phone service
+    // confirming the end — and here the call is, still going. Ask once more.
+    if (!over && task.errorCode === 'cancelled' && TERMINAL_STATUSES.includes(task.status)) {
+      this.endUnwatched(task, call);
     }
 
     switch (event) {
@@ -308,18 +317,29 @@ export class CallEngine {
    * one. `announce` is false for a call that is only heard of once it is over:
    * nobody is "answering" it now.
    */
-  private taskFor(call: RetellCall, announce = true): SecretaryTask | undefined {
+  private taskFor(
+    call: RetellCall,
+    { announce = true, over = false }: { announce?: boolean; over?: boolean } = {},
+  ): SecretaryTask | undefined {
     const callId = call.call_id;
     if (!callId) return undefined;
 
     const claimed = call.metadata?.task_id ? this.store.get(call.metadata.task_id) : undefined;
     if (claimed) {
       if (claimed.providerCallId && claimed.providerCallId !== callId) {
-        // The event names one of our tasks but a different call: not ours to apply.
+        // The event names one of our tasks but a different call: not this
+        // task's to apply. One request places one call — so this is a second
+        // one that went through after all, and nobody is watching it.
         this.log.warn(`Webhook call ${callId} does not match task ${claimed.id}; ignored`);
+        if (!over) this.endUnwatched(claimed, call);
         return undefined;
       }
-      if (!claimed.providerCallId) this.store.update(claimed.id, { providerCallId: callId });
+      if (!claimed.providerCallId) {
+        this.store.update(claimed.id, { providerCallId: callId });
+        // A call that only surfaces after its task was closed: hung up while
+        // it was being placed, or given up on. The owner believes it is over.
+        if (TERMINAL_STATUSES.includes(claimed.status) && !over) this.endUnwatched(claimed, call);
+      }
       return claimed;
     }
 
@@ -351,6 +371,24 @@ export class CallEngine {
     this.answeredAt.set(task.id, Date.now());
     if (announce) this.onProgress?.(task);
     return task;
+  }
+
+  /**
+   * Ends a call that is running although its task is over, or follows another
+   * call: an AI must not talk on, at the owner's cost, with nobody reading.
+   */
+  private endUnwatched(task: SecretaryTask, call: RetellCall): void {
+    const callId = call.call_id;
+    const retell = this.retell;
+    if (!callId || !retell || this.unwatched.has(callId)) return;
+    if (this.unwatched.size > 500) this.unwatched.clear();
+    this.unwatched.add(callId);
+    this.scheduleCleanup(callId);
+    // Already over: there is nothing left to end.
+    if (ENDED_STATUSES.includes(call.call_status ?? '') || call.end_timestamp) return;
+    retell.stopCall({ ...task, providerCallId: callId }).catch((error: unknown) => {
+      this.log.warn(`Could not end the unwatched call ${callId}: ${describeError(error)}`);
+    });
   }
 
   private onCallStarted(task: SecretaryTask): void {
@@ -622,7 +660,7 @@ export class CallEngine {
           const call = { ...(await retell.getCall(callId)), call_id: callId };
           if (this.stopped) break;
           if (this.store.findByProviderCallId(callId)) continue;
-          const task = this.taskFor({ ...call, direction: 'inbound' }, !over);
+          const task = this.taskFor({ ...call, direction: 'inbound' }, { announce: !over });
           if (!task) continue;
           fresh += 1;
           this.applySnapshot(task, call);
@@ -743,7 +781,6 @@ export class CallEngine {
    * Real calls that were under way are picked up again by the poller.
    */
   recoverAfterRestart(): void {
-    const aMinuteAgo = Date.now() - 60_000;
     for (const task of this.store.listActiveCalls()) {
       if (task.simulated) {
         this.applyUpdate(task.id, {
@@ -751,12 +788,21 @@ export class CallEngine {
           errorCode: 'technical',
           error: 'The server restarted during the call',
         });
-      } else if (!task.providerCallId && Date.parse(task.createdAt) < aMinuteAgo) {
-        this.applyUpdate(task.id, {
-          status: 'failed',
-          errorCode: 'technical',
-          error: 'The server restarted while the call was being placed',
-        });
+      } else if (!task.providerCallId) {
+        // Whatever was placing this call ended with the old process, however
+        // recently: at start-up no request of this one can be under way, and
+        // nothing will ever report on a call without an id. (Should the call
+        // exist after all and an event surface for it, it is ended — see
+        // `taskFor`.)
+        if (task.errorCode === 'cancelled') {
+          this.closeCancelled(task.id);
+        } else {
+          this.applyUpdate(task.id, {
+            status: 'failed',
+            errorCode: 'technical',
+            error: 'The server restarted while the call was being placed',
+          });
+        }
       }
     }
     for (const task of this.store.listUnreportedCalls()) {

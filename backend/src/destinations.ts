@@ -52,24 +52,39 @@ export type Refusal = 'country' | 'special';
 /**
  * Whether a number (E.164, "+4930…") may be dialled.
  * `country`: its country is not on the owner's list. `special`: it is a
- * premium-rate, service or emergency number, or one of the costly "+1" places.
+ * premium-rate, service or emergency number, one of the costly "+1" places,
+ * or in a range the owner refuses themselves (`alwaysBlocked`).
  *
- * One rule opens a refused range again: an entry on the owner's own list that
- * names it — "+1876" for Jamaica, "+49900" for German premium rate. Nothing
- * is opened by accident: "+49" does not open "+49900".
+ * One rule opens a built-in refusal again: an entry on the owner's own list
+ * that names the range — "+1876" for Jamaica, "+49900" for German premium
+ * rate. Nothing is opened by accident: "+49" does not open "+49900". What
+ * the owner chose to refuse is never opened by anything.
  */
 export function refusalFor(
   number: string,
   allowedPrefixes: string[],
   blockedPrefixes: string[],
+  alwaysBlocked: string[] = [],
 ): Refusal | null {
   if (!allowedPrefixes.some((prefix) => number.startsWith(prefix))) return 'country';
+  if (alwaysBlocked.some((prefix) => number.startsWith(prefix))) return 'special';
+  // The longest built-in range the number falls into decides.
+  const builtIn = blockedPrefixes
+    .filter((prefix) => number.startsWith(prefix))
+    .sort((left, right) => right.length - left.length)[0];
   const blocked =
-    blockedPrefixes.find((prefix) => number.startsWith(prefix)) ??
+    builtIn ??
     (number.startsWith('+1') && NANP_ELSEWHERE.has(number.slice(2, 5)) ? number.slice(0, 5) : null);
-  if (blocked === null || blocked === undefined) return null;
+  if (!blocked) return null;
   const deliberate = allowedPrefixes.some(
     (prefix) => prefix.length >= blocked.length && number.startsWith(prefix),
   );
   return deliberate ? null : 'special';
+}
+
+/** "+49180" from what an owner may type: "49180", "0049180", " +49 180 ". */
+export function asPrefix(entry: string): string | null {
+  const digits = entry.replace(/[^\d+]/g, '').replace(/^00/, '+');
+  if (!/\d/.test(digits)) return null;
+  return digits.startsWith('+') ? digits : `+${digits}`;
 }

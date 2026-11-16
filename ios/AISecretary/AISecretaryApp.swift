@@ -58,8 +58,8 @@ struct RootView: View {
     /// A pairing link that arrived, waiting for the user to say yes.
     @State private var pairing: ServerStore.Pairing?
     /// A pairing link did not work, and the screen in front does not show the
-    /// server's state.
-    @State private var pairingFailed = false
+    /// server's state: what went wrong, to be said in a message.
+    @State private var pairingFailure: String?
 
     init(stage: Stage?) {
         self.stage = stage
@@ -109,6 +109,10 @@ struct RootView: View {
                 connected: model.server.isConnected
             )
         ) {
+            // A name changes this with every key that is typed: wait until
+            // it rests, rather than send the server every half-written one.
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled else { return }
             await model.syncProfile(
                 name: userName,
                 language: reportLanguage.wrappedValue,
@@ -138,8 +142,9 @@ struct RootView: View {
                     } else if hasOnboarded, !paired, route != .settings {
                         // Not worth taking the user away from something they
                         // are writing — it would be lost. But they must know
-                        // that the app is still with the old server.
-                        pairingFailed = true
+                        // that the app is still with the old server, and why:
+                        // the reason is gone by the time Settings is opened.
+                        pairingFailure = Self.reason(for: model.server.status)
                     }
                 }
             }
@@ -147,12 +152,32 @@ struct RootView: View {
         } message: { request in
             Text(Lf("Yaver will send your tasks to %@. Only connect to a server you started yourself.", request.host))
         }
-        .alert(L("Could not connect"), isPresented: $pairingFailed) {
+        .alert(
+            L("Could not connect"),
+            isPresented: Binding(
+                get: { pairingFailure != nil }, set: { if !$0 { pairingFailure = nil } }
+            )
+        ) {
             Button(L("OK"), role: .cancel) {}
         } message: {
             Text(
-                L("Yaver could not connect to that server, so nothing has changed: your tasks still go to the server you used before. Settings shows what went wrong.")
+                [
+                    pairingFailure ?? "",
+                    L("Nothing has changed: your tasks still go to the server you used before."),
+                ]
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
             )
+        }
+    }
+
+    /// Why a server could not be connected to, in one sentence.
+    private static func reason(for status: ServerStore.Status) -> String {
+        switch status {
+        case let .unreachable(problem): return problem.title
+        case .needsKey: return L("This server needs an access key.")
+        case .wrongKey: return L("The server did not accept the access key.")
+        case .unknown, .checking, .connected: return ""
         }
     }
 

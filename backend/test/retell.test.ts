@@ -471,6 +471,44 @@ describe('webhooks from Retell', () => {
     expect(built.store.get(id)?.status).toBe('dialing');
   });
 
+  it('ends a call that turns up although its task was given up on', async () => {
+    // Retell did not confirm the call, so the owner was told it failed —
+    // and would try again. But the call was placed after all.
+    const { app: built, requests } = retellApp({ RETELL_SEND_OVERRIDES: 'false' }, (request) =>
+      request.url.endsWith('/v2/create-phone-call')
+        ? { status: 402, body: { message: 'Insufficient balance' } }
+        : undefined,
+    );
+    const failed = (await placeCall(built)).json();
+    expect(failed).toMatchObject({ status: 'failed', providerCallId: null });
+
+    await deliver(built, {
+      event: 'call_started',
+      call: { call_id: 'call_ghost', call_status: 'ongoing', metadata: { task_id: failed.id } },
+    });
+    // Nobody is watching it: it is ended, once, and the task stays as the owner saw it.
+    await deliver(built, {
+      event: 'transcript_updated',
+      call: { call_id: 'call_ghost', call_status: 'ongoing', metadata: { task_id: failed.id } },
+    });
+    expect(requests.filter((r) => r.url.includes('/v2/stop-call/call_ghost'))).toHaveLength(1);
+    expect(built.store.get(failed.id)).toMatchObject({ status: 'failed', providerCallId: 'call_ghost' });
+  });
+
+  it('ends a second call that turns up under a task that follows another', async () => {
+    const { app: built, requests } = retellApp();
+    const { id } = (await placeCall(built)).json();
+    const res = await deliver(built, {
+      event: 'call_started',
+      call: { call_id: 'call_twin', call_status: 'ongoing', metadata: { task_id: id } },
+    });
+    expect(res.json()).toEqual({ ok: true, ignored: true });
+    expect(requests.some((r) => r.url.includes('/v2/stop-call/call_twin'))).toBe(true);
+    // The call the task does follow is left alone.
+    expect(requests.some((r) => r.url.includes('/v2/stop-call/call_1'))).toBe(false);
+    expect(built.store.get(id)).toMatchObject({ status: 'dialing', providerCallId: 'call_1' });
+  });
+
   it('does not let a repeated or late event reopen a finished call', async () => {
     const { app: built } = retellApp();
     const { id } = (await placeCall(built)).json();

@@ -227,7 +227,10 @@ final class SecretaryViewModel {
     /// is written in the language the owner reads.
     func syncProfile(name: String, language: Language, callLanguage: Language) async {
         wantedProfile = WantedProfile(name: name, language: language, callLanguage: callLanguage)
-        await pushProfile()
+        // In a task of its own: whoever asks may be cancelled — typing a name
+        // cancels the asking task with every key — and a save that is under
+        // way must still finish, or the server is left with half a name.
+        await Task { await pushProfile() }.value
     }
 
     /// Sends the owner's name and languages if the server does not have them.
@@ -238,23 +241,25 @@ final class SecretaryViewModel {
         guard !isPushingProfile else { return }
         isPushingProfile = true
         defer { isPushingProfile = false }
-        // Twice at most: for what is wanted now, and once more if that
-        // changed while the first save was under way.
-        for _ in 0 ..< 2 {
-            guard let wanted = wantedProfile,
-                  !isStaged, server.isConnected, server.health?.isCurrent == true
-            else { return }
-            var profile = server.session?.profile ?? ServerProfile()
+        // One save at a time; again for as long as something else was asked
+        // for while the last one was under way.
+        while let wanted = wantedProfile,
+              !isStaged, server.isConnected, server.health?.isCurrent == true {
+            let known = server.session?.profile ?? ServerProfile()
             let trimmed = wanted.name.trimmingCharacters(in: .whitespacesAndNewlines)
             let name: String? = trimmed.isEmpty ? nil : trimmed
-            guard profile.name != name || profile.language != wanted.language
-                || profile.callLanguage != wanted.callLanguage
-            else { return }
-            profile.name = name
-            profile.language = wanted.language
-            profile.callLanguage = wanted.callLanguage
+            guard known.name != name || known.language != wanted.language
+                || known.callLanguage != wanted.callLanguage
+            else {
+                if wantedProfile == wanted { wantedProfile = nil }
+                return
+            }
             do {
-                let saved = try await api.saveProfile(profile)
+                let saved = try await api.saveOwner(
+                    APIClient.OwnerDetails(
+                        name: name, language: wanted.language, callLanguage: wanted.callLanguage
+                    )
+                )
                 server.setSession(profile: saved)
             } catch let APIError.server(status, _, _) where (400 ..< 500).contains(status) {
                 // The server will not take these values, however often it is

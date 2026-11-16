@@ -148,7 +148,7 @@
 "Notifications are switched off for Yaver. The follow-up is on your list; to be reminded, allow notifications in the iPhone’s Settings." = "Yaver için bildirimler kapalı. Takip listenizde duruyor; hatırlatılması için iPhone’un Ayarlar bölümünden bildirimlere izin verin.";
 "Connect to this server?" = "Bu sunucuya bağlanılsın mı?";
 "Could not connect" = "Bağlanılamadı";
-"Yaver could not connect to that server, so nothing has changed: your tasks still go to the server you used before. Settings shows what went wrong." = "Yaver bu sunucuya bağlanamadı. Hiçbir şey değişmedi: görevleriniz önceki sunucuya gitmeye devam ediyor. Neyin ters gittiğini Ayarlar’da görebilirsiniz.";
+"Nothing has changed: your tasks still go to the server you used before." = "Hiçbir şey değişmedi: görevleriniz önceki sunucuya gitmeye devam ediyor.";
 "Yaver will send your tasks to %@. Only connect to a server you started yourself." = "Yaver görevlerinizi %@ adresine gönderecek. Yalnızca kendi başlattığınız bir sunucuya bağlanın.";
 "Settings" = "Ayarlar";
 "Brief Yaver" = "Yaver’e görev ver";
