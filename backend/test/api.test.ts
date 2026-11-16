@@ -186,13 +186,41 @@ describe('POST /api/calls', () => {
     }
   });
 
-  it('lets the owner open up a "+1" place on purpose, or change the refused list', async () => {
+  it('opens a refused range only when the owner names it', async () => {
     const jamaica = makeApp({ ALLOWED_COUNTRY_PREFIXES: '+49,+1876' });
     expect((await startCall(jamaica, { ...validBody, phoneNumber: '+18765551234' })).statusCode).toBe(201);
+    // Naming Jamaica opens Jamaica, not the Bahamas — which are not even allowed here.
+    expect((await startCall(jamaica, { ...validBody, phoneNumber: '+12425551234' })).json().code).toBe(
+      'destination_not_allowed',
+    );
     await jamaica.fastify.close();
 
-    const nothingRefused = makeApp({ BLOCKED_NUMBER_PREFIXES: '' });
-    expect((await startCall(nothingRefused, { ...validBody, phoneNumber: '+4990012345678' })).statusCode).toBe(201);
+    const premium = makeApp({ ALLOWED_COUNTRY_PREFIXES: '+49,+49900' });
+    expect((await startCall(premium, { ...validBody, phoneNumber: '+4990012345678' })).statusCode).toBe(201);
+    // The emergency number stays refused.
+    expect((await startCall(premium, { ...validBody, phoneNumber: '+4911200000' })).json().code).toBe(
+      'number_not_allowed',
+    );
+  });
+
+  it('lets the owner refuse more, and never less by accident', async () => {
+    const more = makeApp({ BLOCKED_NUMBER_PREFIXES: '+49180, +44843' });
+    expect((await startCall(more, { ...validBody, phoneNumber: '+4918051234567' })).json().code).toBe(
+      'number_not_allowed',
+    );
+    // The built-in list still holds: a list of one's own adds to it.
+    for (const phoneNumber of ['+4990012345678', '+4911200000', '+19005551234']) {
+      expect((await startCall(more, { ...validBody, phoneNumber })).json().code, phoneNumber).toBe(
+        'number_not_allowed',
+      );
+    }
+    await more.fastify.close();
+
+    // An empty setting changes nothing.
+    const empty = makeApp({ BLOCKED_NUMBER_PREFIXES: '' });
+    expect((await startCall(empty, { ...validBody, phoneNumber: '+4990012345678' })).json().code).toBe(
+      'number_not_allowed',
+    );
   });
 
   it('rejects destinations outside the allowlist', async () => {

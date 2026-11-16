@@ -61,6 +61,12 @@ cd iphoneapp
 git checkout claude/ai-secretary-design-uyvh5i
 ```
 
+**Without typing.** Two files in the project folder can be double-clicked in the Finder:
+**`Start Yaver.command`** starts the server (and fetches what it needs the first time);
+**`Update Yaver.command`** downloads the newest version, prepares the server and the Xcode
+project, and opens Xcode. (If macOS refuses to open one: right-click it and choose
+*Open*.) The steps below do the same by hand.
+
 **1. Start the server** (Terminal, in the project folder):
 
 ```bash
@@ -129,7 +135,7 @@ deliberately. The short version:
 ```bash
 cd backend
 npm run retell:setup        # asks for your Retell API key, creates the two voice agents
-npm start
+npm start                   # stop a server that is still running first (Ctrl-C in its window)
 ```
 
 **[docs/real-calls.md](docs/real-calls.md)** walks through it step by step: the account,
@@ -141,7 +147,7 @@ the first test call, and what each safety switch does.
 ```bash
 cd backend
 npm run claude:setup        # asks for your Anthropic API key and keeps it in backend/.env
-npm start
+npm start                   # stop a server that is still running first (Ctrl-C in its window)
 ```
 
 With a key, the report on each call — what happened, what was agreed, what you still have
@@ -230,6 +236,8 @@ server asks for a key.
 ## Repository layout
 
 ```
+Start Yaver.command   double-click: starts the server
+Update Yaver.command  double-click: newest version, server packages, Xcode project
 backend/              the server: src/, test/, scripts/ (retell-setup, claude-setup)
 ios/                  the iPhone app
   AISecretary/        Swift sources (the target keeps the project's first name)
@@ -247,7 +255,7 @@ docs/                 real-calls.md, ai-secretary-design.md, brand/
 ## Working on it
 
 ```bash
-cd backend && npm test && npm run typecheck      # the server
+(cd backend && npm test && npm run typecheck)    # the server
 python3 ios/scripts/check-strings.py             # every string exists in de and tr
 ```
 
@@ -271,7 +279,8 @@ Archivo, ink on a light ground, one red, no rounded corners, everything flush le
 
 ### Updating a copy you already have
 
-In the project folder (see [Where the commands go](#try-it-in-ten-minutes--no-accounts-no-keys)):
+Double-click **`Update Yaver.command`** in the project folder — or by hand, in the project
+folder (see [Where the commands go](#try-it-in-ten-minutes--no-accounts-no-keys)):
 
 ```bash
 git pull
@@ -279,7 +288,8 @@ cd backend && npm install
 cd ../ios && ./generate.sh
 ```
 
-Then start the server again (`cd ../backend`, then `npm start`) and press ▶ in Xcode.
+Then start the server again — if it is still running in its window, stop it there first
+with Ctrl-C — (`cd ../backend`, then `npm start`), and press ▶ in Xcode.
 
 If you once changed `AppConfig.swift` to your Mac's address, leave it — it is only the
 first address the app tries now.

@@ -53,6 +53,10 @@ export type Refusal = 'country' | 'special';
  * Whether a number (E.164, "+4930…") may be dialled.
  * `country`: its country is not on the owner's list. `special`: it is a
  * premium-rate, service or emergency number, or one of the costly "+1" places.
+ *
+ * One rule opens a refused range again: an entry on the owner's own list that
+ * names it — "+1876" for Jamaica, "+49900" for German premium rate. Nothing
+ * is opened by accident: "+49" does not open "+49900".
  */
 export function refusalFor(
   number: string,
@@ -60,14 +64,12 @@ export function refusalFor(
   blockedPrefixes: string[],
 ): Refusal | null {
   if (!allowedPrefixes.some((prefix) => number.startsWith(prefix))) return 'country';
-  if (blockedPrefixes.some((prefix) => number.startsWith(prefix))) return 'special';
-  // "+1" was allowed as "the US and Canada". A longer, deliberate entry such
-  // as "+1876" opens that one place up again.
-  if (number.startsWith('+1') && NANP_ELSEWHERE.has(number.slice(2, 5))) {
-    const deliberate = allowedPrefixes.some(
-      (prefix) => prefix.length > 2 && number.startsWith(prefix),
-    );
-    if (!deliberate) return 'special';
-  }
-  return null;
+  const blocked =
+    blockedPrefixes.find((prefix) => number.startsWith(prefix)) ??
+    (number.startsWith('+1') && NANP_ELSEWHERE.has(number.slice(2, 5)) ? number.slice(0, 5) : null);
+  if (blocked === null || blocked === undefined) return null;
+  const deliberate = allowedPrefixes.some(
+    (prefix) => prefix.length >= blocked.length && number.startsWith(prefix),
+  );
+  return deliberate ? null : 'special';
 }

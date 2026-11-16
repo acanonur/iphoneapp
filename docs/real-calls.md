@@ -90,6 +90,9 @@ emergency numbers.
 
 ## 3. Start the server and place a test call
 
+If the server is still running in its own window, stop it there first (click into that
+window and press Ctrl-C) — it has to start again to pick up the new settings. Then:
+
 ```bash
 npm start
 ```
@@ -141,8 +144,16 @@ things to know:
   log. Scan the QR code from the log, or type the address and the key into the app under
   *Settings → Server*.
 
-On a Linux server of your own: `docker run --env-file backend/.env -v yaver-data:/data …`
-(the `Dockerfile` has the full line).
+On a Linux server of your own, from the project folder (one level above `backend`):
+
+```bash
+docker build -t yaver backend
+docker run -p 8787:8787 -v yaver-data:/data --env-file backend/.env \
+  -e DB_PATH=/data/calls.db -e HOST=0.0.0.0 -e PORT=8787 yaver
+```
+
+(The three `-e` settings at the end make sure the data lands on the volume, whatever your
+`.env` says.)
 
 ## 4. Have Yaver answer your calls
 

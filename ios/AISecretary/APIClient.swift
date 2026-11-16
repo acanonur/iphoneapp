@@ -135,7 +135,7 @@ enum APIError: LocalizedError {
         case "not_simulated":
             return L("This is only available while calls are simulated.")
         case "number_not_allowed":
-            return L("Your server does not call premium-rate, special or emergency numbers.")
+            return L("Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada.")
         case "invalid_request":
             return L("The server could not use this request. Check what you entered and try again.")
         case "too_large":
@@ -210,14 +210,21 @@ struct APIClient {
     /// server answers once the phone service has taken the call, and that can
     /// take most of a minute on a bad day. Giving up sooner would say "no
     /// answer" about a call that is being placed — and invite a second one.
-    private static let callTransport: URLSession = {
+    private static let callTransport = makeSession(timeout: 95)
+
+    /// Saving the profile can take a while as well: while calls are answered,
+    /// the server passes a change on to the phone service before it agrees.
+    /// It gives each of its (at most four) requests eight seconds.
+    private static let profileTransport = makeSession(timeout: 45)
+
+    private static func makeSession(timeout seconds: TimeInterval) -> URLSession {
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 95
-        configuration.timeoutIntervalForResource = 100
+        configuration.timeoutIntervalForRequest = seconds
+        configuration.timeoutIntervalForResource = seconds + 5
         configuration.waitsForConnectivity = false
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         return URLSession(configuration: configuration)
-    }()
+    }
 
     private struct NoBody: Encodable {}
 
@@ -263,7 +270,7 @@ struct APIClient {
     }
 
     func saveProfile(_ profile: ServerProfile) async throws -> ServerProfile {
-        try await send(path: "/api/profile", method: "PUT", body: profile)
+        try await send(path: "/api/profile", method: "PUT", body: profile, over: Self.profileTransport)
     }
 
     // MARK: - Tasks

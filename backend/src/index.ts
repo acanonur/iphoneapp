@@ -107,14 +107,14 @@ async function main(config: Config): Promise<void> {
     cleanups.push(() => announcement.stop());
   }
 
-  try {
-    await app.refreshCallAnswering();
-  } catch (error) {
+  // Not waited for: the phone service may be slow or away, and the window
+  // must show how to connect either way. What it finds is said further down.
+  app.refreshCallAnswering().catch((error: unknown) => {
     announce(
       `Call answering could not be checked at the phone service (${describeError(error)}). ` +
         'Calls are still answered as before; start the server again later to bring it up to date.',
     );
-  }
+  });
 
   const local = lanUrls(config.port);
   const best = publicUrl ?? local[0] ?? `http://localhost:${config.port}`;
@@ -132,6 +132,9 @@ async function main(config: Config): Promise<void> {
     config.anthropicApiKey
       ? `  Reports: written by Claude (${config.anthropicModel})`
       : '  Reports: basic (no Anthropic key set)',
+    ...(config.provider === 'retell' && app.store.inboundOwner()?.answerCalls
+      ? ['  Answering: on — also while this computer is off; missed notes are fetched now']
+      : []),
     '',
     ...(publicUrl ? [`  From anywhere:   ${publicUrl}`] : []),
     ...local.map((url, index) => `  ${index === 0 ? 'On this Wi-Fi:  ' : '                '} ${url}`),

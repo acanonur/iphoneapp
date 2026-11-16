@@ -124,8 +124,8 @@
 "e.g. %@" = "e.g. %@";
 "Who to call" = "Who to call";
 "The phone service did not accept this. Try again in a moment." = "The phone service did not accept this. Try again in a moment.";
-"Yaver also answers while your computer is off. The messages appear here as soon as the server is running again." = "Yaver also answers while your computer is off. The messages appear here as soon as the server is running again.";
-"Your server does not call premium-rate, special or emergency numbers." = "Your server does not call premium-rate, special or emergency numbers.";
+"Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again." = "Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again.";
+"Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada." = "Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada.";
 "Ending the call…" = "Ending the call…";
 "Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye." = "Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye.";
 "No text could be read from the photo. Try again, flat and in good light." = "No text could be read from the photo. Try again, flat and in good light.";

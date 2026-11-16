@@ -162,6 +162,16 @@ function progressLine(task: SecretaryTask): string | null {
   }
   const number = task.phoneNumber ?? 'an unknown number';
   if (task.direction === 'inbound') {
+    // A call this server only heard of afterwards: say when it was.
+    const rang = Date.parse(task.createdAt);
+    const earlier = Number.isFinite(rang) && Date.now() - rang > 15 * 60_000;
+    if (earlier) {
+      if (task.status !== 'completed' && task.status !== 'failed') return null;
+      const when = new Date(rang);
+      const clock = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
+      const day = when.toDateString() === new Date().toDateString() ? 'today' : `on ${when.toDateString().slice(0, 10)}`;
+      return `Fetched a call from ${number} that was answered ${day} at ${clock} — a note is on its way to the app`;
+    }
     switch (task.status) {
       case 'in_progress':
         return `Answering a call from ${number}${note}`;
@@ -643,10 +653,23 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
       // The provider has the call and is dialling. An event may already have
       // moved the task on, so only step forward from `queued`.
       const fresh = store.get(task.id);
+      const hungUp = fresh?.errorCode === 'cancelled';
       const updated = store.update(task.id, {
         providerCallId,
-        ...(fresh?.status === 'queued' && !provider.simulated ? { status: 'dialing' } : {}),
+        ...(fresh?.status === 'queued' && !provider.simulated && !hungUp ? { status: 'dialing' } : {}),
       });
+      // Hung up while the call was still being placed: there was nothing to
+      // end then. There is now — and it must not ring on unwatched.
+      if (hungUp && updated && CallEngine.isActive(updated)) {
+        try {
+          await provider.stopCall?.(updated);
+        } catch (error) {
+          // The engine asks again while it waits for the call to end.
+          request.log.error({ err: error }, 'provider stopCall failed for a call hung up while it was placed');
+        }
+        engine.finishCancelled(task.id);
+        return reply.code(201).send(store.get(task.id) ?? updated);
+      }
       return reply.code(201).send(updated);
     } catch (error) {
       request.log.error({ err: error }, 'provider startCall failed');

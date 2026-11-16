@@ -423,9 +423,11 @@ final class ServerStore {
         await use(address: pairing.address, key: pairing.key)
     }
 
-    /// Re-reads what the server offers — after the profile changed, say.
+    /// Re-reads what the server offers and what it knows about this phone.
+    /// Both can change behind the app's back: real calls are set up on the
+    /// computer, or another phone takes over call answering.
     func refreshSession() async {
-        guard isConnected, health?.isCurrent == true else { return }
+        guard persists, isConnected, health?.isCurrent == true else { return }
         if let fresh = try? await APIClient(endpoint).session() { session = fresh }
     }
 

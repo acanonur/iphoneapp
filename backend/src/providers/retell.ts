@@ -25,8 +25,16 @@ export const WEBHOOK_EVENTS = [
  * the computer off; once fetched and reported on, the call is deleted there.
  */
 export const ANSWERED_CALLS_KEPT_DAYS = 7;
-/** How many answered calls are looked at in one go, newest first. */
-const ANSWERED_CALLS_PER_LOOK = 50;
+/** How many answered calls are asked for at a time, newest first ... */
+const ANSWERED_CALLS_PER_PAGE = 50;
+/** ... and how many times in a row, when there are more. */
+const ANSWERED_CALL_PAGES = 4;
+/**
+ * Switching answering on takes four requests, with a person watching a
+ * switch in the app. Each gets a short time and no second try: better a
+ * clear "that did not work" than a switch that answers after a minute.
+ */
+const WHILE_SOMEONE_WAITS = { timeout: 8_000, maxRetries: 0 } as const;
 
 export interface RetellProviderOptions {
   /** Where Retell should deliver this call's events, if this server is reachable. */
@@ -187,18 +195,26 @@ export class RetellProvider implements CallProvider {
     }
     if (enabled) {
       if (options.defaults) await this.setInboundDefaults(options.defaults);
-      await this.client.agent.update(agentId, {
-        webhook_url: options.eventsUrl ?? null,
-        webhook_events: [...WEBHOOK_EVENTS],
-        ...(this.cfg.deleteAfterCall
-          ? { data_storage_retention_days: ANSWERED_CALLS_KEPT_DAYS }
-          : {}),
-      });
+      await this.client.agent.update(
+        agentId,
+        {
+          webhook_url: options.eventsUrl ?? null,
+          webhook_events: [...WEBHOOK_EVENTS],
+          ...(this.cfg.deleteAfterCall
+            ? { data_storage_retention_days: ANSWERED_CALLS_KEPT_DAYS }
+            : {}),
+        },
+        WHILE_SOMEONE_WAITS,
+      );
     }
-    await this.client.phoneNumber.update(this.cfg.fromNumber, {
-      inbound_agents: enabled ? [{ agent_id: agentId, weight: 1 }] : null,
-      inbound_webhook_url: null,
-    });
+    await this.client.phoneNumber.update(
+      this.cfg.fromNumber,
+      {
+        inbound_agents: enabled ? [{ agent_id: agentId, weight: 1 }] : null,
+        inbound_webhook_url: null,
+      },
+      WHILE_SOMEONE_WAITS,
+    );
   }
 
   /**
@@ -208,7 +224,7 @@ export class RetellProvider implements CallProvider {
   async setInboundDefaults(defaults: Record<string, string>): Promise<void> {
     const agentId = this.cfg.inboundAgentId;
     if (!agentId) return;
-    const agent = await this.client.agent.retrieve(agentId);
+    const agent = await this.client.agent.retrieve(agentId, undefined, WHILE_SOMEONE_WAITS);
     const engine = agent.response_engine;
     if (engine.type !== 'retell-llm') {
       // Set up by hand with another kind of agent: its wording is its owner's.
@@ -217,12 +233,16 @@ export class RetellProvider implements CallProvider {
       );
       return;
     }
-    await this.client.llm.update(engine.llm_id, {
-      default_dynamic_variables: defaults,
-      // The first sentence says that an AI is answering. It is given to Retell
-      // word for word, not left to a placeholder being filled in.
-      ...(defaults.greeting ? { begin_message: defaults.greeting } : {}),
-    });
+    await this.client.llm.update(
+      engine.llm_id,
+      {
+        default_dynamic_variables: defaults,
+        // The first sentence says that an AI is answering. It is given to
+        // Retell word for word, not left to a placeholder being filled in.
+        ...(defaults.greeting ? { begin_message: defaults.greeting } : {}),
+      },
+      WHILE_SOMEONE_WAITS,
+    );
   }
 
   /**
@@ -234,15 +254,25 @@ export class RetellProvider implements CallProvider {
   async listAnsweredCalls(sinceMs: number): Promise<RetellCall[]> {
     const agentId = this.cfg.inboundAgentId;
     if (!agentId) return [];
-    const page = await this.client.call.list({
-      filter_criteria: {
-        agent: [{ agent_id: agentId }],
-        start_timestamp: { op: 'bt', type: 'range', value: [sinceMs, Date.now() + 60_000] },
-      },
-      sort_order: 'descending',
-      limit: ANSWERED_CALLS_PER_LOOK,
-    });
-    return (page.items ?? []) as RetellCall[];
+    const until = Date.now() + 60_000;
+    const calls: RetellCall[] = [];
+    let next: string | undefined;
+    // A week with the computer off can hold more calls than one answer does.
+    for (let page = 0; page < ANSWERED_CALL_PAGES; page += 1) {
+      const answer = await this.client.call.list({
+        filter_criteria: {
+          agent: [{ agent_id: agentId }],
+          start_timestamp: { op: 'bt', type: 'range', value: [sinceMs, until] },
+        },
+        sort_order: 'descending',
+        limit: ANSWERED_CALLS_PER_PAGE,
+        ...(next ? { pagination_key: next } : {}),
+      });
+      calls.push(...((answer.items ?? []) as RetellCall[]));
+      if (!answer.has_more || !answer.pagination_key) break;
+      next = answer.pagination_key;
+    }
+    return calls;
   }
 
   get canAnswerCalls(): boolean {

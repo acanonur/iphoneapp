@@ -13,6 +13,8 @@ struct Stage {
     let route: Route
     var translatorStage: TranslatorStage?
     var onboardingStep = 0
+    /// Settings opens scrolled down to "Answer my calls".
+    var settingsShowsAnswering = false
 
     static func requested() -> Stage? {
         #if DEBUG
@@ -453,6 +455,10 @@ enum Fixtures {
             return stage
         case "settings":
             return make(.settings, tasks: settled)
+        case "answering":
+            var stage = make(.settings, tasks: settled)
+            stage.settingsShowsAnswering = true
+            return stage
         default:
             return nil
         }

@@ -124,8 +124,8 @@
 "e.g. %@" = "z. B. %@";
 "Who to call" = "Wen soll Yaver anrufen?";
 "The phone service did not accept this. Try again in a moment." = "Der Telefondienst hat das nicht angenommen. Versuchen Sie es gleich noch einmal.";
-"Yaver also answers while your computer is off. The messages appear here as soon as the server is running again." = "Yaver nimmt Anrufe auch an, wenn Ihr Computer aus ist. Die Nachrichten erscheinen hier, sobald der Server wieder läuft.";
-"Your server does not call premium-rate, special or emergency numbers." = "Ihr Server ruft keine Sonder-, Mehrwert- oder Notrufnummern an.";
+"Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again." = "Yaver nimmt Anrufe auch an, wenn Ihr Computer aus ist. Die Nachrichten bleiben bis zu sieben Tage gespeichert und erscheinen hier, sobald der Server wieder läuft.";
+"Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada." = "Ihr Server ruft keine Sonder-, Mehrwert- oder Notrufnummern an und auch keine +1-Nummern außerhalb der USA und Kanadas.";
 "Ending the call…" = "Anruf wird beendet …";
 "Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye." = "Schreiben Sie die Nummer mit der Ländervorwahl statt der ersten 0 – zum Beispiel +49 für Deutschland oder +90 für die Türkei.";
 "No text could be read from the photo. Try again, flat and in good light." = "Auf dem Foto war kein Text zu erkennen. Versuchen Sie es noch einmal – flach hingelegt und bei gutem Licht.";

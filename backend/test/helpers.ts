@@ -41,8 +41,11 @@ export interface RecordedRequest {
  * A stand-in for the network: records every request the Retell client makes
  * and answers from `respond`.
  */
+export type FakeAnswer = { status?: number; body?: unknown } | undefined;
+
 export function fakeFetch(
-  respond: (request: RecordedRequest) => { status?: number; body?: unknown } | undefined,
+  /** May answer later (a promise): for what happens while a request is under way. */
+  respond: (request: RecordedRequest) => FakeAnswer | Promise<FakeAnswer>,
 ): { fetch: typeof fetch; requests: RecordedRequest[] } {
   const requests: RecordedRequest[] = [];
   const fetchImpl = async (...args: Parameters<typeof fetch>): Promise<Response> => {
@@ -56,7 +59,7 @@ export function fakeFetch(
       body: rawBody ? JSON.parse(rawBody) : undefined,
     };
     requests.push(request);
-    const answer = respond(request) ?? {};
+    const answer = (await respond(request)) ?? {};
     const status = answer.status ?? 200;
     return new Response(status === 204 ? null : JSON.stringify(answer.body ?? {}), {
       status,

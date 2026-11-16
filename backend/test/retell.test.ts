@@ -7,7 +7,15 @@ import {
   type RetellCall,
 } from '../src/providers/retell.js';
 import { signRetellPayload } from '../src/retell-signature.js';
-import { DEVICE, fakeFetch, pause, testConfig, until, type RecordedRequest } from './helpers.js';
+import {
+  DEVICE,
+  fakeFetch,
+  pause,
+  testConfig,
+  until,
+  type FakeAnswer,
+  type RecordedRequest,
+} from './helpers.js';
 
 const API_KEY = 'key_retell_test';
 const RETELL_ENV = {
@@ -30,13 +38,12 @@ afterEach(async () => {
 /** A Retell-mode server whose calls to Retell are answered by `respond`. */
 function retellApp(
   env: NodeJS.ProcessEnv = {},
-  respond: (request: RecordedRequest) => { status?: number; body?: unknown } | undefined = () =>
-    undefined,
+  respond: (request: RecordedRequest) => FakeAnswer | Promise<FakeAnswer> = () => undefined,
 ) {
   let created = 0;
   const said: string[] = [];
-  const net = fakeFetch((request) => {
-    const custom = respond(request);
+  const net = fakeFetch(async (request) => {
+    const custom = await respond(request);
     if (custom) return custom;
     if (request.url.endsWith('/v2/create-phone-call')) {
       created += 1;
@@ -245,6 +252,48 @@ describe('placing a call through Retell', () => {
     expect(task).toMatchObject({ status: 'completed', errorCode: 'cancelled', durationSeconds: 42 });
     expect(task?.lines).toHaveLength(4);
     expect(task?.transcript).toContain('Dienstag um 10:30 Uhr');
+  });
+
+  it('ends a call that was hung up while it was still being placed', async () => {
+    // Retell takes a moment to accept a call. Hanging up in that moment used
+    // to close the task and let the call go ahead, unwatched.
+    let accept: () => void = () => {};
+    const accepted = new Promise<void>((resolve) => (accept = resolve));
+    const { app: built, requests } = retellApp({}, async (request) => {
+      if (request.url.endsWith('/v2/create-phone-call')) {
+        await accepted;
+        return { status: 201, body: { call_id: 'call_slow', call_status: 'registered' } };
+      }
+      if (request.url.includes('/v2/get-call/')) {
+        return { body: { call_id: 'call_slow', call_status: 'ended', disconnection_reason: 'registered_call_timeout' } };
+      }
+      return undefined;
+    });
+
+    const placing = placeCall(built);
+    const task = await until(() => built.store.listByDevice(DEVICE['x-device-id'])[0]);
+    expect(task.providerCallId).toBeNull();
+
+    const hangUp = await built.fastify.inject({
+      method: 'POST',
+      url: `/api/tasks/${task.id}/cancel`,
+      headers: authed(built),
+    });
+    // Nothing to end yet — and the task is not closed behind the call's back.
+    expect(hangUp.json()).toMatchObject({ status: 'queued', errorCode: 'cancelled' });
+    expect(requests.some((r) => r.url.includes('/v2/stop-call/'))).toBe(false);
+
+    accept();
+    const placed = await placing;
+    expect(placed.statusCode).toBe(201);
+    // The call exists now: it is ended at once.
+    expect(requests.some((r) => r.url.includes('/v2/stop-call/call_slow'))).toBe(true);
+
+    const ended = await until(() => {
+      const current = built.store.get(task.id);
+      return current?.status === 'failed' ? current : null;
+    }, 5_000);
+    expect(ended).toMatchObject({ errorCode: 'cancelled', providerCallId: 'call_slow' });
   });
 
   it('closes a hung-up call that nobody picked up as cancelled, not as "no answer"', async () => {
@@ -1032,17 +1081,53 @@ describe('calls answered while the server was not listening', () => {
     requests.length = 0;
 
     await built.refreshCallAnswering();
-    const paths = requests.map((r) => new URL(r.url).pathname.split('/').filter(Boolean)[0]);
-    // The agent is told again who it answers for and where this server is now.
-    expect(paths).toContain('update-retell-llm');
-    expect(paths).toContain('update-agent');
-    expect(paths).toContain('update-phone-number');
+    await pause(10);
+    const paths = requests.map((r) => new URL(r.url).pathname.split('/').filter(Boolean).join('/'));
+    // What was answered meanwhile is asked for before anything else ...
+    expect(paths[0]).toBe('v3/list-calls');
+    // ... and the agent is told again who it answers for and where this server is now.
+    expect(paths.some((path) => path.startsWith('update-retell-llm/'))).toBe(true);
+    expect(paths.some((path) => path.startsWith('update-agent/'))).toBe(true);
+    expect(paths.some((path) => path.startsWith('update-phone-number/'))).toBe(true);
+  });
+
+  it('says in the window when a fetched call came in, not that it is being answered now', async () => {
+    const onRecord = [listed('call_saturday', 40 * HOUR)];
+    const { app: built, said: lines } = withCalls(() => onRecord);
+    await switchOn(built);
+    await until(() => mine(built).length === 1);
+    const about = lines.filter((line) => line.includes('+4915112345678'));
+    expect(about).toHaveLength(1);
+    expect(about[0]).toMatch(/^Fetched a call from \+4915112345678 that was answered on .* at \d\d:\d\d/);
   });
 
   it('says nothing to the phone service at start while answering is off', async () => {
     const { app: built, requests } = withCalls(() => []);
     await built.refreshCallAnswering();
     expect(requests).toHaveLength(0);
+  });
+
+  it('asks for more when one answer does not hold them all', async () => {
+    const older = listed('call_older', 30 * HOUR);
+    const newer = listed('call_newer', 2 * HOUR);
+    const { app: built, requests } = retellApp(INBOUND, (request) => {
+      if (request.url.endsWith('/v3/list-calls')) {
+        return request.body.pagination_key === 'page-2'
+          ? { body: { has_more: false, items: [older] } }
+          : { body: { has_more: true, pagination_key: 'page-2', items: [newer] } };
+      }
+      const fetched = /\/v2\/get-call\/([^/?]+)/.exec(request.url);
+      if (fetched) {
+        const call = [older, newer].find((entry) => entry.call_id === fetched[1]);
+        return { body: { ...call, transcript_object: said } };
+      }
+      return undefined;
+    });
+    await switchOn(built);
+    await until(() => mine(built).length === 2);
+    expect(mine(built).map((task) => task.providerCallId)).toEqual(['call_newer', 'call_older']);
+    const pages = requests.filter((r) => r.url.endsWith('/v3/list-calls'));
+    expect(pages[1]!.body.pagination_key).toBe('page-2');
   });
 
   it('keeps going when the phone service cannot be asked', async () => {

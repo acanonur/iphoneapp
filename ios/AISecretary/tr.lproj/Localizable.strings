@@ -124,8 +124,8 @@
 "e.g. %@" = "örn. %@";
 "Who to call" = "Kim aransın?";
 "The phone service did not accept this. Try again in a moment." = "Telefon hizmeti bunu kabul etmedi. Birazdan yeniden deneyin.";
-"Yaver also answers while your computer is off. The messages appear here as soon as the server is running again." = "Yaver, bilgisayarınız kapalıyken de aramaları yanıtlar. Mesajlar, sunucu yeniden çalışır çalışmaz burada görünür.";
-"Your server does not call premium-rate, special or emergency numbers." = "Sunucunuz ücretli, özel ve acil durum numaralarını aramaz.";
+"Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again." = "Yaver, bilgisayarınız kapalıyken de aramaları yanıtlar. Mesajlar en fazla yedi gün saklanır ve sunucu yeniden çalışır çalışmaz burada görünür.";
+"Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada." = "Sunucunuz ücretli, özel ve acil durum numaralarını, ayrıca ABD ve Kanada dışındaki +1 numaralarını aramaz.";
 "Ending the call…" = "Arama sonlandırılıyor…";
 "Write the number with its country code in place of the first 0 — for example +49 for Germany or +90 for Türkiye." = "Numarayı baştaki 0 yerine ülke koduyla yazın; örneğin Almanya için +49, Türkiye için +90.";
 "No text could be read from the photo. Try again, flat and in good light." = "Fotoğraftan metin okunamadı. Belgeyi düz bir yere koyup iyi ışıkta yeniden deneyin.";

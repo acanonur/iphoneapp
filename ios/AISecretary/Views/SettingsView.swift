@@ -11,6 +11,8 @@ struct SettingsView: View {
     var goBack: () -> Void
     /// Opens a task — used after a simulated incoming call starts.
     var openTask: (SecretaryTask) -> Void
+    /// Starts scrolled down to "Answer my calls" (the screenshots use this).
+    var opensAtAnswering = false
 
     @State private var address = ""
     @State private var accessKey = ""
@@ -25,6 +27,8 @@ struct SettingsView: View {
 
     private var server: ServerStore { model.server }
 
+    private static let answeringAnchor = "answering"
+
     var body: some View {
         VStack(spacing: 0) {
             HeaderBar {
@@ -35,17 +39,26 @@ struct SettingsView: View {
                 }
             }
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    serverSection
-                    profileSection
-                    answeringSection
-                    aboutSection
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        serverSection
+                        profileSection
+                        answeringSection
+                            .id(Self.answeringAnchor)
+                        aboutSection
+                    }
+                    .padding(.horizontal, Modernist.gutter)
+                    .padding(.bottom, 28)
                 }
-                .padding(.horizontal, Modernist.gutter)
-                .padding(.bottom, 28)
+                .scrollDismissesKeyboard(.interactively)
+                .task {
+                    guard opensAtAnswering else { return }
+                    // Once the sections have been laid out.
+                    try? await Task.sleep(for: .milliseconds(250))
+                    proxy.scrollTo(Self.answeringAnchor, anchor: .top)
+                }
             }
-            .scrollDismissesKeyboard(.interactively)
         }
         .task {
             address = server.baseURL.absoluteString
@@ -55,6 +68,16 @@ struct SettingsView: View {
             // went wrong with it should stay on screen, not be searched away.
             if !server.isConnected, !server.lastAttemptWasExplicit { _ = await server.connect() }
             loadAnswering()
+            // What this screen shows must be what the server does: answering
+            // may have been taken over by another phone since the app last
+            // asked. Only then is the screen changed — never under a note
+            // that is being typed.
+            let shown = server.session?.profile
+            await server.refreshSession()
+            let fresh = server.session?.profile
+            if fresh?.answerCalls != shown?.answerCalls || fresh?.answerNote != shown?.answerNote {
+                loadAnswering()
+            }
         }
         .onChange(of: server.baseURL) { _, url in address = url.absoluteString }
         // A pairing link can change the key while this screen is open; the
@@ -302,7 +325,7 @@ struct SettingsView: View {
                     // The phone service picks up, not this server: say what
                     // that means for a computer that is not always on.
                     Text(
-                        L("Yaver also answers while your computer is off. The messages appear here as soon as the server is running again.")
+                        L("Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again.")
                     )
                     .typeStyle(.smallTight)
                     .foregroundStyle(Modernist.Neutral.s700)

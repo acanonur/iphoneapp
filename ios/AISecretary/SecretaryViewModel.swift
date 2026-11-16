@@ -20,6 +20,16 @@ final class SecretaryViewModel {
 
     private static let seenKey = "yaver.seenTasks"
 
+    /// What the server should know about the owner, as the app last had it.
+    private struct WantedProfile: Equatable {
+        var name: String
+        var language: Language
+        var callLanguage: Language
+    }
+
+    private var wantedProfile: WantedProfile?
+    private var isPushingProfile = false
+
     init(server: ServerStore? = nil, staged tasks: [SecretaryTask]? = nil) {
         self.server = server ?? .shared
         isStaged = tasks != nil
@@ -85,6 +95,9 @@ final class SecretaryViewModel {
         } catch {
             await handle(error)
         }
+        // A profile the server could not take earlier gets another chance —
+        // without holding up whoever asked for the refresh.
+        Task { await pushProfile() }
     }
 
     /// A request failed. If the server has gone quiet, look for it again — the
@@ -213,18 +226,50 @@ final class SecretaryViewModel {
     /// callers are greeted in the language calls are usually in, and the note
     /// is written in the language the owner reads.
     func syncProfile(name: String, language: Language, callLanguage: Language) async {
-        guard !isStaged, server.isConnected, server.health?.isCurrent == true else { return }
-        var profile = server.session?.profile ?? ServerProfile()
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let wanted: String? = trimmed.isEmpty ? nil : trimmed
-        guard profile.name != wanted || profile.language != language
-            || profile.callLanguage != callLanguage
-        else { return }
-        profile.name = wanted
-        profile.language = language
-        profile.callLanguage = callLanguage
-        if let saved = try? await api.saveProfile(profile) {
-            server.setSession(profile: saved)
+        wantedProfile = WantedProfile(name: name, language: language, callLanguage: callLanguage)
+        await pushProfile()
+    }
+
+    /// Sends the owner's name and languages if the server does not have them.
+    /// Nothing is shown when it fails — the server may just be busy with its
+    /// phone service — but it is not forgotten either: every refresh tries
+    /// again until the server has what the app shows.
+    private func pushProfile() async {
+        guard !isPushingProfile else { return }
+        isPushingProfile = true
+        defer { isPushingProfile = false }
+        // Twice at most: for what is wanted now, and once more if that
+        // changed while the first save was under way.
+        for _ in 0 ..< 2 {
+            guard let wanted = wantedProfile,
+                  !isStaged, server.isConnected, server.health?.isCurrent == true
+            else { return }
+            var profile = server.session?.profile ?? ServerProfile()
+            let trimmed = wanted.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let name: String? = trimmed.isEmpty ? nil : trimmed
+            guard profile.name != name || profile.language != wanted.language
+                || profile.callLanguage != wanted.callLanguage
+            else { return }
+            profile.name = name
+            profile.language = wanted.language
+            profile.callLanguage = wanted.callLanguage
+            do {
+                let saved = try await api.saveProfile(profile)
+                server.setSession(profile: saved)
+            } catch let APIError.server(status, _, _) where (400 ..< 500).contains(status) {
+                // The server will not take these values, however often it is
+                // asked: leave it until they change.
+                if wantedProfile == wanted { wantedProfile = nil }
+                return
+            } catch {
+                // Not now — the next refresh asks again.
+                return
+            }
+            // Done, unless something else was asked for meanwhile.
+            if wantedProfile == wanted {
+                wantedProfile = nil
+                return
+            }
         }
     }
 

@@ -46,6 +46,8 @@ const POLL_INTERVAL_WITHOUT_WEBHOOKS_MS = 5_000;
 const LOOK_INTERVAL_MS = 120_000;
 /** ... and how soon again when somebody has the app open. */
 const LOOK_AGAIN_AFTER_MS = 45_000;
+/** Placing a call takes at most this long (two tries, twice — see RetellProvider). */
+const PLACING_TAKES_AT_MOST_MS = 100_000;
 /** After answering is switched off, a call that was under way may still end. */
 const LOOK_ON_AFTER_OFF_MS = 20 * 60_000;
 /** A call that ended this recently is still being summarised at the provider. */
@@ -301,8 +303,12 @@ export class CallEngine {
     return { ok: true };
   }
 
-  /** The task a provider call belongs to; an unknown incoming call gets a new one. */
-  private taskFor(call: RetellCall): SecretaryTask | undefined {
+  /**
+   * The task a provider call belongs to; an unknown incoming call gets a new
+   * one. `announce` is false for a call that is only heard of once it is over:
+   * nobody is "answering" it now.
+   */
+  private taskFor(call: RetellCall, announce = true): SecretaryTask | undefined {
     const callId = call.call_id;
     if (!callId) return undefined;
 
@@ -343,7 +349,7 @@ export class CallEngine {
     });
     this.store.create(task);
     this.answeredAt.set(task.id, Date.now());
-    this.onProgress?.(task);
+    if (announce) this.onProgress?.(task);
     return task;
   }
 
@@ -496,9 +502,22 @@ export class CallEngine {
     // Closing the task now would throw that away (a finished task takes no
     // more lines). So only the intent is recorded here; the ending itself
     // comes from the provider, asked for right away and a few times more.
-    if (!task.simulated && this.retell && task.providerCallId) {
+    if (!task.simulated && this.retell) {
       this.store.update(taskId, { errorCode: 'cancelled', error: 'Ended by the user' });
-      this.settleCancelled(taskId, 0);
+      if (task.providerCallId) {
+        this.settleCancelled(taskId, 0);
+        return;
+      }
+      // Still being placed: there is no call to end yet, and closing the task
+      // now would let the call go ahead with nobody watching it. The request
+      // that is placing it ends it the moment it exists (`createTask` comes
+      // back here). Should that request never return, the task is closed all
+      // the same.
+      const timer = setTimeout(() => {
+        const now = this.store.get(taskId);
+        if (now && !now.providerCallId && !this.stopped) this.closeCancelled(taskId);
+      }, PLACING_TAKES_AT_MOST_MS);
+      timer.unref();
       return;
     }
     this.closeCancelled(taskId);
@@ -525,6 +544,9 @@ export class CallEngine {
         const task = this.store.get(taskId);
         if (!task || TERMINAL_STATUSES.includes(task.status) || this.stopped) return;
         if (attempt + 1 < CallEngine.SETTLE_DELAYS_MS.length) {
+          // Still going: the request to end it may not have arrived. Ask again
+          // — a call that was hung up must not talk on.
+          this.retell?.stopCall(task).catch(() => {});
           this.settleCancelled(taskId, attempt + 1);
         } else {
           // The provider never said the call was over. It was asked to end
@@ -600,12 +622,16 @@ export class CallEngine {
           const call = { ...(await retell.getCall(callId)), call_id: callId };
           if (this.stopped) break;
           if (this.store.findByProviderCallId(callId)) continue;
-          const task = this.taskFor({ ...call, direction: 'inbound' });
+          const task = this.taskFor({ ...call, direction: 'inbound' }, !over);
           if (!task) continue;
           fresh += 1;
           this.applySnapshot(task, call);
         } catch (error) {
-          this.log.warn(`Could not fetch the answered call ${callId}: ${describeError(error)}`);
+          // Said once per call: the next look tries again.
+          this.warnOnce(
+            `fetch:${callId}`,
+            `Could not fetch the answered call ${callId}: ${describeError(error)}`,
+          );
         }
       }
       this.lookFailed = false;

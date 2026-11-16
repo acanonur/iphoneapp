@@ -127,10 +127,13 @@ struct RootView: View {
         ) { request in
             Button(L("Connect")) {
                 Task {
-                    if await model.server.pair(request) { await model.refresh() }
-                    // Show the result where the server lives — but not by
-                    // pulling the user out of something they were writing.
-                    if hasOnboarded, route == .home { route = .settings }
+                    let paired = await model.server.pair(request)
+                    if paired { await model.refresh() }
+                    // Show the result where the server lives. A success is
+                    // not worth pulling the user out of something they were
+                    // writing; a failure is — otherwise nothing would say
+                    // that the app is still with the old server.
+                    if hasOnboarded, !paired || route == .home { route = .settings }
                 }
             }
             Button(L("Cancel"), role: .cancel) {}
@@ -205,7 +208,8 @@ struct RootView: View {
                 reportLanguage: reportLanguage,
                 callLanguage: callLanguage,
                 goBack: { route = .home },
-                openTask: { open($0) }
+                openTask: { open($0) },
+                opensAtAnswering: stage?.settingsShowsAnswering ?? false
             )
         }
     }
