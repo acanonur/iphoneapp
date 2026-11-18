@@ -66,16 +66,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The App Store pictures need a large-display iPhone that has never run
-      # on this machine, and its first start takes minutes while iOS sets
-      # itself up. Started now, it is ready by the time they are taken.
-      - name: Start the large iPhone simulator early
-        if: matrix.screenshots
-        run: |
-          export PHONES="iPhone 17 Pro Max|iPhone 16 Pro Max|iPhone Air|iPhone 16 Plus"
-          # Only a head start: if it cannot be started, the pictures start it later.
-          START_ONLY=1 sh -c '. ios/scripts/simulator.sh' || true
-
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -141,7 +131,9 @@ jobs:
       - name: Photograph every screen
         if: matrix.screenshots
         # A simulator that will not start must not hold the build up for hours.
-        timeout-minutes: 25
+        # A new one sets itself up first, which on a busy build machine can take
+        # a quarter of an hour.
+        timeout-minutes: 40
         run: |
           ios/scripts/screenshots.sh \
             "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \
@@ -158,7 +150,7 @@ jobs:
       # that asks for its key. See ios/scripts/selftest.sh.
       - name: Run the app against a real server
         if: matrix.screenshots
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           (cd backend && npm ci --no-audit --no-fund)
           ios/scripts/selftest.sh \
@@ -170,7 +162,7 @@ jobs:
       # asks for, in the three languages. See ios/scripts/store-screenshots.sh.
       - name: Photograph the App Store screenshots
         if: matrix.screenshots
-        timeout-minutes: 35
+        timeout-minutes: 20
         run: |
           ios/scripts/store-screenshots.sh \
             "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \

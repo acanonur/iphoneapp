@@ -6,14 +6,14 @@ This page takes you from your Mac to the App Store in five parts:
 2. [Try Yaver on your iPhone](#2-try-yaver-on-your-iphone) with your paid developer account (30 minutes)
 3. [Test the App Store version with TestFlight](#3-test-the-app-store-version-with-testflight) (30 minutes)
 4. [A server for Apple's reviewers](#4-a-server-for-apples-reviewers) (30 minutes)
-5. [Fill in App Store Connect and submit](#5-fill-in-app-store-connect-and-submit) (1–2 hours, then 1–3 days of review)
+5. [Fill in App Store Connect and submit](#5-fill-in-app-store-connect-and-submit) (1–2 hours, then usually 1–2 days of review, sometimes a few weeks)
 
 At the end: [the texts for the store page](#texts-for-the-store-page) in English, German and
 Turkish, ready to copy, and [what to do if Apple says no](#if-apple-says-no).
 
 Everything happens in four places: **Terminal** and **Xcode** on your Mac, the **Yaver app**
 on your iPhone, and **App Store Connect** in Safari (<https://appstoreconnect.apple.com>,
-sign in with the Apple ID of your developer account).
+sign in with the Apple Account of your developer account).
 
 ---
 

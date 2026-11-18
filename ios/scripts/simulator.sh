@@ -2,8 +2,6 @@
 # iPhone, starts it, and leaves its id in $UDID. Sourced, not run.
 #
 # PHONES (optional): the models to prefer, best first, separated by "|".
-# START_ONLY=1 (optional): start it and return at once. A simulator that has
-# never run on this machine takes minutes to set itself up the first time.
 
 PHONES="${PHONES:-iPhone 17 Pro|iPhone 17|iPhone 16 Pro|iPhone 16}"
 export PHONES
@@ -25,7 +23,6 @@ fi
 echo "Simulator: $(xcrun simctl list devices | grep "$UDID" | head -n 1)"
 
 xcrun simctl boot "$UDID" 2>/dev/null || true
-if [ "${START_ONLY:-0}" = 1 ]; then return 0; fi
 xcrun simctl bootstatus "$UDID" -b
 # The same clean status bar on every picture.
 xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 \
