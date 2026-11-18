@@ -199,4 +199,29 @@ describe('TaskStore', () => {
     store.close();
     expect(new TaskStore(path).inboundOwner()?.callLanguage).toBe('de');
   });
+
+  it('takes an answering switch from before it knew where it was made as made in a simulation', () => {
+    const path = tempDbPath();
+    const old = new DatabaseSync(path);
+    old.exec(`CREATE TABLE profiles (
+      device_id TEXT PRIMARY KEY, name TEXT, language TEXT NOT NULL DEFAULT 'en',
+      answer_calls INTEGER NOT NULL DEFAULT 0, answer_note TEXT, updated_at TEXT NOT NULL
+    )`);
+    old.prepare(
+      "INSERT INTO profiles (device_id, name, language, answer_calls, updated_at) VALUES ('a', 'Deniz', 'tr', 1, '2026-01-01T00:00:00.000Z')",
+    ).run();
+    old.close();
+
+    const store = new TaskStore(path);
+    expect(store.getProfile('a')).toMatchObject({ answerCalls: true, answerCallsReal: false });
+    // Switched on with real calls, it is remembered as such — and switching
+    // off forgets it.
+    const base = { deviceId: 'a', name: 'Deniz', language: 'tr' as const, callLanguage: null, answerNote: null };
+    store.saveProfile({ ...base, answerCalls: true, answerCallsReal: true });
+    store.close();
+    const again = new TaskStore(path);
+    expect(again.getProfile('a')?.answerCallsReal).toBe(true);
+    again.saveProfile({ ...base, answerCalls: false, answerCallsReal: true });
+    expect(again.getProfile('a')?.answerCallsReal).toBe(false);
+  });
 });

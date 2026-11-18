@@ -21,7 +21,7 @@ enum AIService: String, CaseIterable, Identifiable {
     var disclosure: String {
         switch self {
         case .phoneCalls:
-            return L("Phone calls: your server gives Retell AI (USA) the number, your request and your name. Retell’s AI holds the conversation, so the voices and everything said are processed there. Yaver’s server has the call deleted there after the report.")
+            return L("Phone calls: your server gives Retell AI (USA) the number, your request and your name. Retell’s AI holds the conversation and records it, so the voices and everything said are processed there. Yaver’s server has the call deleted there right after it ends.")
         case .writing:
             return L("Reports, letters and messages: your server sends the conversation or the document’s text to Claude, the AI of Anthropic (USA), which writes them.")
         }
@@ -61,7 +61,7 @@ enum AIConsent {
         var needed: [AIService] = []
         switch kind {
         case .call:
-            if !server.isSimulated { needed.append(.phoneCalls) }
+            if placesRealCalls(server) { needed.append(.phoneCalls) }
             if writesWithClaude(server) { needed.append(.writing) }
         case .letter, .message, .form:
             if writesWithClaude(server) { needed.append(.writing) }
@@ -76,14 +76,24 @@ enum AIConsent {
     @MainActor
     static func missingForAnswering(server: ServerStore) -> [AIService] {
         var needed: [AIService] = []
-        if !server.isSimulated { needed.append(.phoneCalls) }
+        if placesRealCalls(server) { needed.append(.phoneCalls) }
         if writesWithClaude(server) { needed.append(.writing) }
         return needed.filter { !isGranted($0) }
     }
 
+    /// Whether the server may hand a call to the phone service. A server the
+    /// app has not heard from yet might, so it is asked about as one that does.
+    @MainActor
+    private static func placesRealCalls(_ server: ServerStore) -> Bool {
+        guard let simulated = server.session?.simulated ?? server.health?.simulated else { return true }
+        return !simulated
+    }
+
+    /// The same for Claude: the session says, or else the server's health.
     @MainActor
     private static func writesWithClaude(_ server: ServerStore) -> Bool {
-        server.session?.reports == "claude"
+        guard let reports = server.session?.reports ?? server.health?.reports else { return true }
+        return reports == "claude"
     }
 
     /// The text of the question: one paragraph per service, then what it means.

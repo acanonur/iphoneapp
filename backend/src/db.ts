@@ -155,6 +155,7 @@ function rowToProfile(row: Row): Profile {
     callLanguage:
       callLanguage === 'de' || callLanguage === 'tr' || callLanguage === 'en' ? callLanguage : null,
     answerCalls: row['answer_calls'] === 1,
+    answerCallsReal: row['answer_calls'] === 1 && row['answer_calls_real'] === 1,
     answerNote: text(row, 'answer_note'),
     updatedAt: text(row, 'updated_at') ?? '',
   };
@@ -221,6 +222,12 @@ export class TaskStore {
     const profileColumns = this.db.prepare('PRAGMA table_info(profiles)').all() as Row[];
     if (!profileColumns.some((column) => column['name'] === 'call_language')) {
       this.db.exec('ALTER TABLE profiles ADD COLUMN call_language TEXT');
+    }
+    // An answering switch from before this column is taken as made during a
+    // simulation: real callers go to the phone service only once the owner
+    // has switched it on again, and so been asked.
+    if (!profileColumns.some((column) => column['name'] === 'answer_calls_real')) {
+      this.db.exec('ALTER TABLE profiles ADD COLUMN answer_calls_real INTEGER NOT NULL DEFAULT 0');
     }
   }
 
@@ -371,19 +378,26 @@ export class TaskStore {
     return row ? rowToProfile(row) : undefined;
   }
 
-  saveProfile(profile: Omit<Profile, 'updatedAt'>): Profile {
-    const saved: Profile = { ...profile, updatedAt: new Date().toISOString() };
+  saveProfile(
+    profile: Omit<Profile, 'updatedAt' | 'answerCallsReal'> & { answerCallsReal?: boolean },
+  ): Profile {
+    const saved: Profile = {
+      ...profile,
+      answerCallsReal: profile.answerCalls && (profile.answerCallsReal ?? false),
+      updatedAt: new Date().toISOString(),
+    };
     if (this.closed) return saved;
     this.db
       .prepare(
         `INSERT INTO profiles
-           (device_id, name, language, call_language, answer_calls, answer_note, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+           (device_id, name, language, call_language, answer_calls, answer_calls_real, answer_note, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(device_id) DO UPDATE SET
            name = excluded.name,
            language = excluded.language,
            call_language = excluded.call_language,
            answer_calls = excluded.answer_calls,
+           answer_calls_real = excluded.answer_calls_real,
            answer_note = excluded.answer_note,
            updated_at = excluded.updated_at`,
       )
@@ -393,6 +407,7 @@ export class TaskStore {
         saved.language,
         saved.callLanguage,
         saved.answerCalls ? 1 : 0,
+        saved.answerCallsReal ? 1 : 0,
         saved.answerNote,
         saved.updatedAt,
       );
@@ -401,7 +416,9 @@ export class TaskStore {
     // while the notes go to only one of them.
     if (saved.answerCalls) {
       this.db
-        .prepare('UPDATE profiles SET answer_calls = 0 WHERE device_id != ? AND answer_calls = 1')
+        .prepare(
+          'UPDATE profiles SET answer_calls = 0, answer_calls_real = 0 WHERE device_id != ? AND answer_calls = 1',
+        )
         .run(saved.deviceId);
     }
     return saved;

@@ -148,6 +148,13 @@ export interface Profile {
   callLanguage: Language | null;
   /** Whether the secretary should pick up calls the owner cannot take. */
   answerCalls: boolean;
+  /**
+   * Whether answering was switched on while this server placed real calls —
+   * that is, after the app had asked the owner whether the phone service may
+   * have their callers. Switched on while calls were only simulated, it is
+   * not carried over to real calls: the owner is asked first.
+   */
+  answerCallsReal: boolean;
   /** Anything the owner wants callers told, in their own words. */
   answerNote: string | null;
   updatedAt: string;

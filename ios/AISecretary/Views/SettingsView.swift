@@ -26,6 +26,8 @@ struct SettingsView: View {
     @State private var isSimulating = false
     /// The AI services answering would go to that the user has not allowed yet.
     @State private var answeringConsent: [AIService]?
+    /// Asked before a simulated caller's message goes to Claude for its note.
+    @State private var simulateConsent: [AIService]?
     /// The AI services the user has allowed, for the line under About.
     @State private var allowedServices = AIConsent.granted
 
@@ -381,21 +383,20 @@ struct SettingsView: View {
 
                 if server.isSimulated {
                     Button {
-                        isSimulating = true
-                        Task {
-                            // A caller in another language than the reader's:
-                            // that is the case the translation is for.
-                            let caller: Language = reportLanguage == .de ? .tr : .de
-                            let task = await model.simulateIncomingCall(callerLanguage: caller)
-                            isSimulating = false
-                            if let task { openTask(task) }
-                        }
+                        // Where the server has Claude, it writes the note on
+                        // the simulated call too — with the owner's name in it.
+                        let missing = AIConsent.missingForAnswering(server: server)
+                        if missing.isEmpty { simulateIncomingCall() } else { simulateConsent = missing }
                     } label: {
                         ButtonLabel(title: L("Simulate an incoming call"), icon: .phoneIncoming, iconSize: 16)
                     }
                     .buttonStyle(ModernistButtonStyle(variant: .secondary, block: true, height: 48))
                     .disabled(isSimulating)
                     .padding(.top, 16)
+                    .aiConsentQuestion($simulateConsent, onAllow: {
+                        allowedServices = AIConsent.granted
+                        simulateIncomingCall()
+                    })
 
                     Text(L("Your server only simulates calls for now, so this shows what an answered call looks like."))
                         .typeStyle(.captionSmall)
@@ -513,6 +514,18 @@ struct SettingsView: View {
             .padding(.top, 12)
         }
         .task { allowedServices = AIConsent.granted }
+    }
+
+    private func simulateIncomingCall() {
+        isSimulating = true
+        Task {
+            // A caller in another language than the reader's: that is the
+            // case the translation is for.
+            let caller: Language = reportLanguage == .de ? .tr : .de
+            let task = await model.simulateIncomingCall(callerLanguage: caller)
+            isSimulating = false
+            if let task { openTask(task) }
+        }
     }
 
     /// Takes back the permission to send data to AI services. Answering calls

@@ -1277,6 +1277,46 @@ describe('calls answered while the server was not listening', () => {
     expect(about[0]).toMatch(/^Fetched a call from \+4915112345678 that was answered on .* at \d\d:\d\d/);
   });
 
+  it('does not hand real callers to the phone service for a switch made while calls were simulated', async () => {
+    const { app: built, requests, said: lines } = withCalls(() => []);
+    // What the profile looks like when "Answer my calls" was switched on
+    // while the server only simulated calls: the app asked nothing about
+    // the phone service then.
+    built.store.saveProfile({
+      deviceId: DEVICE['x-device-id'],
+      name: 'Ali',
+      language: 'tr',
+      callLanguage: 'de',
+      answerCalls: true,
+      answerNote: null,
+    });
+    await built.refreshCallAnswering();
+    // Nothing is fetched or set up for answering; the number is told to stop.
+    const paths = requests.map((r) => new URL(r.url).pathname.split('/').filter(Boolean)[0]);
+    expect(paths).not.toContain('v3');
+    expect(paths).not.toContain('update-agent');
+    expect(paths).not.toContain('update-retell-llm');
+    for (const request of requests.filter((r) => r.url.includes('/update-phone-number/'))) {
+      expect(request.body.inbound_agents).toBeNull();
+    }
+    // The app shows it off, so switching it on again asks first.
+    expect(built.store.getProfile(DEVICE['x-device-id'])?.answerCalls).toBe(false);
+    expect(lines.some((line) => line.includes('switch "Answer my calls" on again'))).toBe(true);
+  });
+
+  it('keeps answering at every start once it was switched on with real calls', async () => {
+    const { app: built, requests } = withCalls(() => []);
+    await switchOn(built);
+    expect(built.store.getProfile(DEVICE['x-device-id'])?.answerCallsReal).toBe(true);
+    requests.length = 0;
+    await built.refreshCallAnswering();
+    const enabled = requests.filter(
+      (r) => r.url.includes('/update-phone-number/') && Array.isArray(r.body.inbound_agents),
+    );
+    expect(enabled).toHaveLength(1);
+    expect(built.store.getProfile(DEVICE['x-device-id'])?.answerCalls).toBe(true);
+  });
+
   it('says nothing to the phone service at start while answering is off', async () => {
     const { app: built, requests } = withCalls(() => []);
     await built.refreshCallAnswering();

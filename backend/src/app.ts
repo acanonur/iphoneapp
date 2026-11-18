@@ -413,6 +413,7 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
         language: 'en',
         callLanguage: null,
         answerCalls: false,
+        answerCallsReal: false,
         answerNote: null,
         updatedAt: new Date(0).toISOString(),
       }
@@ -516,8 +517,14 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
         language: body.language ?? current.language,
         callLanguage: body.callLanguage === undefined ? current.callLanguage : body.callLanguage,
         answerCalls: body.answerCalls ?? current.answerCalls,
+        answerCallsReal: current.answerCallsReal,
         answerNote: body.answerNote === undefined ? current.answerNote : cleanText(body.answerNote),
       };
+      // The app asks about the phone service before it switches answering
+      // on with real calls; a switch made while calls are simulated is not.
+      if (next.answerCalls !== current.answerCalls) {
+        next.answerCallsReal = next.answerCalls && !provider.simulated;
+      }
 
       // Callers are answered by the phone company, whether this server is
       // running or not. So what they hear — and whether anyone answers at
@@ -932,6 +939,17 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
     async refreshCallAnswering() {
       const owner = store.inboundOwner();
       if (!retell?.canAnswerCalls || !owner?.answerCalls) return;
+      if (!owner.answerCallsReal) {
+        // Switched on while calls were only simulated: the owner was never
+        // asked whether real callers may go to the phone service. So it goes
+        // off, and switching it on again in the app asks.
+        store.saveProfile({ ...owner, answerCalls: false, answerCallsReal: false });
+        await retell.setInboundAnswering(false).catch(() => {});
+        announce(
+          'Answering calls was switched on while calls were simulated. To have real calls answered, switch "Answer my calls" on again in the app.',
+        );
+        return;
+      }
       // First of all, whatever was answered while this server was not running.
       void engine.importAnsweredCalls();
       await retell.setInboundAnswering(true, {

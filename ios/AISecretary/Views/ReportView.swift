@@ -268,15 +268,17 @@ struct ReportView: View {
     /// Places the same call once more — after asking, if this server would
     /// now send it to an AI service the user has not allowed.
     private func callAgain(_ task: SecretaryTask) {
-        let missing = AIConsent.missing(for: .call, server: model.server)
-        guard missing.isEmpty else {
-            consentAsked = missing
-            return
-        }
         isRetrying = true
         retryError = nil
         Task {
             defer { isRetrying = false }
+            // Read fresh what the server can do now (see BriefView.submit).
+            await model.server.refreshSession()
+            let missing = AIConsent.missing(for: .call, server: model.server)
+            guard missing.isEmpty else {
+                consentAsked = missing
+                return
+            }
             do {
                 let again = try await model.create(
                     NewTaskRequest(

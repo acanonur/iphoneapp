@@ -252,6 +252,9 @@ struct BriefView: View {
         .aiConsentQuestion($consentAsked, onAllow: submit)
         .task {
             if asksConsentAtOnce { consentAsked = [.phoneCalls, .writing] }
+            // So "Calls are simulated" is only said of a server that still
+            // simulates them.
+            await model.server.refreshSession()
         }
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
@@ -466,14 +469,19 @@ struct BriefView: View {
 
     private func submit() {
         guard canSubmit else { return }
-        let missing = AIConsent.missing(for: briefType, server: model.server)
-        guard missing.isEmpty else {
-            consentAsked = missing
-            return
-        }
         isSubmitting = true
         Task {
             defer { isSubmitting = false }
+            // What the server is set up for decides what has to be asked
+            // first. Read it fresh: a server that places real calls or writes
+            // with Claude since the app last looked must not pass for a
+            // simulation.
+            await model.server.refreshSession()
+            let missing = AIConsent.missing(for: briefType, server: model.server)
+            guard missing.isEmpty else {
+                consentAsked = missing
+                return
+            }
             do {
                 let created = try await model.create(
                     NewTaskRequest(
