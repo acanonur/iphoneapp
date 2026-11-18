@@ -613,6 +613,14 @@ export function buildApp(config: Config, options: AppOptions = {}): App {
           code: 'number_not_allowed',
         });
       }
+      // A real call says at once on whose behalf the AI is calling. Nobody
+      // should be rung by an AI for "a client" they cannot name.
+      if (!provider.simulated && !cleanText(body.userName)) {
+        return reply.code(400).send({
+          error: 'A real call needs the name of the person it is made for (userName)',
+          code: 'name_required',
+        });
+      }
       if (
         !provider.simulated &&
         config.maxCallsPerDay > 0 &&

@@ -200,6 +200,16 @@ describe('placing a call through Retell', () => {
     expect(res.json().error).toContain('402');
   });
 
+  it('does not place a real call for nobody: the AI must say whose behalf it is calling on', async () => {
+    const { app: built, requests } = retellApp();
+    for (const userName of [undefined, '', '   ']) {
+      const res = await placeCall(built, { ...callBody, userName });
+      expect(res.statusCode, String(userName)).toBe(400);
+      expect(res.json().code).toBe('name_required');
+    }
+    expect(requests.some((r) => r.url.endsWith('/v2/create-phone-call'))).toBe(false);
+  });
+
   it('stops placing calls once the daily limit is reached', async () => {
     const { app: built } = retellApp({ MAX_CALLS_PER_DAY: '2' });
     expect((await placeCall(built)).statusCode).toBe(201);

@@ -83,8 +83,15 @@ struct BriefView: View {
         return session.reports != "claude"
     }
 
+    /// A real call says at once on whose behalf the AI is calling — never for
+    /// "a client" nobody can name. The name is set once, in Settings.
+    private var nameMissing: Bool {
+        isCall && model.server.isConnected && !model.server.isSimulated
+            && Self.cleanName(userName) == nil
+    }
+
     private var canSubmit: Bool {
-        guard !isSubmitting, !isReadingDocument, !writerMissing,
+        guard !isSubmitting, !isReadingDocument, !writerMissing, !nameMissing,
               goal.trimmingCharacters(in: .whitespacesAndNewlines).count >= 4
         else {
             return false
@@ -184,6 +191,13 @@ struct BriefView: View {
                     goalField
                     if isCall {
                         phoneField
+                    }
+                    if nameMissing {
+                        Notice(
+                            title: L("Your name is missing."),
+                            message: L("Yaver says at the start of every real call on whose behalf it is calling. Add your name in Settings, then come back."),
+                            tone: .accent
+                        )
                     }
                     if briefType == .followup {
                         dueField

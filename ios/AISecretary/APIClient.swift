@@ -126,6 +126,8 @@ enum APIError: LocalizedError {
             return L("Your server has reached the number of calls it places per day.")
         case "number_required":
             return L("A phone call needs a phone number.")
+        case "name_required":
+            return L("Yaver says at the start of every real call on whose behalf it is calling. Add your name in Settings, then come back.")
         case "answering_not_set_up":
             return L("Answering calls is not set up on your server yet.")
         case "public_address_needed":

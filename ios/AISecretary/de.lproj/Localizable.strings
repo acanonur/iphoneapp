@@ -123,6 +123,8 @@
 "What should Yaver do?" = "Was soll Yaver tun?";
 "e.g. %@" = "z. B. %@";
 "Who to call" = "Wen soll Yaver anrufen?";
+"Your name is missing." = "Ihr Name fehlt.";
+"Yaver says at the start of every real call on whose behalf it is calling. Add your name in Settings, then come back." = "Yaver sagt zu Beginn jedes echten Anrufs, in wessen Auftrag es anruft. Tragen Sie Ihren Namen in den Einstellungen ein und kommen Sie dann zurück.";
 "Your data and AI services" = "Ihre Daten und KI-Dienste";
 "Phone calls: your server gives Retell AI (USA) the number, your request and your name. Retell’s AI holds the conversation, so the voices and everything said are processed there. Yaver’s server has the call deleted there after the report." = "Anrufe: Ihr Server gibt Retell AI (USA) die Nummer, Ihr Anliegen und Ihren Namen. Die KI von Retell führt das Gespräch – die Stimmen und alles Gesagte werden dort verarbeitet. Nach dem Bericht lässt der Yaver-Server den Anruf dort löschen.";
 "Reports, letters and messages: your server sends the conversation or the document’s text to Claude, the AI of Anthropic (USA), which writes them." = "Berichte, Briefe und Nachrichten: Ihr Server sendet das Gespräch oder den Text des Dokuments an Claude, die KI von Anthropic (USA), die sie verfasst.";

@@ -151,7 +151,7 @@ jobs:
             "$GITHUB_WORKSPACE/backend" \
             "$RUNNER_TEMP/screens/selftest"
 
-      # The pictures for the App Store page, at the size App Store Connect
+      # The pictures for the App Store page, at the sizes App Store Connect
       # asks for, in the three languages. See ios/scripts/store-screenshots.sh.
       - name: Photograph the App Store screenshots
         if: matrix.screenshots
