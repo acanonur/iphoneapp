@@ -439,7 +439,13 @@ final class ServerStore {
     nonisolated static func url(from text: String) -> URL? {
         var address = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !address.isEmpty else { return nil }
-        if !address.contains("://") { address = "http://" + address }
+        if !address.contains("://") {
+            // Typed without "http://" or "https://": a computer at home speaks
+            // plain HTTP on the server's port, an address on the internet
+            // ("yaver.example.com") is reached over HTTPS.
+            let home = URL(string: "http://" + address).map(isLocal) ?? true
+            address = (home ? "http://" : "https://") + address
+        }
         while address.hasSuffix("/") { address.removeLast() }
         guard var components = URLComponents(string: address),
               let host = components.host, !host.isEmpty

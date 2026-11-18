@@ -149,6 +149,17 @@ jobs:
             "$GITHUB_WORKSPACE/backend" \
             "$RUNNER_TEMP/screens/selftest"
 
+      # The pictures for the App Store page, at the size App Store Connect
+      # asks for, in the three languages. See ios/scripts/store-screenshots.sh.
+      - name: Photograph the App Store screenshots
+        if: matrix.screenshots
+        timeout-minutes: 20
+        run: |
+          xcrun simctl shutdown all || true
+          ios/scripts/store-screenshots.sh \
+            "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \
+            "$RUNNER_TEMP/screens/appstore"
+
       # The pictures go to their own branch — nothing but pictures, replaced on
       # every run — so they can be looked at without downloading anything.
       # Published also when the run above failed: its pictures show why.

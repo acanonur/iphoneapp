@@ -1,16 +1,18 @@
 # Shared by the scripts that drive the simulator: picks an ordinary, current
 # iPhone, starts it, and leaves its id in $UDID. Sourced, not run.
+#
+# PHONES (optional): the models to prefer, best first, separated by "|".
 
+PHONES="${PHONES:-iPhone 17 Pro|iPhone 17|iPhone 16 Pro|iPhone 16}"
+export PHONES
 UDID=$(xcrun simctl list devices available -j | python3 -c '
-import json, sys
+import json, os, sys
 devices = [d for runtime, ds in json.load(sys.stdin)["devices"].items() if "iOS" in runtime for d in ds]
 phones = [d for d in devices if d["name"].startswith("iPhone")]
+wanted = os.environ["PHONES"].split("|")
 def rank(d):
     name = d["name"]
-    for index, wanted in enumerate(["iPhone 17 Pro", "iPhone 17", "iPhone 16 Pro", "iPhone 16"]):
-        if name == wanted:
-            return index
-    return 99
+    return wanted.index(name) if name in wanted else 99
 phones.sort(key=rank)
 print(phones[0]["udid"] if phones else "")
 ')
