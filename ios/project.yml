@@ -27,6 +27,11 @@ targets:
       path: AISecretary/Info.plist
       properties:
         CFBundleDisplayName: Yaver
+        # The version people see, and the build number App Store Connect
+        # counts: both come from the build settings below, so that Xcode can
+        # raise the build number by itself when it uploads.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDevelopmentRegion: en
         # The interface follows the iPhone's language: English, German, Turkish.
         CFBundleLocalizations:
@@ -82,13 +87,17 @@ targets:
         NSPhotoLibraryUsageDescription: >-
           Pick a photo of a letter or form so Yaver can read it. Only
           the text is sent — the photograph stays on your phone.
+        # The app talks to its server over HTTPS (or plain HTTP at home) and
+        # does no encryption of its own: no export documents are needed, and
+        # App Store Connect does not have to ask about it with every upload.
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         # Must be unique across the App Store — com.example.* is a placeholder
         # that is already claimed, and Apple will refuse to sign against it.
         PRODUCT_BUNDLE_IDENTIFIER: com.canonur.aisecretary
-        MARKETING_VERSION: 0.2.0
-        CURRENT_PROJECT_VERSION: 2
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

@@ -289,7 +289,9 @@
 "On most mobile networks: dial **61*%@# and press call. To switch it off again, dial ##61#." = "In den meisten Mobilfunknetzen: **61*%@# wählen und die Anruftaste drücken. Zum Ausschalten ##61# wählen.";
 "About" = "Über Yaver";
 "Version %@" = "Version %@";
-"Translation and speech recognition happen on your iPhone." = "Übersetzung und Spracherkennung laufen auf Ihrem iPhone.";
+"Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language." = "Die Übersetzung läuft auf Ihrem iPhone – die Spracherkennung ebenfalls, sofern das iPhone die Sprache unterstützt.";
+"Privacy policy" = "Datenschutzerklärung";
+"Help and contact" = "Hilfe und Kontakt";
 "Other side" = "Gegenseite";
 "Hide translation" = "Übersetzung ausblenden";
 "Translate into %@" = "Auf %@ übersetzen";

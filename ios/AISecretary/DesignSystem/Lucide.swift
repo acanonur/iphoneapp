@@ -121,6 +121,8 @@ extension Lucide {
     ])
 
     static let chevronRight = Lucide(elements: [.path("m9 18 6-6-6-6")])
+    /// Opens a page outside the app.
+    static let arrowUpRight = Lucide(elements: [.path("M7 7h10v10"), .path("M7 17 17 7")])
     static let chevronLeft = Lucide(elements: [.path("m15 18-6-6 6-6")])
     static let arrowRight = Lucide(elements: [.path("M5 12h14"), .path("m12 5 7 7-7 7")])
     static let close = Lucide(elements: [.path("M18 6 6 18"), .path("m6 6 12 12")])

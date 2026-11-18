@@ -87,11 +87,38 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/build.log" | xcbeautify --quiet --renderer github-actions
 
+      # What is uploaded to the App Store is the Release build for a real
+      # iPhone, which leaves out everything marked DEBUG (the screenshots'
+      # sample data, the self-test). It has to compile too, and carry what
+      # App Store Connect checks: the version, the encryption answer and the
+      # privacy manifest.
+      - name: Build the version that goes to the App Store
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project AISecretary.xcodeproj \
+            -scheme AISecretary \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Yaver.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            archive 2>&1 | tee "$RUNNER_TEMP/archive.log" | xcbeautify --quiet --renderer github-actions
+          APP="$RUNNER_TEMP/Yaver.xcarchive/Products/Applications/AISecretary.app"
+          plutil -p "$APP/Info.plist" | grep -E '"(CFBundleDisplayName|CFBundleShortVersionString|CFBundleVersion|ITSAppUsesNonExemptEncryption)"'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = "1.0" \
+            || { echo "::error::The version is not 1.0"; exit 1; }
+          test "$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' "$APP/Info.plist")" = "false" \
+            || { echo "::error::ITSAppUsesNonExemptEncryption is not set to NO"; exit 1; }
+          test -f "$APP/PrivacyInfo.xcprivacy" \
+            || { echo "::error::PrivacyInfo.xcprivacy is not in the app"; exit 1; }
+          plutil -lint "$APP/PrivacyInfo.xcprivacy"
+
       - name: Summarise compiler errors
         if: failure()
         run: |
           echo "=== COMPILER ERRORS ==="
-          grep -E "error:" "$RUNNER_TEMP/build.log" | sed "s|$GITHUB_WORKSPACE/||" | sort -u | head -120 || true
+          grep -hE "error:" "$RUNNER_TEMP/build.log" "$RUNNER_TEMP/archive.log" 2>/dev/null | sed "s|$GITHUB_WORKSPACE/||" | sort -u | head -120 || true
           echo "=== END ==="
 
       - name: Photograph every screen

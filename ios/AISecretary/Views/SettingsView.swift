@@ -458,9 +458,27 @@ struct SettingsView: View {
                 promise(L("Says it is an AI at the start of every call."))
                 promise(L("Keeps a written transcript. The audio is not kept."))
                 promise(L("Calls only when you ask. One request, one call."))
-                promise(L("Translation and speech recognition happen on your iPhone."))
+                promise(L("Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language."))
             }
+
+            VStack(alignment: .leading, spacing: 0) {
+                aboutLink(L("Privacy policy"), Links.privacyPolicy)
+                aboutLink(L("Help and contact"), Links.help)
+            }
+            .padding(.top, 12)
         }
+    }
+
+    /// A page on the web, opened in Safari.
+    private func aboutLink(_ title: String, _ url: URL) -> some View {
+        Link(destination: url) {
+            ButtonLabel(title: title, icon: .arrowUpRight, iconSize: 14, gap: 6)
+        }
+        .buttonStyle(
+            ModernistButtonStyle(
+                variant: .ghost, fontSize: 14, horizontalPadding: 0, verticalPadding: 8, hitSlop: 6
+            )
+        )
     }
 
     private func promise(_ text: String) -> some View {

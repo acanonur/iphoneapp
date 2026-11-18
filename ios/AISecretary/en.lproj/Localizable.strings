@@ -289,7 +289,9 @@
 "On most mobile networks: dial **61*%@# and press call. To switch it off again, dial ##61#." = "On most mobile networks: dial **61*%@# and press call. To switch it off again, dial ##61#.";
 "About" = "About";
 "Version %@" = "Version %@";
-"Translation and speech recognition happen on your iPhone." = "Translation and speech recognition happen on your iPhone.";
+"Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language." = "Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language.";
+"Privacy policy" = "Privacy policy";
+"Help and contact" = "Help and contact";
 "Other side" = "Other side";
 "Hide translation" = "Hide translation";
 "Translate into %@" = "Translate into %@";

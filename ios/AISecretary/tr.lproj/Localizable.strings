@@ -289,7 +289,9 @@
 "On most mobile networks: dial **61*%@# and press call. To switch it off again, dial ##61#." = "Çoğu mobil şebekede: **61*%@# tuşlayıp arama tuşuna basın. Yeniden kapatmak için ##61# tuşlayın.";
 "About" = "Hakkında";
 "Version %@" = "Sürüm %@";
-"Translation and speech recognition happen on your iPhone." = "Çeviri ve konuşma tanıma iPhone’unuzda yapılır.";
+"Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language." = "Çeviri iPhone’unuzda yapılır; iPhone dili destekliyorsa konuşma tanıma da.";
+"Privacy policy" = "Gizlilik politikası";
+"Help and contact" = "Yardım ve iletişim";
 "Other side" = "Karşı taraf";
 "Hide translation" = "Çeviriyi gizle";
 "Translate into %@" = "%@ diline çevir";
