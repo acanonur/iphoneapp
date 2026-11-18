@@ -105,7 +105,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             archive 2>&1 | tee "$RUNNER_TEMP/archive.log" | xcbeautify --quiet --renderer github-actions
           APP="$RUNNER_TEMP/Yaver.xcarchive/Products/Applications/AISecretary.app"
-          plutil -p "$APP/Info.plist" | grep -E '"(CFBundleDisplayName|CFBundleShortVersionString|CFBundleVersion|ITSAppUsesNonExemptEncryption)"'
+          plutil -p "$APP/Info.plist" | grep -E '"(CFBundleIdentifier|CFBundleDisplayName|CFBundleShortVersionString|CFBundleVersion|ITSAppUsesNonExemptEncryption)"'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = "com.canonur.aisecretary" \
+            || { echo "::error::The bundle identifier is not com.canonur.aisecretary"; exit 1; }
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = "1.0" \
             || { echo "::error::The version is not 1.0"; exit 1; }
           test "$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' "$APP/Info.plist")" = "false" \

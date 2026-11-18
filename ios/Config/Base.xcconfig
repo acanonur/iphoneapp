@@ -6,4 +6,14 @@
 // Xcode project never loses the signing team you picked in Xcode.
 CODE_SIGN_STYLE = Automatic
 
+// The app's identity in the App Store, and its version. Unique across the App
+// Store: Apple will not sign anything else under this identifier.
+PRODUCT_BUNDLE_IDENTIFIER = com.canonur.aisecretary
+// The version people see, and the build number App Store Connect counts.
+MARKETING_VERSION = 1.0
+CURRENT_PROJECT_VERSION = 1
+
+// Anything set in Local.xcconfig wins over the lines above — the signing
+// team, and, should Apple ever refuse the identifier to your team, another
+// identifier (PRODUCT_BUNDLE_IDENTIFIER = com.yourname.yaver).
 #include? "Local.xcconfig"
