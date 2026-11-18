@@ -9,7 +9,9 @@
 #
 # They are taken over the sample data in Support/Staging.swift, like the
 # screenshots that check the design, but at full size and numbered in the
-# order they should appear on the page.
+# order they should appear on the page. They are saved as JPEG: App Store
+# Connect refuses pictures with an alpha channel, which the simulator's PNGs
+# have.
 set -eu
 
 APP="$1"
@@ -43,10 +45,14 @@ shoot() {
         -aisecretary.reportLanguage "$LANGUAGE" \
         -aisecretary.callLanguage "$CALLS" >/dev/null
       sleep 5
-      FILE="$OUT/$FOLDER/$LANGUAGE/$NUMBER-$STAGE.png"
-      xcrun simctl io "$UDID" screenshot "$FILE" >/dev/null 2>&1
+      FILE="$OUT/$FOLDER/$LANGUAGE/$NUMBER-$STAGE.jpg"
+      xcrun simctl io "$UDID" screenshot --type=jpeg "$FILE" >/dev/null 2>&1
       SIZE=$(sips -g pixelWidth -g pixelHeight "$FILE" | awk '/pixel/ { printf "%sx", $2 }' | sed 's/x$//')
-      echo "  $FOLDER/$LANGUAGE/$NUMBER-$STAGE.png  $SIZE"
+      ALPHA=$(sips -g hasAlpha "$FILE" | awk '/hasAlpha/ { print $2 }')
+      echo "  $FOLDER/$LANGUAGE/$NUMBER-$STAGE.jpg  $SIZE"
+      if [ "$ALPHA" = "yes" ]; then
+        echo "::warning::$FILE has an alpha channel, which App Store Connect refuses"
+      fi
     done
   done
   xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true

@@ -162,10 +162,15 @@ docker run -p 8787:8787 -v yaver-data:/data --env-file backend/.env \
 
 ## 4. Have Yaver answer your calls
 
-1. In the app: **Settings → Answer my calls → On**. The server then tells Retell to answer
-   calls to your Retell number with the answering agent, and hands it your name, your
-   note for callers and the greeting. Switching it **Off** takes the agent off the number
-   again.
+1. In the app: **Settings → Answer my calls → On**. The app first asks whether your server
+   may hand your callers to Retell AI — tap **Allow**. The server then tells Retell to
+   answer calls to your Retell number with the answering agent, and hands it your name,
+   your note for callers and the greeting. Switching it **Off** takes the agent off the
+   number again.
+
+   Had you switched it on while calls were still simulated, the server switches it off
+   when it first starts with Retell (its window says so): switch it on again, so the app
+   can ask.
 2. The app shows the number. **Forward the calls you do not answer** to it — on most
    mobile networks by dialling `**61*` + the number + `#` and pressing call (`##61#`
    switches it off again), or in the phone's call settings.

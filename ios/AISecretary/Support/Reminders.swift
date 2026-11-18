@@ -4,6 +4,13 @@ import UserNotifications
 /// Reminders that actually remind: a follow-up with a date becomes a
 /// notification on this iPhone at that time. Nothing leaves the phone.
 enum Reminders {
+    /// iOS keeps quiet about a notification that falls due while its app is
+    /// on screen, unless the app says otherwise. A reminder should ring
+    /// whether Yaver is open or not.
+    static func showWhileOpen() {
+        UNUserNotificationCenter.current().delegate = ForegroundPresenter.shared
+    }
+
     /// Schedules the notification. Returns false when the user has not allowed
     /// Yaver to send notifications — the follow-up is then only a list entry.
     static func schedule(id: String, text: String, at date: Date) async -> Bool {
@@ -28,5 +35,18 @@ enum Reminders {
         } catch {
             return false
         }
+    }
+}
+
+/// Shows a reminder as a banner, with its sound, also while Yaver is open.
+final class ForegroundPresenter: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = ForegroundPresenter()
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list, .sound])
     }
 }

@@ -10,6 +10,11 @@ on:
     branches-ignore:
       # Holds only the screenshots this workflow itself produces.
       - ci-screenshots
+    # A change to the documentation alone needs no build: it would only
+    # cancel the build of the code before it.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
 
 concurrency:
@@ -42,7 +47,7 @@ jobs:
   ios:
     name: iOS build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       # The newest leg pushes its screenshots to the ci-screenshots branch.
       contents: write
@@ -60,6 +65,16 @@ jobs:
             screenshots: true
     steps:
       - uses: actions/checkout@v4
+
+      # The App Store pictures need a large-display iPhone that has never run
+      # on this machine, and its first start takes minutes while iOS sets
+      # itself up. Started now, it is ready by the time they are taken.
+      - name: Start the large iPhone simulator early
+        if: matrix.screenshots
+        run: |
+          export PHONES="iPhone 17 Pro Max|iPhone 16 Pro Max|iPhone Air|iPhone 16 Plus"
+          # Only a head start: if it cannot be started, the pictures start it later.
+          START_ONLY=1 sh -c '. ios/scripts/simulator.sh' || true
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -155,9 +170,8 @@ jobs:
       # asks for, in the three languages. See ios/scripts/store-screenshots.sh.
       - name: Photograph the App Store screenshots
         if: matrix.screenshots
-        timeout-minutes: 20
+        timeout-minutes: 35
         run: |
-          xcrun simctl shutdown all || true
           ios/scripts/store-screenshots.sh \
             "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/AISecretary.app" \
             "$RUNNER_TEMP/screens/appstore"

@@ -12,6 +12,7 @@ struct AISecretaryApp: App {
         self.stage = stage
         _model = State(initialValue: stage?.model ?? SecretaryViewModel())
         _translator = State(initialValue: stage?.translator ?? LiveTranslator())
+        Reminders.showWhileOpen()
     }
 
     var body: some Scene {

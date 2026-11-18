@@ -163,6 +163,16 @@ request (official letters are full of debt, health and immigration matters) it i
 on another model instead of leaving you with nothing. Set `ANTHROPIC_MODEL` to use a
 different model.
 
+## Publishing on the App Store
+
+**[docs/app-store.md](docs/app-store.md)** goes through it step by step: trying the
+app on your own iPhone with a paid developer account, TestFlight, the demo server
+Apple's reviewers need, and every field in App Store Connect — with the texts for the
+store page in English, German and Turkish. The privacy policy is in
+[docs/privacy/](docs/privacy/) (English, German, Turkish), the help page in
+[docs/support.md](docs/support.md), and the build machine makes the App Store
+screenshots in both sizes Apple asks for.
+
 ## How it works
 
 An iPhone app cannot place and steer a phone call by itself, so the app is a thin client

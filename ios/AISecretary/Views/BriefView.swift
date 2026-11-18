@@ -432,7 +432,11 @@ struct BriefView: View {
         Button {
             briefType = .call
             goal = Self.exampleGoal
-            phone = Self.examplePhone
+            // A made-up number is right for a simulated call. A server that
+            // places real calls would ring whoever has it: then the number is
+            // left for the user to type.
+            let simulated = model.server.session?.simulated ?? model.server.health?.simulated ?? false
+            phone = simulated ? Self.examplePhone : ""
         } label: {
             Text(L("Use an example brief"))
         }
