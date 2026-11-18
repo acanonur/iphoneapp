@@ -31,6 +31,10 @@ struct BriefView: View {
     @State private var isReadingDocument = false
     /// Set when a photo was taken but no text could be read from it.
     @State private var documentUnreadable = false
+    /// The AI services this task would go to that the user has not allowed yet.
+    @State private var consentAsked: [AIService]?
+    /// Screenshots only: open with the permission question on screen.
+    private let asksConsentAtOnce: Bool
 
     /// What the server accepts.
     /// The name as the server takes it: trimmed, of a sensible length, or none.
@@ -54,8 +58,10 @@ struct BriefView: View {
         reportLanguage: Language,
         callLanguage: Binding<Language>,
         onCancel: @escaping () -> Void,
-        onCreated: @escaping (SecretaryTask) -> Void
+        onCreated: @escaping (SecretaryTask) -> Void,
+        asksConsentAtOnce: Bool = false
     ) {
+        self.asksConsentAtOnce = asksConsentAtOnce
         self.kind = kind
         self.userName = userName
         self.reportLanguage = reportLanguage
@@ -228,6 +234,11 @@ struct BriefView: View {
             .ignoresSafeArea()
         }
         .photosPicker(isPresented: $showingPhotoPicker, selection: $photoItem, matching: .images)
+        // Before anything personal goes to an AI service for the first time.
+        .aiConsentQuestion($consentAsked, onAllow: submit)
+        .task {
+            if asksConsentAtOnce { consentAsked = [.phoneCalls, .writing] }
+        }
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             isReadingDocument = true
@@ -441,6 +452,11 @@ struct BriefView: View {
 
     private func submit() {
         guard canSubmit else { return }
+        let missing = AIConsent.missing(for: briefType, server: model.server)
+        guard missing.isEmpty else {
+            consentAsked = missing
+            return
+        }
         isSubmitting = true
         Task {
             defer { isSubmitting = false }

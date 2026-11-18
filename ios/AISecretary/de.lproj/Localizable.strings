@@ -123,6 +123,16 @@
 "What should Yaver do?" = "Was soll Yaver tun?";
 "e.g. %@" = "z. B. %@";
 "Who to call" = "Wen soll Yaver anrufen?";
+"Your data and AI services" = "Ihre Daten und KI-Dienste";
+"Phone calls: your server gives Retell AI (USA) the number, your request and your name. Retell’s AI holds the conversation, so the voices and everything said are processed there. Yaver’s server has the call deleted there after the report." = "Anrufe: Ihr Server gibt Retell AI (USA) die Nummer, Ihr Anliegen und Ihren Namen. Die KI von Retell führt das Gespräch – die Stimmen und alles Gesagte werden dort verarbeitet. Nach dem Bericht lässt der Yaver-Server den Anruf dort löschen.";
+"Reports, letters and messages: your server sends the conversation or the document’s text to Claude, the AI of Anthropic (USA), which writes them." = "Berichte, Briefe und Nachrichten: Ihr Server sendet das Gespräch oder den Text des Dokuments an Claude, die KI von Anthropic (USA), die sie verfasst.";
+"This happens only with the services set up on your server. You can withdraw your permission in Settings." = "Das geschieht nur mit den Diensten, die auf Ihrem Server eingerichtet sind. Ihre Erlaubnis können Sie in den Einstellungen widerrufen.";
+"Allow" = "Erlauben";
+"Not now" = "Nicht jetzt";
+"Retell AI (phone calls)" = "Retell AI (Anrufe)";
+"Anthropic Claude (reports)" = "Anthropic Claude (Berichte)";
+"You allowed your server to send data to: %@." = "Sie haben erlaubt, dass Ihr Server Daten sendet an: %@.";
+"Withdraw permission" = "Erlaubnis widerrufen";
 "The phone service did not accept this. Try again in a moment." = "Der Telefondienst hat das nicht angenommen. Versuchen Sie es gleich noch einmal.";
 "Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again." = "Yaver nimmt Anrufe auch an, wenn Ihr Computer aus ist. Die Nachrichten bleiben bis zu sieben Tage gespeichert und erscheinen hier, sobald der Server wieder läuft.";
 "Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada." = "Ihr Server ruft keine Sonder-, Mehrwert- oder Notrufnummern an und auch keine +1-Nummern außerhalb der USA und Kanadas.";

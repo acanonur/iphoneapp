@@ -219,7 +219,8 @@ struct RootView: View {
                 // kinds go back to the ledger and resolve there.
                 onCreated: { task in
                     route = task.kind == .call ? .call(task.id) : .home
-                }
+                },
+                asksConsentAtOnce: stage?.briefAsksConsent ?? false
             )
             // A fresh brief every time, so the form never carries over.
             .id(kind)

@@ -123,6 +123,16 @@
 "What should Yaver do?" = "Yaver ne yapsın?";
 "e.g. %@" = "örn. %@";
 "Who to call" = "Kim aransın?";
+"Your data and AI services" = "Verileriniz ve yapay zekâ hizmetleri";
+"Phone calls: your server gives Retell AI (USA) the number, your request and your name. Retell’s AI holds the conversation, so the voices and everything said are processed there. Yaver’s server has the call deleted there after the report." = "Aramalar: Sunucunuz numarayı, isteğinizi ve adınızı Retell AI’a (ABD) iletir. Görüşmeyi Retell’in yapay zekâsı yürütür; sesler ve söylenen her şey orada işlenir. Rapor yazıldıktan sonra Yaver sunucusu aramayı orada sildirir.";
+"Reports, letters and messages: your server sends the conversation or the document’s text to Claude, the AI of Anthropic (USA), which writes them." = "Raporlar, mektuplar ve mesajlar: Sunucunuz görüşmeyi ya da belgenin metnini, bunları yazan Anthropic’in (ABD) yapay zekâsı Claude’a gönderir.";
+"This happens only with the services set up on your server. You can withdraw your permission in Settings." = "Bu yalnızca sunucunuzda kurulu hizmetlerle olur. İzninizi Ayarlar’dan geri alabilirsiniz.";
+"Allow" = "İzin ver";
+"Not now" = "Şimdi değil";
+"Retell AI (phone calls)" = "Retell AI (aramalar)";
+"Anthropic Claude (reports)" = "Anthropic Claude (raporlar)";
+"You allowed your server to send data to: %@." = "Sunucunuzun şu hizmetlere veri göndermesine izin verdiniz: %@.";
+"Withdraw permission" = "İzni geri al";
 "The phone service did not accept this. Try again in a moment." = "Telefon hizmeti bunu kabul etmedi. Birazdan yeniden deneyin.";
 "Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again." = "Yaver, bilgisayarınız kapalıyken de aramaları yanıtlar. Mesajlar en fazla yedi gün saklanır ve sunucu yeniden çalışır çalışmaz burada görünür.";
 "Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada." = "Sunucunuz ücretli, özel ve acil durum numaralarını, ayrıca ABD ve Kanada dışındaki +1 numaralarını aramaz.";

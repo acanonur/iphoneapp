@@ -24,6 +24,10 @@ struct SettingsView: View {
     @State private var answerError: String?
     @State private var isSavingAnswer = false
     @State private var isSimulating = false
+    /// The AI services answering would go to that the user has not allowed yet.
+    @State private var answeringConsent: [AIService]?
+    /// The AI services the user has allowed, for the line under About.
+    @State private var allowedServices = AIConsent.granted
 
     private var server: ServerStore { model.server }
 
@@ -313,8 +317,26 @@ struct SettingsView: View {
                 .padding(.top, 14)
                 .onChange(of: answering) { _, enabled in
                     guard enabled != (server.session?.profile.answerCalls ?? false) else { return }
+                    if enabled {
+                        // Callers' voices go to the phone service's AI: the
+                        // user says yes to that first.
+                        let missing = AIConsent.missingForAnswering(server: server)
+                        guard missing.isEmpty else {
+                            answeringConsent = missing
+                            return
+                        }
+                    }
                     saveAnswering()
                 }
+                .aiConsentQuestion(
+                    $answeringConsent,
+                    onAllow: {
+                        allowedServices = AIConsent.granted
+                        saveAnswering()
+                    },
+                    // Not allowed: the switch goes back, and nothing is saved.
+                    onDecline: { answering = false }
+                )
 
                 if let answerError {
                     Notice(title: L("That did not work."), message: answerError, tone: .accent)
@@ -461,12 +483,44 @@ struct SettingsView: View {
                 promise(L("Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language."))
             }
 
+            if !allowedServices.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(
+                        Lf(
+                            "You allowed your server to send data to: %@.",
+                            allowedServices.map(\.label).joined(separator: ", ")
+                        )
+                    )
+                    .typeStyle(.smallTight)
+                    .foregroundStyle(Modernist.Neutral.s700)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Button(action: withdrawConsent) {
+                        Text(L("Withdraw permission"))
+                    }
+                    .buttonStyle(
+                        ModernistButtonStyle(
+                            variant: .ghost, fontSize: 14, horizontalPadding: 0, verticalPadding: 8, hitSlop: 6
+                        )
+                    )
+                }
+                .padding(.top, 14)
+            }
+
             VStack(alignment: .leading, spacing: 0) {
                 aboutLink(L("Privacy policy"), Links.privacyPolicy)
                 aboutLink(L("Help and contact"), Links.help)
             }
             .padding(.top, 12)
         }
+        .task { allowedServices = AIConsent.granted }
+    }
+
+    /// Takes back the permission to send data to AI services. Answering calls
+    /// needs it, so it goes off with it.
+    private func withdrawConsent() {
+        AIConsent.withdrawAll()
+        allowedServices = []
+        if answering, !server.isSimulated { answering = false }
     }
 
     /// A page on the web, opened in Safari.

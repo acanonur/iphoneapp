@@ -16,6 +16,8 @@ struct ReportView: View {
     @State private var reminderError: String?
     @State private var isRetrying = false
     @State private var retryError: String?
+    /// The AI services a new call would go to that the user has not allowed yet.
+    @State private var consentAsked: [AIService]?
 
     private var task: SecretaryTask? { model.task(withID: taskID) }
 
@@ -260,29 +262,40 @@ struct ReportView: View {
             && task.problem != .cancelled && task.phoneNumber != nil
     }
 
+    /// Places the same call once more — after asking, if this server would
+    /// now send it to an AI service the user has not allowed.
+    private func callAgain(_ task: SecretaryTask) {
+        let missing = AIConsent.missing(for: .call, server: model.server)
+        guard missing.isEmpty else {
+            consentAsked = missing
+            return
+        }
+        isRetrying = true
+        retryError = nil
+        Task {
+            defer { isRetrying = false }
+            do {
+                let again = try await model.create(
+                    NewTaskRequest(
+                        kind: .call,
+                        goal: task.goal,
+                        phoneNumber: task.phoneNumber,
+                        language: task.language,
+                        summaryLanguage: task.summaryLanguage,
+                        userName: task.userName
+                    )
+                )
+                openTask(again)
+            } catch {
+                retryError = error.localizedDescription
+            }
+        }
+    }
+
     private func retryBlock(_ task: SecretaryTask) -> some View {
         VStack(spacing: 0) {
             Button {
-                isRetrying = true
-                retryError = nil
-                Task {
-                    defer { isRetrying = false }
-                    do {
-                        let again = try await model.create(
-                            NewTaskRequest(
-                                kind: .call,
-                                goal: task.goal,
-                                phoneNumber: task.phoneNumber,
-                                language: task.language,
-                                summaryLanguage: task.summaryLanguage,
-                                userName: task.userName
-                            )
-                        )
-                        openTask(again)
-                    } catch {
-                        retryError = error.localizedDescription
-                    }
-                }
+                callAgain(task)
             } label: {
                 ButtonLabel(title: L("Call again"), icon: .phone, iconSize: 16)
             }
@@ -291,6 +304,7 @@ struct ReportView: View {
             )
             .disabled(isRetrying)
             .padding(.vertical, 14)
+            .aiConsentQuestion($consentAsked, onAllow: { callAgain(task) })
             if let retryError {
                 Notice(title: L("That did not work."), message: retryError, tone: .accent)
                     .padding(.bottom, 14)

@@ -123,6 +123,16 @@
 "What should Yaver do?" = "What should Yaver do?";
 "e.g. %@" = "e.g. %@";
 "Who to call" = "Who to call";
+"Your data and AI services" = "Your data and AI services";
+"Phone calls: your server gives Retell AI (USA) the number, your request and your name. Retell’s AI holds the conversation, so the voices and everything said are processed there. Yaver’s server has the call deleted there after the report." = "Phone calls: your server gives Retell AI (USA) the number, your request and your name. Retell’s AI holds the conversation, so the voices and everything said are processed there. Yaver’s server has the call deleted there after the report.";
+"Reports, letters and messages: your server sends the conversation or the document’s text to Claude, the AI of Anthropic (USA), which writes them." = "Reports, letters and messages: your server sends the conversation or the document’s text to Claude, the AI of Anthropic (USA), which writes them.";
+"This happens only with the services set up on your server. You can withdraw your permission in Settings." = "This happens only with the services set up on your server. You can withdraw your permission in Settings.";
+"Allow" = "Allow";
+"Not now" = "Not now";
+"Retell AI (phone calls)" = "Retell AI (phone calls)";
+"Anthropic Claude (reports)" = "Anthropic Claude (reports)";
+"You allowed your server to send data to: %@." = "You allowed your server to send data to: %@.";
+"Withdraw permission" = "Withdraw permission";
 "The phone service did not accept this. Try again in a moment." = "The phone service did not accept this. Try again in a moment.";
 "Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again." = "Yaver also answers while your computer is off. The messages wait for up to seven days and appear here as soon as the server is running again.";
 "Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada." = "Your server does not call premium-rate, special or emergency numbers, or +1 numbers outside the US and Canada.";

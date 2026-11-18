@@ -15,6 +15,8 @@ struct Stage {
     var onboardingStep = 0
     /// Settings opens scrolled down to "Answer my calls".
     var settingsShowsAnswering = false
+    /// The brief opens with the question about AI services on screen.
+    var briefAsksConsent = false
 
     static func requested() -> Stage? {
         #if DEBUG
@@ -458,6 +460,10 @@ enum Fixtures {
         case "answering":
             var stage = make(.settings, tasks: settled)
             stage.settingsShowsAnswering = true
+            return stage
+        case "consent":
+            var stage = make(.brief(.call), tasks: settled)
+            stage.briefAsksConsent = true
             return stage
         default:
             return nil

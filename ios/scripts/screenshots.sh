@@ -11,7 +11,7 @@ set -eu
 APP="$1"
 OUT="$2"
 BUNDLE=com.canonur.aisecretary
-STAGES="onboarding connect home offline brief call report answered failed translator settings answering"
+STAGES="onboarding connect home offline brief call report answered failed translator settings answering consent"
 
 . "$(dirname "$0")/simulator.sh"
 xcrun simctl install "$UDID" "$APP"
