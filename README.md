@@ -228,9 +228,9 @@ server asks for a key.
   service records the call, and recording someone without telling them is a crime in
   Germany (§ 201 StGB) and Türkiye (TCK Art. 133). Whoever stays on the line has heard it.
 - **The recording is deleted.** The app keeps a written transcript. The recording the
-  phone service makes is deleted there as soon as the report is saved — and by the service
-  itself after one day at the latest (seven for an answered call your server has not
-  fetched yet).
+  phone service makes is deleted there right after the call — within two minutes of its
+  end while your server runs — and by the service itself after one day at the latest
+  (seven for an answered call your server has not fetched yet).
 - **Calls only when you ask.** One request, one call, to a number you typed; only to the
   countries the server allows (`ALLOWED_COUNTRY_PREFIXES`), and no more than
   `MAX_CALLS_PER_DAY`.

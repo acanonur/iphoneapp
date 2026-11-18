@@ -198,7 +198,7 @@
 "Answering…" = "Nimmt den Anruf an …";
 "Brief" = "Auftrag";
 "Live transcript" = "Live-Mitschrift";
-"The call is recorded for this transcript. The recording is deleted once the report is written." = "Das Gespräch wird für diese Mitschrift aufgezeichnet. Die Aufnahme wird gelöscht, sobald der Bericht fertig ist.";
+"The call is recorded for this transcript. The recording is deleted right after the call." = "Das Gespräch wird für diese Mitschrift aufgezeichnet. Die Aufnahme wird gleich nach dem Anruf gelöscht.";
 "A simulated call: nothing is recorded." = "Ein simulierter Anruf: Es wird nichts aufgezeichnet.";
 "Yaver is working on it — this updates by itself." = "Yaver ist dabei – die Anzeige aktualisiert sich von selbst.";
 "The call has ended." = "Der Anruf ist beendet.";
@@ -207,7 +207,7 @@
 "Waiting for the first words…" = "Wartet auf die ersten Worte …";
 "Nothing was said on this call." = "In diesem Anruf wurde nichts gesagt.";
 "Says it is an AI at the start of every call." = "Sagt zu Beginn jedes Anrufs, dass es eine KI ist.";
-"Says that the call is recorded, and has the recording deleted once the report is written." = "Sagt, dass das Gespräch aufgezeichnet wird, und lässt die Aufnahme löschen, sobald der Bericht fertig ist.";
+"Says that the call is recorded, and has the recording deleted right after the call." = "Sagt, dass das Gespräch aufgezeichnet wird, und lässt die Aufnahme gleich nach dem Anruf löschen.";
 "Calls only when you ask. One request, one call." = "Ruft nur an, wenn Sie es verlangen. Ein Auftrag, ein Anruf.";
 "Step %1$d of %2$d" = "Schritt %1$d von %2$d";
 "Phone calls, made for you." = "Telefonate, für Sie erledigt.";

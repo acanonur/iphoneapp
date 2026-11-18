@@ -198,7 +198,7 @@
 "Answering…" = "Yanıtlanıyor…";
 "Brief" = "Görev";
 "Live transcript" = "Canlı döküm";
-"The call is recorded for this transcript. The recording is deleted once the report is written." = "Görüşme bu döküm için kaydediliyor. Kayıt, rapor yazılınca silinir.";
+"The call is recorded for this transcript. The recording is deleted right after the call." = "Görüşme bu döküm için kaydediliyor. Kayıt, görüşmeden hemen sonra silinir.";
 "A simulated call: nothing is recorded." = "Simüle bir arama: hiçbir şey kaydedilmiyor.";
 "Yaver is working on it — this updates by itself." = "Yaver üzerinde çalışıyor; bu ekran kendiliğinden güncellenir.";
 "The call has ended." = "Arama sona erdi.";
@@ -207,7 +207,7 @@
 "Waiting for the first words…" = "İlk sözler bekleniyor…";
 "Nothing was said on this call." = "Bu aramada hiçbir şey konuşulmadı.";
 "Says it is an AI at the start of every call." = "Her aramanın başında yapay zekâ olduğunu söyler.";
-"Says that the call is recorded, and has the recording deleted once the report is written." = "Görüşmenin kaydedildiğini söyler ve rapor yazılınca kaydı sildirir.";
+"Says that the call is recorded, and has the recording deleted right after the call." = "Görüşmenin kaydedildiğini söyler ve kaydı görüşmeden hemen sonra sildirir.";
 "Calls only when you ask. One request, one call." = "Yalnızca siz istediğinizde arar. Bir istek, bir arama.";
 "Step %1$d of %2$d" = "Adım %1$d / %2$d";
 "Phone calls, made for you." = "Telefon görüşmeleri, sizin yerinize.";

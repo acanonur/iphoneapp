@@ -202,12 +202,12 @@ Retell records calls by default, so the first sentence of every call says so —
 This call is being recorded."* (in German *"Das Gespräch wird aufgezeichnet."*, in
 Turkish *"Bu görüşme kaydediliyor."*). Recording a phone call without telling the other
 side is a crime in Germany and in Türkiye; do not take this sentence out. Yaver's server
-asks Retell to **delete each call — recording included — as soon as the report is
-saved**. In case the server is switched off
-at the wrong moment, Retell's own automatic deletion is set as well: after one day for a
-call Yaver placed, after seven days for a call it answered (a message left while your
-computer was off has to be there when you switch it on again). What is kept is the
-written transcript, on your own server.
+asks Retell to **delete each call — recording included — right after it**: as soon as
+Retell has finished its own analysis of the call, and at the latest two minutes after the
+call ended. In case the server is switched off at the wrong moment, Retell's own
+automatic deletion is set as well: after one day for a call Yaver placed, after seven days
+for a call it answered (a message left while your computer was off has to be there when
+you switch it on again). What is kept is the written transcript, on your own server.
 
 ## If something does not work
 

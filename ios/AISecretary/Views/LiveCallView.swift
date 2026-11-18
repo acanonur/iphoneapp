@@ -269,7 +269,7 @@ struct LiveCallView: View {
                 emptyText: waitingText(task),
                 note: task.simulated
                     ? L("A simulated call: nothing is recorded.")
-                    : L("The call is recorded for this transcript. The recording is deleted once the report is written.")
+                    : L("The call is recorded for this transcript. The recording is deleted right after the call.")
             )
 
             Text(

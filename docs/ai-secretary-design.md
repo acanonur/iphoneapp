@@ -120,8 +120,8 @@ The home grid offers six things, and all of them do real work:
 
 A photographed letter or form is read **on the phone** with Vision, and only the
 recognised text is sent — the photograph never leaves the device. Paperwork, like a call,
-ends up as text: for a call, the phone service's recording is deleted once the report is
-saved.
+ends up as text: for a call, the phone service's recording is deleted right after the
+call.
 
 With no Anthropic key on the server (`npm run claude:setup` sets one), a letter, message
 or form is not pretended to be done: it ends as `failed` with the reason `reports_off`,

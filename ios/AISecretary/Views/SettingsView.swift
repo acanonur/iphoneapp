@@ -478,7 +478,7 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 promise(L("Says it is an AI at the start of every call."))
-                promise(L("Says that the call is recorded, and has the recording deleted once the report is written."))
+                promise(L("Says that the call is recorded, and has the recording deleted right after the call."))
                 promise(L("Calls only when you ask. One request, one call."))
                 promise(L("Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language."))
             }

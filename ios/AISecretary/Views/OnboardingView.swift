@@ -38,7 +38,7 @@ struct OnboardingView: View {
     private var promises: [String] {
         [
             L("Says it is an AI at the start of every call."),
-            L("Says that the call is recorded, and has the recording deleted once the report is written."),
+            L("Says that the call is recorded, and has the recording deleted right after the call."),
             L("Calls only when you ask. One request, one call."),
         ]
     }

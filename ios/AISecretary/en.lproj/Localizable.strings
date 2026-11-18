@@ -198,7 +198,7 @@
 "Answering…" = "Answering…";
 "Brief" = "Brief";
 "Live transcript" = "Live transcript";
-"The call is recorded for this transcript. The recording is deleted once the report is written." = "The call is recorded for this transcript. The recording is deleted once the report is written.";
+"The call is recorded for this transcript. The recording is deleted right after the call." = "The call is recorded for this transcript. The recording is deleted right after the call.";
 "A simulated call: nothing is recorded." = "A simulated call: nothing is recorded.";
 "Yaver is working on it — this updates by itself." = "Yaver is working on it — this updates by itself.";
 "The call has ended." = "The call has ended.";
@@ -207,7 +207,7 @@
 "Waiting for the first words…" = "Waiting for the first words…";
 "Nothing was said on this call." = "Nothing was said on this call.";
 "Says it is an AI at the start of every call." = "Says it is an AI at the start of every call.";
-"Says that the call is recorded, and has the recording deleted once the report is written." = "Says that the call is recorded, and has the recording deleted once the report is written.";
+"Says that the call is recorded, and has the recording deleted right after the call." = "Says that the call is recorded, and has the recording deleted right after the call.";
 "Calls only when you ask. One request, one call." = "Calls only when you ask. One request, one call.";
 "Step %1$d of %2$d" = "Step %1$d of %2$d";
 "Phone calls, made for you." = "Phone calls, made for you.";
