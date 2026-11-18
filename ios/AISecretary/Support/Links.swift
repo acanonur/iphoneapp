@@ -14,4 +14,16 @@ enum Links {
     static var help: URL {
         URL(string: "\(pages)/support.md")!
     }
+
+    /// The part of the help page that says how to report a wrong or harmful
+    /// result, under its heading in the app's language.
+    static var reportProblem: URL {
+        let heading: String
+        switch L10n.language {
+        case .de: heading = "ein-problem-melden"
+        case .tr: heading = "bir-sorun-bildirin"
+        case .en: heading = "report-a-problem"
+        }
+        return URL(string: "\(pages)/support.md#\(heading)")!
+    }
 }

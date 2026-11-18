@@ -17,44 +17,57 @@ export const VOICE_LOCALES: Record<Language, 'de-DE' | 'en-US' | 'tr-TR'> = {
  * Mandatory AI self-disclosure, spoken as the very first sentence of every call.
  * EU AI Act Article 50(1) (applies from 2 Aug 2026) requires people to be told
  * they are talking to an AI no later than the first interaction.
+ *
+ * It also says that the call is recorded: the phone service records it (Retell
+ * keeps the audio until this server deletes the call), and recording a call
+ * without telling the other side is a crime in Germany (§ 201 StGB) and in
+ * Türkiye (TCK Art. 133). Whoever stays on the line after hearing it agrees.
  */
 export function disclosureLine(language: Language, userName: string | null): string {
   const name = userName?.trim() || null;
   switch (language) {
     case 'de':
       return name
-        ? `Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von ${name} anruft.`
-        : 'Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag eines Kunden anruft.';
+        ? `Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von ${name} anruft. ${RECORDED.de}`
+        : `Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag eines Kunden anruft. ${RECORDED.de}`;
     case 'tr':
       return name
-        ? `Merhaba! Ben ${name} adına arayan bir yapay zekâ asistanıyım.`
-        : 'Merhaba! Ben bir müşteri adına arayan bir yapay zekâ asistanıyım.';
+        ? `Merhaba! Ben ${name} adına arayan bir yapay zekâ asistanıyım. ${RECORDED.tr}`
+        : `Merhaba! Ben bir müşteri adına arayan bir yapay zekâ asistanıyım. ${RECORDED.tr}`;
     case 'en':
       return name
-        ? `Hello! This is an AI assistant calling on behalf of ${name}.`
-        : 'Hello! This is an AI assistant calling on behalf of a client.';
+        ? `Hello! This is an AI assistant calling on behalf of ${name}. ${RECORDED.en}`
+        : `Hello! This is an AI assistant calling on behalf of a client. ${RECORDED.en}`;
   }
 }
 
+/** The sentence that tells the other side the call is recorded. */
+export const RECORDED: Record<Language, string> = {
+  de: 'Das Gespräch wird aufgezeichnet.',
+  en: 'This call is being recorded.',
+  tr: 'Bu görüşme kaydediliyor.',
+};
+
 /**
  * The first thing a caller hears when the secretary answers for its owner. The
- * same duty to disclose applies: it says at once that it is an AI.
+ * same duty to disclose applies: it says at once that it is an AI, and that
+ * the call is recorded.
  */
 export function greetingLine(language: Language, ownerName: string | null): string {
   const name = ownerName?.trim() || null;
   switch (language) {
     case 'de':
       return name
-        ? `Guten Tag! Hier ist der KI-Assistent von ${name}. ${name} ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?`
-        : 'Guten Tag! Hier ist ein KI-Assistent. Die gewünschte Person ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?';
+        ? `Guten Tag! Hier ist der KI-Assistent von ${name}. ${name} ist gerade nicht erreichbar. ${RECORDED.de} Wie kann ich Ihnen helfen?`
+        : `Guten Tag! Hier ist ein KI-Assistent. Die gewünschte Person ist gerade nicht erreichbar. ${RECORDED.de} Wie kann ich Ihnen helfen?`;
     case 'tr':
       return name
-        ? `Merhaba! Ben ${name} adına telefona bakan yapay zekâ asistanıyım. ${name} şu anda müsait değil. Size nasıl yardımcı olabilirim?`
-        : 'Merhaba! Ben bir yapay zekâ asistanıyım. Aradığınız kişi şu anda müsait değil. Size nasıl yardımcı olabilirim?';
+        ? `Merhaba! Ben ${name} adına telefona bakan yapay zekâ asistanıyım. ${name} şu anda müsait değil. ${RECORDED.tr} Size nasıl yardımcı olabilirim?`
+        : `Merhaba! Ben bir yapay zekâ asistanıyım. Aradığınız kişi şu anda müsait değil. ${RECORDED.tr} Size nasıl yardımcı olabilirim?`;
     case 'en':
       return name
-        ? `Hello! This is ${name}'s AI assistant. ${name} can't take your call right now. How can I help you?`
-        : "Hello! This is an AI assistant. The person you are calling can't take your call right now. How can I help you?";
+        ? `Hello! This is ${name}'s AI assistant. ${name} can't take your call right now. ${RECORDED.en} How can I help you?`
+        : `Hello! This is an AI assistant. The person you are calling can't take your call right now. ${RECORDED.en} How can I help you?`;
   }
 }
 
@@ -109,7 +122,7 @@ Rules:
 1. Right after the opening, say briefly why you are calling and pursue the task.
 2. Be concise and natural. Use short sentences suitable for a phone call. Ask one question at a time and wait for the answer.
 3. Never invent personal data. If you are asked for information about {{user_name}} that you were not given (date of birth, insurance number, address), say you do not have it at hand and that {{user_name}} will provide it later or in person.
-4. If asked whether the call is recorded, say: the audio is not kept; a written transcript is made so that {{user_name}} can read what was agreed.
+4. If asked about the recording, say: yes, the call is recorded, so that {{user_name}} gets a written transcript of what was agreed.
 5. Before ending, repeat and confirm the key result (for example date, time, place, price, reference number).
 6. If the other side cannot help, is a wrong number, or refuses to talk to an AI, apologize briefly, thank them, and end the call politely.
 7. If you reach a voicemail or an answering machine, do not leave a message: end the call.
@@ -135,7 +148,7 @@ What to find out, one question at a time:
 Rules:
 - Keep it short and friendly. Short sentences. Do not repeat the caller's words back unless you are confirming a number, a date or a name.
 - You cannot make appointments, accept offers, confirm or cancel anything, agree to payments, or give any personal information about {{owner_name}} (address, date of birth, whereabouts, other phone numbers). If asked, say that you will pass the question on.
-- If asked whether the call is recorded, say: the audio is not kept; a written transcript is made so that {{owner_name}} can read the message.
+- If asked about the recording, say: yes, the call is recorded, so that {{owner_name}} gets the message in writing.
 - If it is a sales call or a survey, politely say that {{owner_name}} is not interested, and end the call.
 - When you have the message, repeat the key points once, say that you will pass it on to {{owner_name}}, say goodbye and hang up.
 

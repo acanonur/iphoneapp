@@ -12,7 +12,12 @@
  */
 import '../src/env.js';
 import Retell from 'retell-sdk';
-import { AGENT_PROMPT_TEMPLATE, INBOUND_PROMPT_TEMPLATE, greetingLine } from '../src/prompt.js';
+import {
+  AGENT_PROMPT_TEMPLATE,
+  INBOUND_PROMPT_TEMPLATE,
+  disclosureLine,
+  greetingLine,
+} from '../src/prompt.js';
 import {
   ANSWERED_CALLS_KEPT_DAYS,
   WEBHOOK_EVENTS,
@@ -37,7 +42,7 @@ const OUTBOUND_LLM: Retell.LlmCreateParams = {
     user_name: 'the client',
     language_name: 'English',
     goal: 'Ask politely whether this is a good time to talk, then end the call.',
-    disclosure: 'Hello! This is an AI assistant calling on behalf of a client.',
+    disclosure: disclosureLine('en', null),
   },
 };
 

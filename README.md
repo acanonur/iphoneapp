@@ -221,17 +221,28 @@ server asks for a key.
 
 ## Rules that are built in — do not remove
 
-- **It says it is an AI.** The first sentence of every call — placed or answered — is the
-  disclosure, spoken by the platform itself, word for word (EU AI Act, Article 50).
-- **The audio is not kept.** The app keeps a written transcript. The recording the phone
-  service makes is deleted there as soon as the report is saved — and by the service
+- **It says it is an AI, and that the call is recorded.** The first sentence of every
+  call — placed or answered — is the disclosure, spoken by the platform itself, word for
+  word (EU AI Act, Article 50): *"Hello! This is an AI assistant calling on behalf of
+  Deniz Kaya. This call is being recorded."* The second half is there because the phone
+  service records the call, and recording someone without telling them is a crime in
+  Germany (§ 201 StGB) and Türkiye (TCK Art. 133). Whoever stays on the line has heard it.
+- **The recording is deleted.** The app keeps a written transcript. The recording the
+  phone service makes is deleted there as soon as the report is saved — and by the service
   itself after one day at the latest (seven for an answered call your server has not
   fetched yet).
 - **Calls only when you ask.** One request, one call, to a number you typed; only to the
   countries the server allows (`ALLOWED_COUNTRY_PREFIXES`), and no more than
   `MAX_CALLS_PER_DAY`.
 - **Only text leaves the phone.** A photographed letter is read on the device; the
-  photograph stays there. The translator's audio and text never leave the phone.
+  photograph stays there. The translator's text never leaves the phone, and neither does
+  its audio wherever the iPhone recognises the language itself (otherwise iOS sends the
+  audio to Apple to recognise it, and the translator says so).
+- **It asks before an AI service gets anything.** Before the first real call (Retell AI)
+  or the first report or letter written by Claude, the app says what goes where and asks
+  for permission; Settings → About can take it back (App Review Guideline 5.1.2(i)).
+- **It never calls for "a client".** A real call needs the owner's name, which the AI says
+  at the start; the server refuses a real call without one.
 
 ## Repository layout
 

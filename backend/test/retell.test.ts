@@ -103,7 +103,10 @@ async function deliver(built: App, payload: unknown, options: { sign?: boolean; 
 
 const conversation = [
   { role: 'user', content: 'Praxis am Park, guten Tag.' },
-  { role: 'agent', content: 'Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von Ali anruft.' },
+  {
+    role: 'agent',
+    content: 'Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von Ali anruft. Das Gespräch wird aufgezeichnet.',
+  },
   { role: 'user', content: 'Dienstag um 10:30 Uhr wäre frei.' },
   { role: 'agent', content: 'Dienstag 10:30 Uhr passt. Vielen Dank!' },
 ];
@@ -149,7 +152,8 @@ describe('placing a call through Retell', () => {
     // The AI disclosure is spoken by the platform, word for word, first.
     expect(request.body.agent_override.retell_llm).toEqual({
       start_speaker: 'agent',
-      begin_message: 'Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von Ali anruft.',
+      begin_message:
+        'Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von Ali anruft. Das Gespräch wird aufgezeichnet.',
     });
   });
 
@@ -839,7 +843,7 @@ describe('answering calls for the owner', () => {
     expect(updates.at(-1)!.body.default_dynamic_variables).toMatchObject({
       owner_note: 'On holiday until Monday.',
       greeting:
-        'Guten Tag! Hier ist der KI-Assistent von Ali. Ali ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?',
+        'Guten Tag! Hier ist der KI-Assistent von Ali. Ali ist gerade nicht erreichbar. Das Gespräch wird aufgezeichnet. Wie kann ich Ihnen helfen?',
     });
     // The number itself was not touched again.
     expect(requests.filter((r) => r.url.includes('/update-phone-number/'))).toHaveLength(1);
@@ -979,7 +983,7 @@ describe('answering calls for the owner', () => {
     });
     const variables = res.json().call_inbound.dynamic_variables;
     expect(variables.greeting).toBe(
-      'Guten Tag! Hier ist der KI-Assistent von Ali. Ali ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?',
+      'Guten Tag! Hier ist der KI-Assistent von Ali. Ali ist gerade nicht erreichbar. Das Gespräch wird aufgezeichnet. Wie kann ich Ihnen helfen?',
     );
 
     // The call is expected in German and reported in Turkish.

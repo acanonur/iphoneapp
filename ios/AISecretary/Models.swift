@@ -567,21 +567,32 @@ extension ISO8601DateFormatter {
 
 /// The AI self-disclosure spoken as the first sentence of every call, shown to
 /// the user so they know what the other side will hear. Required by EU AI Act
-/// Article 50(1); the server speaks the same line (backend/src/prompt.ts).
+/// Article 50(1); the server speaks the same line (backend/src/prompt.ts). It
+/// ends by saying the call is recorded: the phone service records it, and the
+/// other side has to be told (§ 201 StGB, TCK Art. 133).
 enum Disclosure {
+    /// The sentence that tells the other side the call is recorded.
+    static func recorded(_ language: Language) -> String {
+        switch language {
+        case .de: return "Das Gespräch wird aufgezeichnet."
+        case .tr: return "Bu görüşme kaydediliyor."
+        case .en: return "This call is being recorded."
+        }
+    }
+
     static func line(_ language: Language, name: String?) -> String {
         let trimmed = name?.trimmingCharacters(in: .whitespaces) ?? ""
         guard !trimmed.isEmpty else {
             switch language {
-            case .de: return "Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag eines Kunden anruft."
-            case .tr: return "Merhaba! Ben bir müşteri adına arayan bir yapay zekâ asistanıyım."
-            case .en: return "Hello! This is an AI assistant calling on behalf of a client."
+            case .de: return "Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag eines Kunden anruft. \(recorded(.de))"
+            case .tr: return "Merhaba! Ben bir müşteri adına arayan bir yapay zekâ asistanıyım. \(recorded(.tr))"
+            case .en: return "Hello! This is an AI assistant calling on behalf of a client. \(recorded(.en))"
             }
         }
         switch language {
-        case .de: return "Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von \(trimmed) anruft."
-        case .tr: return "Merhaba! Ben \(trimmed) adına arayan bir yapay zekâ asistanıyım."
-        case .en: return "Hello! This is an AI assistant calling on behalf of \(trimmed)."
+        case .de: return "Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von \(trimmed) anruft. \(recorded(.de))"
+        case .tr: return "Merhaba! Ben \(trimmed) adına arayan bir yapay zekâ asistanıyım. \(recorded(.tr))"
+        case .en: return "Hello! This is an AI assistant calling on behalf of \(trimmed). \(recorded(.en))"
         }
     }
 
@@ -590,15 +601,15 @@ enum Disclosure {
         let trimmed = name?.trimmingCharacters(in: .whitespaces) ?? ""
         guard !trimmed.isEmpty else {
             switch language {
-            case .de: return "Guten Tag! Hier ist ein KI-Assistent. Die gewünschte Person ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?"
-            case .tr: return "Merhaba! Ben bir yapay zekâ asistanıyım. Aradığınız kişi şu anda müsait değil. Size nasıl yardımcı olabilirim?"
-            case .en: return "Hello! This is an AI assistant. The person you are calling can't take your call right now. How can I help you?"
+            case .de: return "Guten Tag! Hier ist ein KI-Assistent. Die gewünschte Person ist gerade nicht erreichbar. \(recorded(.de)) Wie kann ich Ihnen helfen?"
+            case .tr: return "Merhaba! Ben bir yapay zekâ asistanıyım. Aradığınız kişi şu anda müsait değil. \(recorded(.tr)) Size nasıl yardımcı olabilirim?"
+            case .en: return "Hello! This is an AI assistant. The person you are calling can't take your call right now. \(recorded(.en)) How can I help you?"
             }
         }
         switch language {
-        case .de: return "Guten Tag! Hier ist der KI-Assistent von \(trimmed). \(trimmed) ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?"
-        case .tr: return "Merhaba! Ben \(trimmed) adına telefona bakan yapay zekâ asistanıyım. \(trimmed) şu anda müsait değil. Size nasıl yardımcı olabilirim?"
-        case .en: return "Hello! This is \(trimmed)'s AI assistant. \(trimmed) can't take your call right now. How can I help you?"
+        case .de: return "Guten Tag! Hier ist der KI-Assistent von \(trimmed). \(trimmed) ist gerade nicht erreichbar. \(recorded(.de)) Wie kann ich Ihnen helfen?"
+        case .tr: return "Merhaba! Ben \(trimmed) adına telefona bakan yapay zekâ asistanıyım. \(trimmed) şu anda müsait değil. \(recorded(.tr)) Size nasıl yardımcı olabilirim?"
+        case .en: return "Hello! This is \(trimmed)'s AI assistant. \(trimmed) can't take your call right now. \(recorded(.en)) How can I help you?"
         }
     }
 }

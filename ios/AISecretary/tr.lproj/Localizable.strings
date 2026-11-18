@@ -198,7 +198,8 @@
 "Answering…" = "Yanıtlanıyor…";
 "Brief" = "Görev";
 "Live transcript" = "Canlı döküm";
-"A written record only. The audio is not kept." = "Yalnızca yazılı kayıt. Ses saklanmaz.";
+"The call is recorded for this transcript. The recording is deleted once the report is written." = "Görüşme bu döküm için kaydediliyor. Kayıt, rapor yazılınca silinir.";
+"A simulated call: nothing is recorded." = "Simüle bir arama: hiçbir şey kaydedilmiyor.";
 "Yaver is working on it — this updates by itself." = "Yaver üzerinde çalışıyor; bu ekran kendiliğinden güncellenir.";
 "The call has ended." = "Arama sona erdi.";
 "Getting ready…" = "Hazırlanıyor…";
@@ -206,7 +207,7 @@
 "Waiting for the first words…" = "İlk sözler bekleniyor…";
 "Nothing was said on this call." = "Bu aramada hiçbir şey konuşulmadı.";
 "Says it is an AI at the start of every call." = "Her aramanın başında yapay zekâ olduğunu söyler.";
-"Keeps a written transcript. The audio is not kept." = "Yazılı bir döküm tutar. Ses saklanmaz.";
+"Says that the call is recorded, and has the recording deleted once the report is written." = "Görüşmenin kaydedildiğini söyler ve rapor yazılınca kaydı sildirir.";
 "Calls only when you ask. One request, one call." = "Yalnızca siz istediğinizde arar. Bir istek, bir arama.";
 "Step %1$d of %2$d" = "Adım %1$d / %2$d";
 "Phone calls, made for you." = "Telefon görüşmeleri, sizin yerinize.";
@@ -304,6 +305,7 @@
 "Translation runs on your iPhone, and so does speech recognition wherever the iPhone supports the language." = "Çeviri iPhone’unuzda yapılır; iPhone dili destekliyorsa konuşma tanıma da.";
 "Privacy policy" = "Gizlilik politikası";
 "Help and contact" = "Yardım ve iletişim";
+"Report a problem with this result" = "Bu sonuçla ilgili bir sorun bildir";
 "Other side" = "Karşı taraf";
 "Hide translation" = "Çeviriyi gizle";
 "Translate into %@" = "%@ diline çevir";

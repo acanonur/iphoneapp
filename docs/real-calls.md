@@ -102,10 +102,15 @@ key** and a QR code. Point the iPhone's Camera at the code, tap the link, tap **
 Yaver** — the app saves the address and the key. (Once real calls are on, the app has to
 present that key; this is what stops anyone else from making calls on your account.)
 
+First put your name in the app under *Settings → You*: Yaver says at the start of every
+real call on whose behalf it is calling, and it does not place a real call without a name.
+
 For the first call, ring a phone you can pick up yourself: tap **Brief Yaver**, write
 something like *"Ask whether this is a good time to talk, then say goodbye"*, enter your
-own number with its country code, and place the call. You should hear the AI disclosure
-first, in the language you chose.
+own number with its country code, and place the call. Before the first real call the app
+asks whether your server may send it to Retell AI (and the conversation to Claude, if you
+set up reports) — tap **Allow**. You should hear the AI disclosure first, in the language
+you chose.
 
 **Without a public address**, the app shows *Dialing…* and *On the call…*, and the
 conversation appears when the call is over. To see every sentence while it is being
@@ -193,8 +198,12 @@ assistant may pass on.
 
 ## What happens to the recording
 
-Retell records calls by default. Yaver's server asks Retell to **delete each call —
-recording included — as soon as the report is saved**. In case the server is switched off
+Retell records calls by default, so the first sentence of every call says so — *"…
+This call is being recorded."* (in German *"Das Gespräch wird aufgezeichnet."*, in
+Turkish *"Bu görüşme kaydediliyor."*). Recording a phone call without telling the other
+side is a crime in Germany and in Türkiye; do not take this sentence out. Yaver's server
+asks Retell to **delete each call — recording included — as soon as the report is
+saved**. In case the server is switched off
 at the wrong moment, Retell's own automatic deletion is set as well: after one day for a
 call Yaver placed, after seven days for a call it answered (a message left while your
 computer was off has to be there when you switch it on again). What is kept is the

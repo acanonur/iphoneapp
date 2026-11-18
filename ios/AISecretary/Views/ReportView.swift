@@ -66,6 +66,9 @@ struct ReportView: View {
                         if task.kind == .call {
                             transcriptBlock(task)
                         }
+                        if task.summary != nil || task.result != nil {
+                            reportProblemLink
+                        }
                     }
                     .padding(.horizontal, Modernist.gutter)
                 } else {
@@ -393,6 +396,23 @@ struct ReportView: View {
         case .form: return L("The form so far")
         default: return L("Written for you")
         }
+    }
+
+    // MARK: - Report a problem
+
+    /// What an AI wrote can be wrong. This says where to tell the developer.
+    private var reportProblemLink: some View {
+        Link(destination: Links.reportProblem) {
+            ButtonLabel(
+                title: L("Report a problem with this result"), icon: .arrowUpRight, iconSize: 14, gap: 6
+            )
+        }
+        .buttonStyle(
+            ModernistButtonStyle(
+                variant: .ghost, fontSize: 14, horizontalPadding: 0, verticalPadding: 8, hitSlop: 6
+            )
+        )
+        .padding(.bottom, 24)
     }
 
     // MARK: - Transcript

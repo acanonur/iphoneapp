@@ -63,11 +63,11 @@ enum Fixtures {
                 (.other, "Praxis Dr. Weber, guten Tag.",
                  text("Dr. Weber’s practice, hello.", "", "Dr. Weber muayenehanesi, iyi günler.")),
                 (.assistant,
-                 "Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von Deniz Kaya anruft. Ich möchte einen Kontrolltermin für nächste Woche vereinbaren, am liebsten vormittags.",
+                 "Guten Tag! Hier spricht ein KI-Assistent, der im Auftrag von Deniz Kaya anruft. Das Gespräch wird aufgezeichnet. Ich möchte einen Kontrolltermin für nächste Woche vereinbaren, am liebsten vormittags.",
                  text(
-                     "Hello! This is an AI assistant calling on behalf of Deniz Kaya. I would like to book a check-up for next week, preferably in the morning.",
+                     "Hello! This is an AI assistant calling on behalf of Deniz Kaya. This call is being recorded. I would like to book a check-up for next week, preferably in the morning.",
                      "",
-                     "İyi günler! Ben Deniz Kaya adına arayan bir yapay zekâ asistanıyım. Gelecek hafta için bir kontrol randevusu almak istiyorum, tercihen öğleden önce."
+                     "İyi günler! Ben Deniz Kaya adına arayan bir yapay zekâ asistanıyım. Bu görüşme kaydediliyor. Gelecek hafta için bir kontrol randevusu almak istiyorum, tercihen öğleden önce."
                  )),
                 (.other, "Einen Moment bitte. Dienstag um 10:30 Uhr wäre noch frei.",
                  text(
@@ -89,8 +89,8 @@ enum Fixtures {
         return [
             (.other, "Ege Diş Kliniği, buyurun.", "Zahnklinik Ege, guten Tag."),
             (.assistant,
-             "Merhaba! Ben Jonas Becker adına arayan bir yapay zekâ asistanıyım. Gelecek hafta için bir kontrol randevusu almak istiyorum, tercihen öğleden önce.",
-             "Guten Tag! Ich bin ein KI-Assistent und rufe im Auftrag von Jonas Becker an. Ich möchte für nächste Woche einen Kontrolltermin vereinbaren, am liebsten vormittags."),
+             "Merhaba! Ben Jonas Becker adına arayan bir yapay zekâ asistanıyım. Bu görüşme kaydediliyor. Gelecek hafta için bir kontrol randevusu almak istiyorum, tercihen öğleden önce.",
+             "Guten Tag! Ich bin ein KI-Assistent und rufe im Auftrag von Jonas Becker an. Das Gespräch wird aufgezeichnet. Ich möchte für nächste Woche einen Kontrolltermin vereinbaren, am liebsten vormittags."),
             (.other, "Bir saniye lütfen. Salı günü saat 10.30 uygun görünüyor.",
              "Einen Moment bitte. Dienstag um 10:30 Uhr wäre möglich."),
             (.assistant, "Salı 10.30 çok uygun. Randevuyu kaydedebilir misiniz?",
@@ -154,11 +154,11 @@ enum Fixtures {
         if spoken == .de {
             return [
                 (.assistant,
-                 "Guten Tag! Hier ist der KI-Assistent von Deniz Kaya. Deniz Kaya ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?",
+                 "Guten Tag! Hier ist der KI-Assistent von Deniz Kaya. Deniz Kaya ist gerade nicht erreichbar. Das Gespräch wird aufgezeichnet. Wie kann ich Ihnen helfen?",
                  text(
-                     "Hello! This is Deniz Kaya’s AI assistant. Deniz Kaya can’t take your call right now. How can I help you?",
+                     "Hello! This is Deniz Kaya’s AI assistant. Deniz Kaya can’t take your call right now. This call is being recorded. How can I help you?",
                      "",
-                     "İyi günler! Ben Deniz Kaya’nın yapay zekâ asistanıyım. Deniz Kaya şu anda müsait değil. Size nasıl yardımcı olabilirim?"
+                     "İyi günler! Ben Deniz Kaya’nın yapay zekâ asistanıyım. Deniz Kaya şu anda müsait değil. Bu görüşme kaydediliyor. Size nasıl yardımcı olabilirim?"
                  )),
                 (.other,
                  "Hier ist die Hausverwaltung Schmidt. Der Heizungsmonteur kommt am Donnerstag zwischen 8 und 10 Uhr.",
@@ -181,8 +181,8 @@ enum Fixtures {
         }
         return [
             (.assistant,
-             "Merhaba! Ben Jonas Becker adına telefona bakan yapay zekâ asistanıyım. Jonas Becker şu anda müsait değil. Size nasıl yardımcı olabilirim?",
-             "Guten Tag! Hier ist der KI-Assistent von Jonas Becker. Jonas Becker ist gerade nicht erreichbar. Wie kann ich Ihnen helfen?"),
+             "Merhaba! Ben Jonas Becker adına telefona bakan yapay zekâ asistanıyım. Jonas Becker şu anda müsait değil. Bu görüşme kaydediliyor. Size nasıl yardımcı olabilirim?",
+             "Guten Tag! Hier ist der KI-Assistent von Jonas Becker. Jonas Becker ist gerade nicht erreichbar. Das Gespräch wird aufgezeichnet. Wie kann ich Ihnen helfen?"),
             (.other, "Site yönetiminden arıyorum. Kombi ustası perşembe günü saat 8 ile 10 arasında gelecek.",
              "Ich rufe von der Hausverwaltung an. Der Heizungsmonteur kommt am Donnerstag zwischen 8 und 10 Uhr."),
             (.assistant, "Anladım: perşembe saat 8 ile 10 arası. Hangi numaradan geri aranabilirsiniz?",

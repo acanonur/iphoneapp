@@ -267,7 +267,9 @@ struct LiveCallView: View {
                 readerLanguage: readerLanguage,
                 title: L("Live transcript"),
                 emptyText: waitingText(task),
-                note: L("A written record only. The audio is not kept.")
+                note: task.simulated
+                    ? L("A simulated call: nothing is recorded.")
+                    : L("The call is recorded for this transcript. The recording is deleted once the report is written.")
             )
 
             Text(
