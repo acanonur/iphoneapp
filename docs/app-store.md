@@ -261,7 +261,8 @@ translator: every iPad can run Yaver in iPhone mode, and Apple's reviewers may t
 
 ## 4. A server for Apple's reviewers
 
-Apple's reviewers must be able to use Yaver — and Yaver does nothing without a server.
+Apple's reviewers must be able to use Yaver — and apart from the live translator, Yaver needs a
+server for everything.
 They cannot reach the one on your Mac at home, so they need one on the internet, for the
 whole review (usually 1–2 days; in busy weeks it can take a few weeks).
 
@@ -347,9 +348,10 @@ lines of **Logs** and send them to me.
 1. In Safari on the iPhone, open your address with `/health` at the end, for example
    `https://yaver-review.onrender.com/health`. It must show `"ok":true`,
    `"service":"yaver"` and `"simulated":true`.
-2. In Yaver: **Settings** (the sliders icon, top right) → **Server**. **Server address**: your
-   address; **Access key (only if the server shows one)**: the key from 4.1 → **Connect**. It
-   must say **Connected to** followed by a name.
+2. In Yaver: **Settings** (the sliders icon, top right) → **Server**. Tap into **Server
+   address**, hold the delete key until the field is empty, then type or paste your address.
+   Do the same in **Access key (only if the server shows one)**: empty it, then paste the key
+   from 4.1 → **Connect**. It must say **Connected to** followed by a name.
 3. Place a simulated call: **Brief Yaver → Use an example brief → Place the call**.
 4. Then go back to your own server: double-click **Start Yaver.command** on the Mac, point
    the iPhone's **Camera** at the QR code in its window, tap the link, then **Open Yaver**
@@ -422,8 +424,9 @@ when you submit a new app. Without an answer, the app is not shown in the EU.
      **No, we do not collect data from this app** → **Save** → **Publish** (top right) →
      **Publish** again to confirm.
      This is true: the app sends nothing to you, and it contains no third-party code; your
-     users' data goes only to their own Yaver server. (If you ever run a server that other
-     people use, this answer must change.)
+     users' data goes only to their own Yaver server. The review server from part 4 does not
+     change this: only Apple's reviewers use it, during the review, and you delete it
+     afterwards. (If you ever run a server that other people use, this answer must change.)
 
 ### 5.3 Pricing and Availability
 
@@ -479,12 +482,23 @@ Click **1.0 Prepare for Submission** (under "iOS App").
    - **Attachment** (needed: the notes say "screenshot attached", and on the review server
      the reviewer never sees this question): drag in `consent.png` from the `en` folder of the
      unzipped screenshots.
-   - Optional, helpful: if you made the real call in 2.5, make one more to your own phone
-     and record it (on the iPhone: Control Center → **Screen Recording**, with Yaver open on
-     the call). Keep recording until the conversation appears — with your Mac's server that
-     is shortly after the call ends. Add the video as a second **Attachment**, and add this
-     line to the notes, after the access key:
-     `Attached: a screen recording of a real call Yaver placed to the developer's own phone; its transcript opens with the AI disclosure and the recording notice.`
+   - Helpful, if your server places real calls (2.5): record one real call, so Apple sees the
+     permission question and the AI disclosure. First, in Yaver: **Settings → About →
+     Withdraw permission**, so that the question appears again (if **Answer my calls** was on,
+     switch it on again afterwards and tap **Allow**). Then on the iPhone: Control Center →
+     **Screen Recording**. In Yaver: **Brief Yaver** → write `Ask whether this is a good time
+     to talk, then say goodbye` → enter a number you can answer on another phone (a landline,
+     or the phone of someone who agrees), so Yaver stays on screen → **Place the call** →
+     **Allow**. Keep recording until the conversation appears (with your Mac's server, shortly
+     after the call ends), then open **Settings** and scroll down to **About**. Stop the
+     recording, add the video as another **Attachment**, and add this line to the notes,
+     after the access key:
+     `Attached: a screen recording of a real call placed with Yaver: the permission dialog, then the transcript with the AI disclosure and recording notice.`
+   - Without a video, but you tapped **Allow** in 2.5: in Yaver open **Settings**, scroll down
+     until **Withdraw permission** is on screen, and take a screenshot (side button and volume
+     up together). Put it on the Mac with **AirDrop**, add it as another **Attachment**, and
+     add this line to the notes, after the access key:
+     `Also attached: Settings > About with Withdraw permission.`
 8. **Version Release**: **Manually release this version** (you decide when it goes live) or
    **Automatically release** (it goes live as soon as Apple approves).
 9. **Save** (top right).
@@ -519,8 +533,21 @@ the version page). It names the rule ("Guideline 2.1", "5.1.2" and so on) and wh
 - **"We were unable to connect to the server" / app does not work** → the review server
   was stopped: check part 4, answer in App Store Connect that it runs again, and resubmit.
 - **5.1.2 (data shared with AI)** → reply, and attach `consent.png` again: "Yaver asks for
-  explicit permission before any data goes to an AI service (screenshot attached); on the
-  review server no AI service is set up, so no data is shared."
+  explicit permission before it sends a task to an AI service and before it switches call
+  answering on (screenshot attached); on the review server no AI service is set up, so no
+  data is shared."
+- **"Guideline 2.1 – Information Needed"** (they want to see a real call) → reply, and attach
+  the screen recording from 5.4 if you made one: "Real calls need the user's own account at
+  the phone service Retell AI, set up on the user's own server; every new Yaver server
+  simulates calls until then, as the review server does. Attached is a screen recording of
+  a real call placed with Yaver: the permission dialog, then the transcript with the AI
+  disclosure and the recording notice." If you have no recording, send me the message.
+- **"Guideline 4.2.3" or "4.2"** (the app needs something else to work) → reply: "Yaver is
+  the client of the Yaver server, as the Home Assistant, Nextcloud, Jellyfin and Plex apps on
+  the App Store are clients of their servers. The server is not an iOS app: it is free, its
+  code is public (https://github.com/acanonur/iphoneapp/tree/claude/ai-secretary-design-uyvh5i),
+  and the support page shows how to start it on a Mac. The live translator works on the
+  iPhone without any server, and for the review a server runs at the address in the notes."
 - **Anything else** → copy the whole message and send it to me.
 
 You can reply and resubmit as often as needed; it does not count against you.
@@ -549,6 +576,10 @@ the top right of App Store Connect first, then paste the boxes of that language.
 
 **Name** (App Information), the same in all three languages: `Yaver`
 
+Good to know: in Germany the App Store offers only a German and an English page; the
+Turkish page is shown in Türkiye and Cyprus. Turkish-speaking people in Germany therefore
+see the German page — that is why the German keywords include a few Turkish words.
+
 ### English (U.S.)
 
 **Subtitle** (App Information)
@@ -560,39 +591,39 @@ AI secretary for phone calls
 **Promotional Text** (version page)
 
 ```
-Yaver phones the doctor, the office or the landlord for you – in German, Turkish or English – and shows you every sentence of the call, translated into your language.
+Yaver phones the doctor, a government office or the landlord for you – in German, Turkish or English – and shows you every sentence of the call in your language.
 ```
 
 **Description** (version page)
 
 ```
-Yaver is an AI secretary for people who live in a country whose language they do not speak well. It makes the phone calls you find hard, answers the calls you cannot take, and translates conversations as they happen.
+Yaver is an AI secretary for people who live in a country whose language they do not speak well. It makes the phone calls you find hard, answers the calls you cannot take, and translates conversations as they happen. Apart from the live translator, Yaver works through the free Yaver server, which you run on your own Mac; real phone calls also need your own paid account with the telephone service Retell AI (details below).
 
 MAKES CALLS FOR YOU
-Write what you need – "Book a check-up at my dentist next week, mornings preferred" – and give the number. Yaver calls in German, Turkish or English, says at the start that it is an AI calling on your behalf, and handles the conversation.
+Write what you need – "Call my dentist and book a check-up appointment for next week, mornings preferred" – and give the number. Yaver calls in German, Turkish or English, says at the start that it is an AI calling on your behalf and that the call is recorded, and handles the conversation.
 • Follow the call on your screen: every sentence, with its translation into your language underneath – while it is spoken if your server can be reached from the internet, otherwise right after the call.
 • Afterwards you get a short report: what was agreed, and what you still have to do.
 
 ANSWERS CALLS FOR YOU
-Forward the calls you do not pick up to your Yaver number. Yaver answers, says that it is your AI assistant, takes the message in the caller's language and writes down who called and why.
+Forward the calls you do not pick up to your number at the telephone service Retell AI. Yaver answers, says that it is your AI assistant and that the call is recorded, takes the message in the caller's language and writes down who called and why.
 
 LIVE TRANSLATOR
 For conversations in person: tap "I speak" and talk. The translation appears on the other half of the screen while you are still speaking, and is read aloud when you finish. The translation is made on your iPhone.
 
 LETTERS, MESSAGES AND FORMS
-Photograph an official letter: Yaver reads the text on your iPhone and explains what it says and what you have to do. It also drafts the email you cannot phrase, and fills in a form as far as it can.
+Photograph an official letter: Yaver reads the text on your iPhone and explains what the letter says and what you have to do. It also drafts the email you find hard to write, and fills in a form as far as it can.
 
 REMINDERS
-Ask Yaver to remind you of an appointment or to follow up a call, and it does so at the time you choose.
+Ask Yaver to remind you of an appointment or of a call you want to follow up, and it does so at the time you choose.
 
 IN YOUR LANGUAGE
 The whole app is in English, German and Turkish and follows your iPhone's language.
 
 YOUR OWN SERVER – NO ACCOUNT WITH US
 Yaver works together with the free Yaver server, which you run on your own Mac; the support page shows how. There is no sign-up, no advertising and no tracking, and the developer of Yaver receives none of your data.
-• Out of the box the server simulates calls, so you can try calls, answered calls and reminders without an account and without cost.
-• Real phone calls need your own account with the telephone service Retell AI. Letters, messages and forms need your own key for Claude by Anthropic, which then also writes your call reports.
-• Yaver asks for your permission before your data goes to one of these services, and you can withdraw it at any time in Settings.
+• Out of the box the server only simulates calls: you can try placed and answered calls, the translator and reminders without an account and without cost.
+• Real phone calls need your own account with the telephone service Retell AI, with a phone number in it; Retell charges per minute, and the number costs a monthly fee. Letters, messages and forms need your own key for Claude by Anthropic (paid per use); Claude then also writes your call reports.
+• Yaver asks for your permission before it sends a task to one of these services or switches call answering on, and you can withdraw it at any time in Settings.
 
 Yaver only calls when you ask it to, and it always says on whose behalf it is calling.
 ```
@@ -600,7 +631,7 @@ Yaver only calls when you ask it to, and it always says on whose behalf it is ca
 **Keywords** (version page)
 
 ```
-assistant,call,phone,translator,translate,german,turkish,english,receptionist,letter,expat,dentist
+assistant,translator,translate,interpreter,german,turkish,english,receptionist,letter,expat,doctor
 ```
 
 
@@ -621,41 +652,41 @@ Yaver ruft für Sie bei Arzt, Amt oder Vermieter an – auf Deutsch, Türkisch o
 **Description** (version page)
 
 ```
-Yaver ist ein KI-Sekretär für Menschen, die in einem Land leben, dessen Sprache sie nicht gut sprechen. Yaver führt die Telefonate, die Ihnen schwerfallen, nimmt Anrufe an, wenn Sie nicht können, und übersetzt Gespräche, während sie stattfinden.
+Yaver ist ein KI-Sekretär für Menschen, die in einem Land leben, dessen Sprache sie nicht gut sprechen. Yaver führt die Telefonate, die Ihnen schwerfallen, nimmt Anrufe an, wenn Sie nicht können, und übersetzt Gespräche, während sie stattfinden. Außer dem Live-Übersetzer arbeitet Yaver über den kostenlosen Yaver-Server, den Sie auf Ihrem eigenen Mac betreiben; für echte Telefonate brauchen Sie außerdem ein eigenes, kostenpflichtiges Konto beim Telefondienst Retell AI (Einzelheiten unten).
 
 RUFT FÜR SIE AN
-Schreiben Sie, was Sie brauchen – „Vereinbare bei meinem Zahnarzt eine Kontrolle nächste Woche, am liebsten vormittags“ – und geben Sie die Nummer an. Yaver ruft auf Deutsch, Türkisch oder Englisch an, sagt gleich zu Beginn, dass hier eine KI in Ihrem Auftrag anruft, und führt das Gespräch.
+Schreiben Sie, was Sie brauchen – „Meinen Zahnarzt anrufen und für nächste Woche einen Kontrolltermin vereinbaren, am liebsten vormittags“ – und geben Sie die Nummer an. Yaver ruft auf Deutsch, Türkisch oder Englisch an, sagt gleich zu Beginn, dass hier eine KI in Ihrem Auftrag anruft und dass das Gespräch aufgezeichnet wird, und führt das Gespräch.
 • Verfolgen Sie das Telefonat auf Ihrem Bildschirm: jeden Satz, darunter die Übersetzung in Ihre Sprache – schon während des Gesprächs, wenn Ihr Server aus dem Internet erreichbar ist, sonst gleich nach dem Anruf.
 • Danach erhalten Sie einen kurzen Bericht: was vereinbart wurde und was Sie noch tun müssen.
 
 NIMMT ANRUFE FÜR SIE AN
-Leiten Sie die Anrufe, die Sie nicht annehmen, an Ihre Yaver-Nummer weiter. Yaver meldet sich als Ihr KI-Assistent, nimmt die Nachricht in der Sprache des Anrufers auf und notiert, wer angerufen hat und warum.
+Leiten Sie die Anrufe, die Sie nicht annehmen, an Ihre Nummer beim Telefondienst Retell AI weiter. Yaver meldet sich als Ihr KI-Assistent, sagt, dass das Gespräch aufgezeichnet wird, nimmt die Nachricht in der Sprache des Anrufers entgegen und notiert, wer angerufen hat und warum.
 
 LIVE-ÜBERSETZER
 Für Gespräche vor Ort: Tippen Sie auf „Ich spreche“ und reden Sie. Die Übersetzung erscheint auf der anderen Hälfte des Bildschirms, während Sie noch sprechen, und wird vorgelesen, sobald Sie fertig sind. Die Übersetzung entsteht auf Ihrem iPhone.
 
 BRIEFE, NACHRICHTEN UND FORMULARE
-Fotografieren Sie einen Brief vom Amt: Yaver liest den Text auf Ihrem iPhone und erklärt, was darin steht und was Sie tun müssen. Yaver entwirft auch die E-Mail, die Sie nicht formulieren können, und füllt ein Formular aus, so weit es geht.
+Fotografieren Sie einen Brief vom Amt: Yaver liest den Text auf Ihrem iPhone und erklärt, was darin steht und was Sie tun müssen. Yaver entwirft auch die E-Mail, die Ihnen schwerfällt, und füllt ein Formular aus, soweit es geht.
 
 ERINNERUNGEN
 Lassen Sie sich an einen Termin erinnern oder an ein Telefonat, bei dem Sie nachhaken wollen – zu der Zeit, die Sie wählen.
 
 IN IHRER SPRACHE
-Die ganze App gibt es auf Deutsch, Englisch und Türkisch; sie folgt der Sprache Ihres iPhones.
+Die ganze App gibt es auf Deutsch, Englisch und Türkisch; sie erscheint automatisch in der Sprache, die auf Ihrem iPhone eingestellt ist.
 
 IHR EIGENER SERVER – KEIN KONTO BEI UNS
 Yaver arbeitet mit dem kostenlosen Yaver-Server zusammen, den Sie auf Ihrem eigenen Mac betreiben; wie das geht, zeigt die Support-Seite. Es gibt keine Anmeldung, keine Werbung und kein Tracking, und der Entwickler von Yaver erhält keine Ihrer Daten.
-• Im Auslieferungszustand simuliert der Server die Anrufe – so können Sie Anrufe, angenommene Anrufe und Erinnerungen ohne Konto und ohne Kosten ausprobieren.
-• Echte Telefonate brauchen Ihr eigenes Konto beim Telefondienst Retell AI. Briefe, Nachrichten und Formulare brauchen Ihren eigenen Schlüssel für Claude von Anthropic; Claude schreibt dann auch Ihre Gesprächsberichte.
-• Yaver fragt Sie um Erlaubnis, bevor Ihre Daten an einen dieser Dienste gehen, und Sie können sie in den Einstellungen jederzeit widerrufen.
+• Zunächst simuliert der Server Anrufe nur – so können Sie ausgehende und angenommene Anrufe, den Übersetzer und Erinnerungen ohne Konto und kostenlos ausprobieren.
+• Für echte Telefonate brauchen Sie ein eigenes Konto beim Telefondienst Retell AI mit einer Telefonnummer darin; Retell berechnet die Gesprächsminuten, und für die Nummer fällt eine monatliche Gebühr an. Für Briefe, Nachrichten und Formulare brauchen Sie einen eigenen Schlüssel für Claude von Anthropic (Abrechnung nach Nutzung); Claude schreibt dann auch Ihre Gesprächsberichte.
+• Bevor Yaver eine Aufgabe an einen dieser Dienste schickt oder das Annehmen von Anrufen einschaltet, fragt es Sie um Erlaubnis; Sie können sie in den Einstellungen jederzeit widerrufen.
 
-Yaver ruft nur an, wenn Sie es wollen, und sagt immer, in wessen Auftrag es anruft.
+Yaver ruft nur an, wenn Sie es verlangen, und sagt immer, in wessen Auftrag es anruft.
 ```
 
 **Keywords** (version page)
 
 ```
-Assistent,Anruf,Telefon,Übersetzer,übersetzen,Türkisch,Englisch,Anrufbeantworter,Brief,Termin
+Assistent,Anruf,Übersetzer,Dolmetscher,Türkisch,Anrufbeantworter,Brief,tercüman,çeviri,Almanca
 ```
 
 
@@ -664,45 +695,45 @@ Assistent,Anruf,Telefon,Übersetzer,übersetzen,Türkisch,Englisch,Anrufbeantwor
 **Subtitle** (App Information)
 
 ```
-Telefon için yapay zekâ yaveri
+Yapay zekâ telefon asistanı
 ```
 
 **Promotional Text** (version page)
 
 ```
-Yaver doktoru, resmî daireyi ya da ev sahibini sizin yerinize arar – Almanca, Türkçe veya İngilizce – ve görüşmenin her cümlesini dilinize çevrilmiş olarak gösterir.
+Yaver doktorunuzu, resmî daireleri ya da ev sahibinizi sizin yerinize arar – Almanca, Türkçe veya İngilizce – ve görüşmenin her cümlesini dilinize çevirip gösterir.
 ```
 
 **Description** (version page)
 
 ```
-Yaver, dilini iyi konuşamadığı bir ülkede yaşayan insanlar için yapay zekâlı bir sekreterdir. Size zor gelen telefon görüşmelerini yapar, açamadığınız aramaları yanıtlar ve konuşmaları o anda çevirir.
+Yaver, dilini iyi konuşamadığı bir ülkede yaşayan ya da Türkiye’den Almanca veya İngilizce bir görüşme yapması gereken herkes için yapay zekâlı bir sekreterdir. Size zor gelen telefon görüşmelerini yapar, açamadığınız aramaları yanıtlar ve konuşmaları o anda çevirir. Canlı çevirmen dışında Yaver, kendi Mac’inizde çalıştırdığınız ücretsiz Yaver sunucusu üzerinden çalışır; gerçek telefon görüşmeleri için ayrıca Retell AI telefon hizmetinde kendi ücretli hesabınız olmalıdır (ayrıntılar aşağıda).
 
 SİZİN YERİNİZE ARAR
-Ne istediğinizi yazın – “Diş hekimimden gelecek hafta için kontrol randevusu al, tercihen sabah” – ve numarayı verin. Yaver Almanca, Türkçe veya İngilizce arar, en başta sizin adınıza arayan bir yapay zekâ olduğunu söyler ve görüşmeyi yürütür.
+Ne istediğinizi yazın – “Diş hekimimi ara ve gelecek hafta için bir kontrol randevusu al, tercihen öğleden önce” – ve numarayı verin. Yaver Almanca, Türkçe veya İngilizce arar; en başta sizin adınıza arayan bir yapay zekâ olduğunu ve görüşmenin kaydedildiğini söyler, sonra görüşmeyi yürütür.
 • Görüşmeyi ekranınızda izleyin: her cümle, altında kendi dilinize çevirisiyle – sunucunuza internetten ulaşılabiliyorsa konuşulurken, değilse görüşmenin hemen ardından.
-• Ardından kısa bir rapor alırsınız: Neyin kararlaştırıldığı ve sizin daha neler yapmanız gerektiği.
+• Ardından kısa bir rapor alırsınız: neyin kararlaştırıldığı ve sizin daha neler yapmanız gerektiği.
 
 ARAMALARINIZI YANITLAR
-Açmadığınız aramaları Yaver numaranıza yönlendirin. Yaver kendini yapay zekâ asistanınız olarak tanıtır, arayanın dilinde mesajını alır ve kimin, neden aradığını not eder.
+Açmadığınız aramaları Retell AI telefon hizmetindeki numaranıza yönlendirin. Yaver kendini yapay zekâ asistanınız olarak tanıtır, görüşmenin kaydedildiğini söyler, arayanın dilinde mesajını alır ve kimin, neden aradığını not eder.
 
 CANLI ÇEVİRMEN
 Yüz yüze konuşmalar için: “Ben konuşuyorum”a dokunun ve konuşun. Çeviri, siz daha konuşurken ekranın diğer yarısında belirir ve bitirdiğinizde sesli okunur. Çeviri iPhone’unuzda yapılır.
 
 MEKTUPLAR, MESAJLAR VE FORMLAR
-Resmî bir mektubun fotoğrafını çekin: Yaver metni iPhone’unuzda okur, ne yazdığını ve sizin ne yapmanız gerektiğini açıklar. Yazmakta zorlandığınız e-postanın taslağını hazırlar, bir formu da elinden geldiğince doldurur.
+Resmî bir mektubun fotoğrafını çekin: Yaver metni iPhone’unuzda okur; mektupta ne yazdığını ve sizin ne yapmanız gerektiğini açıklar. Yazmakta zorlandığınız e-postanın taslağını hazırlar, bir formu da elinden geldiğince doldurur.
 
 HATIRLATMALAR
-Bir randevuyu ya da peşine düşmek istediğiniz bir görüşmeyi Yaver size seçtiğiniz saatte hatırlatır.
+Bir randevuyu ya da takip etmek istediğiniz bir görüşmeyi Yaver size seçtiğiniz zamanda hatırlatır.
 
 KENDİ DİLİNİZDE
-Uygulamanın tamamı Türkçe, Almanca ve İngilizce’dir ve iPhone’unuzun dilini kullanır.
+Uygulamanın tamamı Türkçe, Almanca ve İngilizce olarak kullanılabilir; iPhone’unuz hangi dildeyse o dilde açılır.
 
-KENDİ SUNUCUNUZ – BİZDE HESAP YOK
-Yaver, kendi Mac’inizde çalıştırdığınız ücretsiz Yaver sunucusuyla birlikte çalışır; nasıl kurulacağı destek sayfasında anlatılır. Kayıt yok, reklam yok, izleme yok; Yaver’in geliştiricisi verilerinizden hiçbirini almaz.
-• Sunucu ilk kurulduğunda aramaları yalnızca simüle eder; böylece aramaları, yanıtlanan aramaları ve hatırlatmaları hesapsız ve ücretsiz deneyebilirsiniz.
-• Gerçek telefon görüşmeleri için telefon hizmeti Retell AI’da kendi hesabınız gerekir. Mektuplar, mesajlar ve formlar için Anthropic’ten (Claude) kendi anahtarınızı almanız gerekir; o zaman görüşme raporlarınızı da Claude yazar.
-• Yaver, verileriniz bu hizmetlerden birine gitmeden önce izninizi ister; bu izni Ayarlar’dan istediğiniz zaman geri alabilirsiniz.
+KENDİ SUNUCUNUZ – BİZE ÜYE OLMANIZ GEREKMEZ
+Yaver, kendi Mac’inizde çalıştırdığınız ücretsiz Yaver sunucusuyla birlikte çalışır; nasıl kurulacağı destek sayfasında anlatılır. Üyelik yok, reklam yok, izleme yok; Yaver’in geliştiricisi verilerinizden hiçbirini almaz.
+• Sunucu ilk kurulduğunda aramaları yalnızca simüle eder; böylece arama yapmayı, gelen aramaların yanıtlanmasını, çevirmeni ve hatırlatmaları hesap açmadan ve ücretsiz deneyebilirsiniz.
+• Gerçek telefon görüşmeleri için Retell AI telefon hizmetinde kendi hesabınız ve orada bir telefon numaranız olmalıdır; Retell dakika başına ücret alır, numara için de aylık ücret ödenir. Mektuplar, mesajlar ve formlar için Anthropic’ten kendi Claude anahtarınızı almanız gerekir (kullandıkça ücretlendirilir); o zaman görüşme raporlarınızı da Claude yazar.
+• Yaver, bu hizmetlerden birine bir görev göndermeden ya da aramaları yanıtlamayı açmadan önce izninizi ister; bu izni Ayarlar’dan istediğiniz zaman geri alabilirsiniz.
 
 Yaver yalnızca siz istediğinizde arar ve kimin adına aradığını her zaman söyler.
 ```
@@ -710,7 +741,7 @@ Yaver yalnızca siz istediğinizde arar ve kimin adına aradığını her zaman 
 **Keywords** (version page)
 
 ```
-asistan,sekreter,arama,telefon,çeviri,tercüman,Almanca,İngilizce,mektup,randevu,gurbet
+sekreter,arama,çeviri,çevirmen,tercüman,almanca,ingilizce,mektup,randevu,telesekreter,belge
 ```
 
 ## Notes for Apple's reviewer
@@ -722,33 +753,32 @@ model and iOS version (on the iPhone: **Settings → General → About** shows b
 *Model Name* and *iOS Version*). Apple reads it in English.
 
 ```
-Yaver is the iPhone app for the Yaver server, which each user runs on their own Mac (free; code is public: https://github.com/acanonur/iphoneapp). As with the apps for Home Assistant or Nextcloud, the app needs its server, so we run one for you during the review.
+Yaver is the iPhone app for the Yaver server, which each user runs on their own Mac (free; code is public: https://github.com/acanonur/iphoneapp/tree/claude/ai-secretary-design-uyvh5i). Like the Home Assistant and Nextcloud apps, it works through the user's own server; only the live translator works without one. We run a server for the review.
 
-DEMO SERVER (simulation mode: no real phone calls, no AI service, no data leaves the server)
+REVIEW SERVER (calls are simulated, as on every new Yaver server until its owner adds a phone-service account; no AI service; no data leaves the server)
 Address: YOUR-ADDRESS
 Access key: YOUR-KEY
 
-To connect: go through the four introduction pages (on page 3 type any name: every call opens with it; the local network permission only finds servers on the same Wi-Fi, you may decline it). Then Settings (sliders icon, top right) > Server: enter the address and the access key, tap Connect. It shows "Connected to" and the server's name.
+To connect: go through the four introduction pages (on page 3 type any name: every call opens with it; you may decline the local network permission, it only finds servers on the same Wi-Fi). Then Settings (sliders icon, top right) > Server: replace http://localhost:8787 with the address, enter the access key, tap Connect.
 
 WHAT TO TRY
-1. A call: Brief Yaver > Use an example brief > Place the call. The simulated conversation appears line by line with its translation (iOS may first ask to download the languages), then the report.
+1. A call: Brief Yaver > Use an example brief > Place the call. The simulated conversation appears line by line with its translation (iOS may ask to download languages), then the report.
 2. An answered call: Settings > Answer my calls > On > Simulate an incoming call.
-3. Live translator (home screen): choose two languages, tap "I speak" and talk; the translation appears while you speak. Uses Apple speech recognition (Siri & Dictation must be on) and on-device Translation.
+3. Live translator (home screen): choose two languages, tap "I speak" and talk; the translation appears while you speak (Siri & Dictation must be on).
 4. A reminder: Follow-up or reminder on the home screen.
-Letters, messages and forms need the user's own Claude (Anthropic) key on their server; the demo server has none, so the app explains how to set one up.
+Letters, messages and forms need the user's own Claude (Anthropic) key; the review server has none, so they show "Not set up yet" (expected).
 
 THIRD-PARTY AI AND CONSENT (5.1.2(i))
-On a user's own server, real calls go through Retell AI (telephone service, USA) and letters, messages and call reports through Claude by Anthropic (USA) — only if the user set up these services with their own accounts. Before data first goes to one of them, the app shows a dialog naming the service, the data and where it goes (screenshot attached); the call, letter or message waits until the user taps Allow. Settings > About > Withdraw permission takes it back (shown once a permission was given). Neither service is set up on the demo server, so the dialog does not appear during the review and no data is shared with any third party.
+On a user's own server, real calls go through Retell AI (phone service, USA) and letters, messages and call reports through Claude by Anthropic (USA), only with the user's own accounts there. Before the app sends a task that would reach one of them, and before it switches call answering on, a dialog names the service, the data and where it goes (screenshot attached); the action waits until the user taps Allow. Settings > About > Withdraw permission takes it back (shown once one was given). The review server has neither service, so no dialog appears and no data reaches a third party.
 
 CALLS ARE NEVER ANONYMOUS (1.1.6)
-Yaver calls only when the user starts a call, one call per request. Every call opens by saying that an AI is calling on behalf of the user, by name, and that the call is recorded (the phone service records it for the transcript; the recording is deleted right after the call). A real call is refused without the user's name. Real calls go only to the countries the user's server allows (by default +49, +90, +44, and +1 within the US and Canada); premium-rate numbers are refused; calls per day are capped.
+Yaver calls only when the user starts a call, one call per request. Every call opens by saying that an AI is calling on behalf of the user, by name, and that the call is recorded (by the phone service, for the transcript; the user's server then has it deleted there). A real call is refused without the user's name, and comes from the number in the user's own Retell AI account. Real calls go only to countries the user's server allows (by default +49, +90, +44 and +1 for the US and Canada); premium-rate numbers are refused; calls per day are capped.
 
-PRIVACY AND REPORTING
-No account, analytics, advertising, tracking or third-party SDK. The developer receives no user data (App Privacy: Data Not Collected). Privacy policy: Settings > About > Privacy policy. The app stores no audio. Under every result an AI wrote, "Report a problem with this result" opens the help page with the developer's contact.
+PRIVACY AND REPORTING (App Privacy: Data Not Collected)
+No account, analytics, ads, tracking or third-party SDK. The app sends data only to the user's own server and has no Retell or Anthropic code; that server uses them with the user's own accounts, so neither we nor any partner of ours can access the data. Our review server is only for App Review and is deleted afterwards. Privacy policy: Settings > About. The app stores no audio. AI results are shown only to the user who asked; nothing is shared between users. Under every result, "Report a problem with this result" opens the help page with our contact.
 
-TESTED ON
-YOUR-IPHONE-MODEL with iOS YOUR-IOS-VERSION. Every version is also built with the iOS 18 and iOS 26 SDKs and run automatically in the iOS 26 simulator.
+Tested on YOUR-IPHONE-MODEL with iOS YOUR-IOS-VERSION.
 
 PERMISSIONS
-Local network: finds the user's server on their Wi-Fi. Camera: photographing a letter; the text is recognised on the iPhone and only the text goes to the user's server (photos are picked with iOS's own picker, no library access). Microphone and speech recognition: the live translator. Notifications: reminders.
+Camera: a letter's text is read on the iPhone; only the text is sent (photos come through iOS's picker, no library access). Microphone, speech recognition: the translator, only while it shows "Listening". Notifications: reminders.
 ```
