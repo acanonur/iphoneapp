@@ -19,6 +19,20 @@ sign in with the Apple Account of your developer account).
 
 ## 1. Before you start
 
+### 1.0 Download Yaver from GitHub (skip if `Desktop → iphoneapp` exists)
+
+1. Install **Node.js** (the "LTS" download, version 22.13 or newer) from <https://nodejs.org>, and open the **App Store** app to install **Xcode** (see 1.1).
+2. Open **Terminal** (Spotlight: press ⌘+Space, type *Terminal*, Enter). Paste these four lines, one after the other, pressing Enter after each. If macOS offers to install "command line developer tools", click **Install** and repeat the line afterwards:
+
+   ```
+   cd ~/Desktop
+   git clone https://github.com/acanonur/iphoneapp.git
+   cd iphoneapp
+   git checkout claude/ai-secretary-design-uyvh5i
+   ```
+
+3. A folder **iphoneapp** is now on your Desktop. From here on, **Update Yaver.command** and **Start Yaver.command** (inside it) do the rest.
+
 ### 1.1 Xcode must be version 26 or newer
 
 Apple only accepts apps built with **Xcode 26 or later**.
