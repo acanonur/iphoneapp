@@ -143,6 +143,19 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE INDEX IF NOT EXISTS tasks_space_rev ON tasks(space_id, rev);
 CREATE INDEX IF NOT EXISTS tasks_open ON tasks(space_id, done, due_at);
 
+CREATE TABLE IF NOT EXISTS chores (
+  ${SYNC_COLUMNS},
+  title       TEXT    NOT NULL,
+  every_days  INTEGER NOT NULL DEFAULT 7,
+  next_due_at INTEGER NOT NULL,
+  mode        TEXT    NOT NULL DEFAULT 'rotate',
+  assignee_id TEXT,
+  effort      INTEGER NOT NULL DEFAULT 1,
+  history     TEXT    NOT NULL DEFAULT '[]',
+  paused      INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS chores_space_rev ON chores(space_id, rev);
+
 CREATE TABLE IF NOT EXISTS shopping_items (
   ${SYNC_COLUMNS},
   name        TEXT    NOT NULL,

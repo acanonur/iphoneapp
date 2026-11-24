@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect id="ground" width="100" height="100" fill="#231f2b"/>
+  <g id="coral" fill="#f0704f">
+    <circle cx="38.5" cy="31.0" r="9.5"/>
+    <rect x="30.0" y="45.0" width="17.0" height="34.0" rx="8.5"/>
+  </g>
+  <g id="teal" fill="#4cb7b1">
+    <circle cx="61.5" cy="24.0" r="9.5"/>
+    <rect x="53.0" y="38.0" width="17.0" height="41.0" rx="8.5"/>
+  </g>
+</svg>

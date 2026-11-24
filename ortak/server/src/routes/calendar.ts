@@ -1,7 +1,7 @@
 /**
  * Calendar mirroring.
  *
- * A shared Ortak event has to end up in *each* person's own calendar — Onur's
+ * A shared Ikimiz event has to end up in *each* person's own calendar — Onur's
  * iCloud, Tugce's Google — and those are different calendars with different
  * native ids. The phones do the actual writing (through EventKit on iOS and the
  * Calendar Provider on Android, both via expo-calendar); the server's job is to

@@ -341,6 +341,14 @@ export function documentFor(
         context: str(row.category),
         sortAt: num(row.dueAt) || num(row.updatedAt),
       };
+    case 'chores':
+      return {
+        kind,
+        title: str(row.title),
+        body: '',
+        context: 'chore',
+        sortAt: num(row.nextDueAt) || num(row.updatedAt),
+      };
     case 'shoppingItems':
       return {
         kind,

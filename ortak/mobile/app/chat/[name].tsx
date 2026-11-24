@@ -11,7 +11,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useStore } from '../../src/store/useStore.js';
 import type { ArchiveMessageRow } from '../../src/api/client.js';
 import { Button, Card, Muted, Row } from '../../src/ui/components.js';
-import { colors, clockTime, relativeDay, spacing, typography } from '../../src/ui/theme.js';
+import { clockTime, colors, fonts, relativeDay, spacing, typography } from '../../src/ui/theme.js';
 
 const PAGE_SIZE = 80;
 
@@ -103,7 +103,7 @@ export default function ChatScreen() {
             {showDay ? <DayDivider label={day} /> : null}
             <Card style={{ marginBottom: spacing.xs }}>
               <Row style={{ justifyContent: 'space-between' }}>
-                <Text style={[typography.tiny, { color: colors.accent, fontWeight: '600' }]}>
+                <Text style={[typography.tiny, { color: colors.accent, fontFamily: fonts.headingSemi }]}>
                   {message.author ?? 'Unknown'}
                 </Text>
                 <Text style={typography.tiny}>{clockTime(message.sentAt)}</Text>

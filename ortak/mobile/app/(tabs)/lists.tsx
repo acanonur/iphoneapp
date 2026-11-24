@@ -1,19 +1,20 @@
 /**
- * To-dos and the shopping list, in Modernist.
+ * To-dos, chores and the shopping list.
  *
- * The two halves sit behind a segmented control. Inside To do, the Things-style
- * buckets are flush-left text tabs with a 2px accent underline and a small
- * count. Every item is a ruled row with a square tick box at the left; ticking
- * one draws a 2px accent rule through the title rather than fading it out.
+ * Three lists behind one segmented control. Inside To do, the Things-style
+ * buckets are a row of chips with a small count. Every item is a row with a
+ * round tick at the left; ticking one draws a rule through the title rather
+ * than fading it out. Chores live in `src/chores/ChoresList.tsx`.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useStore, selectAll, memberName, memberColor } from '../../src/store/useStore.js';
 import { announcePresence } from '../../src/store/socket.js';
+import { ChoresList } from '../../src/chores/ChoresList.js';
 import { useReminderMirror } from '../../src/calendar/useReminderMirror.js';
 import { newId } from '../../src/util/id.js';
 import { parseQuickAdd } from '../../../shared/src/datetime.js';
@@ -51,11 +52,20 @@ import {
   typography,
 } from '../../src/ui/theme.js';
 
-type Half = 'todo' | 'shopping';
+type Half = 'todo' | 'chores' | 'shopping';
 
 export default function ListsScreen() {
+  // `ortak://lists?half=chores` opens straight on a segment — for a Shortcut,
+  // or a link in a note.
+  const params = useLocalSearchParams<{ half?: string }>();
   const [half, setHalf] = useState<Half>('todo');
   const store = useStore();
+
+  useEffect(() => {
+    if (params.half === 'todo' || params.half === 'chores' || params.half === 'shopping') {
+      setHalf(params.half);
+    }
+  }, [params.half]);
 
   // Tell the other phone we're shopping, and keep saying so while we are.
   useFocusEffect(
@@ -83,12 +93,13 @@ export default function ListsScreen() {
         <Seg
           options={[
             { value: 'todo', label: 'To do' },
+            { value: 'chores', label: 'Chores' },
             { value: 'shopping', label: 'Shopping' },
           ]}
           value={half}
           onChange={setHalf}
         />
-        {half === 'todo' ? <TodoList /> : <ShoppingList />}
+        {half === 'todo' ? <TodoList /> : half === 'chores' ? <ChoresList /> : <ShoppingList />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -294,7 +305,7 @@ function TaskRow({
             <Text
               style={[
                 typography.tiny,
-                overdue && { color: colors.accent700, fontFamily: fonts.headingSemi },
+                overdue && { color: colors.danger, fontFamily: fonts.headingSemi },
               ]}
             >
               due {relativeDay(task.dueAt)}

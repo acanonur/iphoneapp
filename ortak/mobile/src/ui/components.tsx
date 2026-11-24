@@ -1,19 +1,19 @@
 /**
- * The building blocks, in Modernist.
+ * The building blocks of the "Two Inks" system.
  *
- * What changed from the first design, and why:
+ * Every screen is assembled from these, which is what lets the look of the
+ * whole app live in two files (this one and `theme.ts`):
  *
- *  - **Cards became rules.** Most of what used to be a bordered, rounded card
- *    is now a row separated by a hairline, inside a section separated by a 2px
- *    rule. `Card` still exists but is now a flat surface panel with no border
- *    and no radius, used only for notices.
- *  - **Round became square.** Avatars are squares of solid ink; tick boxes are
- *    squares that fill with the accent.
- *  - **Pills became tabs and tags.** Filters that used to be pill chips are
- *    either a segmented control (two exclusive modes) or flush-left text tabs
- *    with a 2px underline (many options).
- *  - **Buttons run flush left** with the icon pushed to the far edge, which is
- *    what makes a column of them line up with the labels above them.
+ *  - **Cards carry groups.** A white, rounded card a step above the oat ground
+ *    holds anything that belongs together; rows inside it are split by a soft
+ *    hairline. Nothing is boxed in by heavy rules.
+ *  - **People are circles in their own ink.** Coral and teal, by join order.
+ *  - **Modes are a segmented pill; filters are chips.** The active chip is
+ *    solid ink, so it is findable at a glance without using either person's
+ *    colour for something that is not about a person.
+ *  - **Buttons are centred and rounded.** Coral for the one primary action on a
+ *    screen, a quiet fill for everything else.
+ *  - **Done is green.** A tick fills with the success colour, not the accent.
  */
 
 import type { ReactNode } from 'react';
@@ -31,7 +31,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CheckIcon } from './icons.js';
-import { colors, fonts, initials, rules, spacing, typography } from './theme.js';
+import { colors, elevation, fonts, initials, radius, rules, spacing, typography } from './theme.js';
 
 export function Screen({
   children,
@@ -61,8 +61,8 @@ export function Screen({
 }
 
 /**
- * The screen title bar: an 800-weight title with the household's member
- * squares at the right, over a 2px rule.
+ * The screen title bar: the serif title with the household's avatars at the
+ * right, overlapping the way two people in one photo do.
  */
 export function ScreenHeader({
   title,
@@ -80,9 +80,19 @@ export function ScreenHeader({
       </Text>
       {right}
       {members && members.length > 0 ? (
-        <View style={{ flexDirection: 'row', gap: 4, paddingBottom: 4 }}>
-          {members.map((m) => (
-            <MemberSquare key={m.id} name={m.name} color={m.color} size={18} />
+        <View style={{ flexDirection: 'row', paddingBottom: 3 }}>
+          {members.map((m, index) => (
+            <View
+              key={m.id}
+              style={{
+                marginLeft: index === 0 ? 0 : -8,
+                borderWidth: 2,
+                borderColor: colors.bg,
+                borderRadius: radius.pill,
+              }}
+            >
+              <MemberSquare name={m.name} color={m.color} size={28} />
+            </View>
           ))}
         </View>
       ) : null}
@@ -98,7 +108,7 @@ export function Heading({ children, style }: { children: ReactNode; style?: Text
   return <Text style={[typography.heading, { marginBottom: spacing.sm }, style]}>{children}</Text>;
 }
 
-/** Uppercase, tracked-out section label — the system's h6. */
+/** A small, muted section label. */
 export function Kicker({ children, style }: { children: ReactNode; style?: TextStyle }) {
   return <Text style={[typography.kicker, style]}>{children}</Text>;
 }
@@ -111,7 +121,7 @@ export function Muted({ children, numberOfLines }: { children: ReactNode; number
   );
 }
 
-/** A flat surface panel. Used for notices, not for every row. */
+/** A rounded surface a step above the ground. */
 export function Card({
   children,
   onPress,
@@ -121,14 +131,12 @@ export function Card({
   onPress?: () => void;
   style?: ViewStyle;
 }) {
-  // Cards in this system are flat fields of surface colour with no outline, so
-  // a caller's `borderColor` had nothing to colour and was silently dropped —
-  // the offline warning, the error notice and the accented summaries all looked
-  // exactly like ordinary cards. A heavy left rule is how this design system
-  // marks something out, so that is what a colour now buys.
+  // A caller's `borderColor` marks a card out — the offline warning, an error,
+  // an accented summary. On a rounded card that reads best as a full outline in
+  // that colour, so that is what a colour buys.
   const marked: ViewStyle | null =
     style?.borderColor !== undefined && style.borderWidth === undefined
-      ? { borderLeftWidth: 3, borderLeftColor: style.borderColor }
+      ? { borderWidth: 1.5, borderColor: style.borderColor }
       : null;
 
   if (onPress) {
@@ -144,7 +152,7 @@ export function Card({
   return <View style={[styles.card, style, marked]}>{children}</View>;
 }
 
-/** A notice with an accent kicker above it — the system's card-kicker pattern. */
+/** A notice with a small accent label above it. */
 export function NoticeCard({
   kicker,
   children,
@@ -168,7 +176,7 @@ export function Button({
   variant = 'primary',
   disabled = false,
   busy = false,
-  /** Pushed to the far edge, per the system's flush-left button rule. */
+  /** Sits after the label; at the far edge of a full-width button. */
   icon,
   block = false,
   style,
@@ -183,8 +191,8 @@ export function Button({
   style?: ViewStyle;
 }) {
   const palette = {
-    primary: { bg: colors.accent, fg: colors.bg, border: 'transparent' },
-    secondary: { bg: 'transparent', fg: colors.text, border: colors.divider },
+    primary: { bg: colors.accent, fg: colors.onAccent, border: 'transparent' },
+    secondary: { bg: colors.surfaceAlt, fg: colors.text, border: 'transparent' },
     ghost: { bg: 'transparent', fg: colors.accent, border: 'transparent' },
   }[variant];
 
@@ -198,7 +206,7 @@ export function Button({
           backgroundColor: palette.bg,
           borderColor: palette.border,
           opacity: disabled ? 0.45 : pressed ? 0.82 : 1,
-          justifyContent: block ? 'flex-start' : 'center',
+          justifyContent: block && (icon || busy) ? 'space-between' : 'center',
           width: block ? '100%' : undefined,
         },
         variant === 'ghost' && { paddingHorizontal: spacing.xs },
@@ -213,11 +221,11 @@ export function Button({
       */}
       <Text style={[styles.buttonLabel, { color: palette.fg }]}>{label}</Text>
       {busy ? (
-        <View style={{ marginLeft: block ? 'auto' : 6 }}>
+        <View style={{ marginLeft: 6 }}>
           <ActivityIndicator color={palette.fg} size="small" />
         </View>
       ) : icon ? (
-        <View style={{ marginLeft: block ? 'auto' : 6 }}>{icon}</View>
+        <View style={{ marginLeft: 6 }}>{icon}</View>
       ) : null}
     </Pressable>
   );
@@ -250,7 +258,10 @@ export function Field({
   );
 }
 
-/** A square of solid ink with the member's initials — the system's avatar. */
+/**
+ * A circle in the member's ink with their initials. The name is historical —
+ * it was a square in the previous design — and `Avatar` is the same component.
+ */
 export function MemberSquare({
   name,
   color,
@@ -261,12 +272,21 @@ export function MemberSquare({
   size?: number;
 }) {
   return (
-    <View style={{ width: size, height: size, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <Text
         style={{
           fontFamily: fonts.heading,
-          fontSize: Math.round(size * 0.45),
-          color: colors.bg,
+          fontSize: Math.round(size * 0.4),
+          color: colors.onAccent,
           lineHeight: Math.round(size * 0.55),
         }}
       >
@@ -275,6 +295,8 @@ export function MemberSquare({
     </View>
   );
 }
+
+export const Avatar = MemberSquare;
 
 export function Tag({
   label,
@@ -288,12 +310,12 @@ export function Tag({
   variant?: 'neutral' | 'accent' | 'outline';
 }) {
   const palette = selected
-    ? { bg: colors.accent, fg: colors.bg, border: colors.accent }
+    ? { bg: colors.text, fg: colors.bg, border: colors.text }
     : variant === 'accent'
       ? { bg: colors.accent100, fg: colors.accent800, border: 'transparent' }
       : variant === 'outline'
         ? { bg: 'transparent', fg: colors.accent, border: colors.accent }
-        : { bg: colors.neutral100, fg: colors.text, border: colors.divider };
+        : { bg: colors.surfaceAlt, fg: colors.text, border: 'transparent' };
 
   const body = (
     <Text
@@ -332,7 +354,7 @@ export interface SegOption<T extends string> {
   label: string;
 }
 
-/** Two or three exclusive modes — the system's segmented control. */
+/** Two or three exclusive modes, as a pill with a white thumb on the active one. */
 export function Seg<T extends string>({
   options,
   value,
@@ -346,7 +368,7 @@ export function Seg<T extends string>({
 }) {
   return (
     <View style={[styles.seg, style]}>
-      {options.map((option, index) => {
+      {options.map((option) => {
         const active = option.value === value;
         return (
           <Pressable
@@ -354,17 +376,16 @@ export function Seg<T extends string>({
             onPress={() => onChange(option.value)}
             style={({ pressed }) => [
               styles.segOpt,
-              index > 0 && { borderLeftWidth: 1, borderLeftColor: colors.divider },
-              active && { backgroundColor: colors.accent },
-              !active && pressed && { backgroundColor: colors.neutral200 },
+              active && [{ backgroundColor: colors.surface }, elevation.card],
+              !active && pressed && { opacity: 0.6 },
             ]}
           >
             <Text
               style={{
-                fontFamily: fonts.body,
-                fontSize: 13,
-                lineHeight: 17,
-                color: active ? colors.bg : colors.text,
+                fontFamily: active ? fonts.heading : fonts.headingSemi,
+                fontSize: 14,
+                lineHeight: 18,
+                color: active ? colors.text : colors.textMuted,
               }}
             >
               {option.label}
@@ -384,8 +405,8 @@ export interface TextTab<T extends string> {
 }
 
 /**
- * Many options as flush-left text with a 2px accent underline on the active
- * one. Scrolls horizontally when the labels outgrow the width.
+ * Many options as a row of chips; the active one is solid ink. Scrolls
+ * horizontally when the labels outgrow the width.
  */
 export function TextTabs<T extends string>({
   tabs,
@@ -403,7 +424,7 @@ export function TextTabs<T extends string>({
       horizontal
       showsHorizontalScrollIndicator={false}
       style={[styles.tabsTrack, style]}
-      contentContainerStyle={{ gap: 18 }}
+      contentContainerStyle={{ gap: 8 }}
     >
       {tabs.map((tab) => {
         const active = tab.value === value;
@@ -413,21 +434,27 @@ export function TextTabs<T extends string>({
             onPress={() => onChange(tab.value)}
             style={[
               styles.textTab,
-              { borderBottomColor: active ? colors.accent : 'transparent' },
+              { backgroundColor: active ? colors.text : colors.surfaceAlt },
             ]}
           >
             <Text
               style={{
-                fontFamily: active ? fonts.headingSemi : fonts.body,
+                fontFamily: fonts.headingSemi,
                 fontSize: 13,
                 lineHeight: 17,
-                color: active ? colors.text : colors.textMuted,
+                color: active ? colors.bg : colors.textMuted,
               }}
             >
               {tab.label}
             </Text>
             {tab.count ? (
-              <Text style={{ fontFamily: fonts.heading, fontSize: 10, color: colors.accent700 }}>
+              <Text
+                style={{
+                  fontFamily: fonts.heading,
+                  fontSize: 11,
+                  color: active ? colors.bg : colors.accent700,
+                }}
+              >
                 {tab.count}
               </Text>
             ) : null}
@@ -438,7 +465,7 @@ export function TextTabs<T extends string>({
   );
 }
 
-/** A square tick box that fills with the accent when done. */
+/** A round tick that fills with green when done. */
 export function TickBox({
   checked,
   onPress,
@@ -468,20 +495,21 @@ export function TickBox({
         style={{
           width: size,
           height: size,
-          borderWidth: 1.5,
-          borderColor: checked ? colors.accent : colors.divider,
-          backgroundColor: checked ? colors.accent : 'transparent',
+          borderRadius: size / 2,
+          borderWidth: 1.75,
+          borderColor: checked ? colors.success : colors.neutral400,
+          backgroundColor: checked ? colors.success : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {checked ? <CheckIcon size={size - 8} color={colors.bg} /> : null}
+        {checked ? <CheckIcon size={size - 8} color={colors.surface} strokeWidth={3} /> : null}
       </View>
     </Pressable>
   );
 }
 
-/** A 2px section rule, or a 1px row rule. */
+/** A hairline: `section` is the firmer of the two. */
 export function Rule({ weight = 'section', style }: { weight?: 'section' | 'row'; style?: ViewStyle }) {
   return (
     <View
@@ -496,7 +524,7 @@ export function Rule({ weight = 'section', style }: { weight?: 'section' | 'row'
   );
 }
 
-/** Kept for screens not yet restyled; renders the system's row rule. */
+/** A row hairline with breathing room either side. */
 export function Divider() {
   return <Rule weight="row" style={{ marginVertical: spacing.md }} />;
 }
@@ -524,8 +552,8 @@ export function Row({
 }
 
 /**
- * A section: an uppercase heading over a 2px rule, with its rows beneath.
- * This is the shape most of the app is built from now.
+ * A section: a quiet label with its rows beneath. Sections are separated by
+ * space rather than by a rule.
  */
 export function Section({
   label,
@@ -544,7 +572,6 @@ export function Section({
         <Kicker>{label}</Kicker>
         {meta ? <Text style={typography.tiny}>{meta}</Text> : null}
       </View>
-      <Rule />
       {children}
     </View>
   );
@@ -576,87 +603,89 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingTop: 6,
-    paddingBottom: 10,
-    borderBottomWidth: rules.section,
-    borderBottomColor: colors.divider,
+    paddingTop: 10,
+    paddingBottom: 6,
   },
   card: {
     backgroundColor: colors.surface,
-    padding: spacing.md,
-    gap: spacing.sm - 4,
-    marginBottom: spacing.sm,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm - 2,
+    marginBottom: spacing.md,
+    ...elevation.card,
   },
-  cardPressed: { backgroundColor: colors.neutral300 },
+  cardPressed: { backgroundColor: colors.neutral100 },
   cardKicker: {
     fontFamily: fonts.heading,
-    fontSize: 10,
-    lineHeight: 14,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: colors.accent,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.2,
+    color: colors.accent700,
   },
   button: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md + 2,
-    minHeight: 44,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg + 2,
+    minHeight: 46,
     borderWidth: 1,
+    borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  buttonLabel: { fontFamily: fonts.heading, fontSize: 14, lineHeight: 18 },
+  buttonLabel: { fontFamily: fonts.heading, fontSize: 15, lineHeight: 19 },
   fieldLabel: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: 5,
-    color: colors.neutral700,
+    fontFamily: fonts.headingSemi,
+    fontSize: 13,
+    lineHeight: 17,
+    marginBottom: 6,
+    color: colors.textMuted,
   },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.divider,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md + 2,
+    paddingVertical: spacing.sm + 2,
+    minHeight: 48,
     color: colors.text,
     fontFamily: fonts.body,
-    fontSize: 15,
+    fontSize: 16,
   },
   tag: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: 'transparent',
+    borderRadius: radius.pill,
     alignSelf: 'flex-start',
   },
-  tagTappable: { minHeight: 30, justifyContent: 'center' },
+  tagTappable: { minHeight: 32, justifyContent: 'center', paddingHorizontal: 12 },
   seg: {
     flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: colors.divider,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    padding: 3,
     alignSelf: 'flex-start',
   },
-  segOpt: { paddingVertical: 9, paddingHorizontal: 16 },
+  segOpt: { paddingVertical: 8, paddingHorizontal: 18, borderRadius: radius.pill },
   tabsTrack: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
     marginTop: spacing.md + 2,
+    flexGrow: 0,
   },
   textTab: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 4,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 2,
-    marginBottom: -1,
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
   },
   sectionHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    paddingBottom: 6,
+    paddingBottom: 2,
   },
   listRow: {
     flexDirection: 'row',

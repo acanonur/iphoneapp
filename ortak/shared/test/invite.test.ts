@@ -58,7 +58,7 @@ describe('join links', () => {
 
   it('survives being pasted inside a whole forwarded message', () => {
     const message = buildInviteMessage({ ...invite, spaceName: 'Ev', invitedBy: 'Can' });
-    expect(message).toContain('Join Ev on Ortak');
+    expect(message).toContain('Join Ev on Ikimiz');
     expect(message).toContain('Can invited you');
     expect(parseJoinInput(message)).toEqual({
       inviteCode: 'ABCD-2345',

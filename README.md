@@ -3,7 +3,7 @@
 > | App | Folder | What it is |
 > |---|---|---|
 > | **AI Secretary** 📞 | [`ios/`](ios/) + [`backend/`](backend/) | Described below: an AI that makes phone calls for you and reports back in your language. |
-> | **Ortak** 🏠 | [`ortak/`](ortak/README.md) | A shared daily-life app for two people on two different phones: one calendar that writes into **both** your real calendars, collaborative to-do and shopping lists, notes, a searchable WhatsApp archive and holiday expense splitting. Runs on **iOS and Android** from one Expo codebase, against your own server. See the [Ortak README](ortak/README.md). |
+> | **Ikimiz** (formerly Ortak) | [`ortak/`](ortak/README.md) | A shared daily-life app for two people on two different phones: one calendar that writes into **both** your real calendars, collaborative to-do and shopping lists, recurring chores that take turns, notes, a searchable WhatsApp archive, and shared money for everyday costs and holidays. Runs on **iOS and Android** from one Expo codebase, against your own server. See the [Ikimiz README](ortak/README.md). |
 > | **KnitStudio** 🧶 | [`ios-knitstudio/`](ios-knitstudio/) (Apple)<br>[`android/`](android/) (Android) | A knitting technique guide, pattern calculator, chart tool and yarn shopping list. Runs on **iPhone, iPad, Mac and Android**; fully on-device. The knitting engine exists twice — Swift and Kotlin — and both are tested against the same verified numbers. See [**how to run it on a Mac**](docs/running-on-your-mac.md), the [Apple README](ios-knitstudio/README.md), the [Android README](android/README.md), [how the numbers work](docs/knitstudio.md), and [how to release it](docs/platforms-and-release.md). |
 
 ---

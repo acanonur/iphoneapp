@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copy the shared Ortak notes into Apple Notes on a Mac.
+# Copy the shared Ikimiz notes into Apple Notes on a Mac.
 #
 # iOS gives no app write access to Apple Notes, but macOS does — through
 # AppleScript — so this is the one place the copy can be made automatically
@@ -15,12 +15,12 @@
 # On a schedule, e.g. every 30 minutes:
 #   */30 * * * * ORTAK_URL=... ORTAK_TOKEN=... /path/to/sync-notes-to-apple-notes.sh
 #
-# One direction only: Ortak → Apple Notes. Editing the copy in Notes does not
-# come back, and the next run overwrites it. Ortak stays the shared original.
+# One direction only: Ikimiz → Apple Notes. Editing the copy in Notes does not
+# come back, and the next run overwrites it. Ikimiz stays the shared original.
 
 set -euo pipefail
 
-FOLDER="${1:-Ortak}"
+FOLDER="${1:-Ikimiz}"
 
 if [[ -z "${ORTAK_URL:-}" || -z "${ORTAK_TOKEN:-}" ]]; then
   echo "Set ORTAK_URL and ORTAK_TOKEN first." >&2

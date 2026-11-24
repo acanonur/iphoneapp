@@ -3,7 +3,7 @@
  *
  * This is what makes the calendar genuinely two-way. Each phone reads its own
  * device calendars — the work calendar, the university one, whatever is on
- * there — and publishes them as busy intervals. Ortak then knows when each of
+ * there — and publishes them as busy intervals. Ikimiz then knows when each of
  * you is actually free, which is the thing a shared planner needs and a
  * one-way "we write events out" integration can never answer.
  *
