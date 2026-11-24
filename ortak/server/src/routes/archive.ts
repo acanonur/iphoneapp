@@ -10,7 +10,7 @@
  * that is what this endpoint consumes:
  *
  *   WhatsApp → open the chat → ⋮ (or the contact name on iOS) → Export chat
- *   → Without media → share into Ikimiz
+ *   → Without media → share into Hane
  *
  * Re-exporting the same group later is safe and cheap: message ids are derived
  * from a fingerprint of (timestamp, author, text), so a second import of an

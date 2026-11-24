@@ -1,15 +1,16 @@
-# Ikimiz in Two Inks
+# Hane in Two Inks
 
 The app's visual system, and where each decision lives in the code.
 
 ## The name and the mark
 
-The app was called Ortak (Turkish: "shared"). It is now Ikimiz — Turkish for
-"the two of us". It starts with *iki*, "two".
+The app was called Ortak (Turkish: "shared"). It is now Hane — Turkish for
+"household". It was briefly Ikimiz, "the two of us", which was dropped because
+a household is not always two people.
 
-The logo is two lowercase i's standing side by side — a dot over a rounded stem
-each, which also reads as two people. The left one is coral, the right one is
-teal and slightly taller, on a dark plum ground (`#231f2b`).
+The logo is a lowercase h in the app's two inks: a coral stem and a teal arch
+on a dark plum ground (`#231f2b`). Two inks making one letter, in a shape that
+stands like a doorway.
 
 It is drawn by a script, [`scripts/make-icons.py`](../scripts/make-icons.py),
 not kept as an opaque binary. Run it to regenerate `mobile/assets/`: the icon,
@@ -22,9 +23,10 @@ the OS tints or desaturates icons.
 
 ## The system in one paragraph
 
-A warm oat ground (`#faf6ef`) with white rounded cards a step above it. Two
-inks: coral (`#c9432a`) is the primary action and the first person; teal
-(`#167a78`) is the second person and the secondary highlight. Fraunces 600, a
+A warm oat ground (`#faf6ef`) with white rounded cards a step above it. Every
+member has an ink, and the first two carry the interface: coral (`#c9432a`) is
+the primary action and the first person; teal (`#167a78`) is the second person
+and the secondary highlight. Fraunces 600, a
 soft serif, sets screen titles; DM Sans (400 / 600 / 700) sets everything else.
 Radii are 8 for chips, 14 for inputs, 20 for cards and full pills for buttons.
 Semantic colours exist again: green for done, amber for due soon, red for
@@ -71,7 +73,7 @@ list should be light in a dim supermarket at 8pm.
 | Before | Now | Reason |
 |---|---|---|
 | Zero radius, 2px rules | Rounded cards, hairlines | "Busy, too many options" is the complaint that turned up in the market research; grouping by card is calmer than a ruled ledger |
-| One red for everything | Coral and teal, plus semantic colours | Two people need two colours, and a single accent could not tell "done" from "urgent" |
+| One red for everything | An ink per person, plus semantic colours | People need colours of their own, and a single accent could not tell "done" from "urgent" |
 | Archivo 800, uppercase kickers | Fraunces titles, sentence-case labels | Warmer; reads as a household notebook rather than a form |
 | Square member tiles in ink and red | Round avatars in coral and teal | A member's colour now means the same person on every screen |
 | Six tabs | Five tabs | The chat archive moved under Notes; fewer destinations |
@@ -89,15 +91,16 @@ icon in the Notes header, and its messages still turn up in Search.
 
 Colours are assigned by join order on the phone (`memberInk` in `theme.ts`,
 applied in the store), not taken from the server, so both phones and both themes
-agree: first to join is coral, second is teal. Friends who exist only on a
-ledger take plum, gold, blue and rose.
+agree: first to join is coral, second is teal, then plum, gold, blue and rose.
+Friends who exist only on a ledger continue the same sequence after the first
+two.
 
 ## Not done
 
 - Live theme switching without a relaunch.
 - A layered icon file for Apple's Icon Composer. The flat icon is accepted by
   the App Store, but a layered one renders better in the tinted and clear icon
-  modes; `mobile/assets/logo.svg` has the mark as one group per ink to start
+  modes; `mobile/assets/logo.svg` has the mark as one shape per ink to start
   from.
 - Screens beyond the shared components were not individually recomposed. They
   take the new tokens and components, so they are consistent, but Calendar,

@@ -1,5 +1,5 @@
 /**
- * Entity types shared by the Ikimiz server and the mobile app.
+ * Entity types shared by the Hane server and the mobile app.
  *
  * Every syncable record carries the same four sync fields so one delta-sync
  * engine can move all of them:
@@ -42,7 +42,7 @@ export type EntityKind = (typeof ENTITY_KINDS)[number];
 // ---------------------------------------------------------------------------
 
 /**
- * A shared calendar entry. It lives in Ikimiz, and each member's phone mirrors
+ * A shared calendar entry. It lives in Hane, and each member's phone mirrors
  * it into whichever device calendar that member picked (iCloud, Google, …).
  * The mirror bookkeeping is per-device and lives in `CalendarMirror`.
  */

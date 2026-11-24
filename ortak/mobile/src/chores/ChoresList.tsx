@@ -213,7 +213,7 @@ export function ChoresList() {
         <Card>
           <Text style={typography.subheading}>No chores yet</Text>
           <Muted>
-            Add the jobs that come round again — bins, laundry, the bathroom. Ikimiz takes turns for
+            Add the jobs that come round again — bins, laundry, the bathroom. Hane takes turns for
             you and keeps count of who did what.
           </Muted>
         </Card>

@@ -185,8 +185,8 @@ export default function SettingsScreen() {
         ) : calendars.length === 0 ? (
           <View style={{ marginTop: spacing.md }}>
             <Muted>
-              No writable calendars found. Ikimiz needs calendar permission — check your phone’s
-              privacy settings for Ikimiz.
+              No writable calendars found. Hane needs calendar permission — check your phone’s
+              privacy settings for Hane.
             </Muted>
           </View>
         ) : (
@@ -268,8 +268,8 @@ export default function SettingsScreen() {
 
       <Card>
         <Muted>
-          The other half of calendar sync. Pick which of your own calendars Ikimiz may read, and the
-          app can tell you when the two of you are both actually free instead of only writing events
+          The other half of calendar sync. Pick which of your own calendars Hane may read, and the
+          app can tell you when you are all actually free instead of only writing events
           out. Nothing here leaves your server.
         </Muted>
 
@@ -338,7 +338,7 @@ export default function SettingsScreen() {
                 Alert.alert(
                   'Availability shared',
                   report.blocked === 'permission'
-                    ? 'Ikimiz needs calendar permission to read your calendars.'
+                    ? 'Hane needs calendar permission to read your calendars.'
                     : `${report.published} entr${report.published === 1 ? 'y' : 'ies'} read` +
                       (report.removed > 0 ? `, ${report.removed} no longer there.` : '.'),
                 );
@@ -379,7 +379,7 @@ export default function SettingsScreen() {
           <Card>
             <Muted>
               Apple Notes has no API, but Reminders does — so shared to-dos can be copied into a real
-              Reminders list, where Siri and your watch can see them. One direction: Ikimiz stays the
+              Reminders list, where Siri and your watch can see them. One direction: Hane stays the
               shared original.
             </Muted>
 
@@ -394,7 +394,7 @@ export default function SettingsScreen() {
                   if (lists.length === 0) {
                     Alert.alert(
                       'No reminder lists',
-                      'Ikimiz needs permission to use Reminders. Turn it on in your phone’s settings.',
+                      'Hane needs permission to use Reminders. Turn it on in your phone’s settings.',
                     );
                   }
                 }}
@@ -430,7 +430,7 @@ export default function SettingsScreen() {
       </Text>
       <Card>
         <Muted>
-          iOS gives no app write access to Apple Notes, so Ikimiz keeps the shared copy and exports on
+          iOS gives no app write access to Apple Notes, so Hane keeps the shared copy and exports on
           demand. Any note has an Export button; for one-tap or automatic export, the README has a
           Shortcut recipe and a Mac script that writes straight into a Notes folder.
         </Muted>

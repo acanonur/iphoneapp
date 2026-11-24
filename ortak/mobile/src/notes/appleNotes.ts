@@ -1,11 +1,11 @@
 /**
- * Getting a note out of Ikimiz and into Apple Notes.
+ * Getting a note out of Hane and into Apple Notes.
  *
  * ## The honest constraint
  *
  * There is no public API for Apple Notes on iOS. No third-party app can create,
  * read or write notes in it — that is a deliberate Apple restriction, not a gap
- * in this app, and no library works around it. So Ikimiz keeps the shared note as
+ * in this app, and no library works around it. So Hane keeps the shared note as
  * the source of truth and offers three real ways to get a copy into Notes:
  *
  *  1. **Share sheet** (below). Tap Export → the iOS share sheet opens → tap
@@ -51,7 +51,7 @@ export async function shareNote(note: ExportableNote): Promise<ExportOutcome> {
   try {
     const result = await Share.share(
       { message: formatNote(note), title: note.title || 'Note' },
-      { subject: note.title || 'Note from Ikimiz', dialogTitle: 'Save note to…' },
+      { subject: note.title || 'Note from Hane', dialogTitle: 'Save note to…' },
     );
     return result.action === Share.dismissedAction ? 'dismissed' : 'shared';
   } catch {

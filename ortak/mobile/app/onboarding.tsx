@@ -102,7 +102,7 @@ export default function Onboarding() {
       return setError(
         mode === 'join'
           ? 'That invite has no address in it. Ask for the link, or fill in where the project is kept.'
-          : 'Ikimiz needs somewhere to keep the project. Fill in the address of your server.',
+          : 'Hane needs somewhere to keep the project. Fill in the address of your server.',
       );
     }
 
@@ -149,10 +149,10 @@ export default function Onboarding() {
         <View style={{ marginBottom: spacing.lg }}>
           <Logo size={72} />
         </View>
-        <Title>Ikimiz</Title>
+        <Title>Hane</Title>
         <Text style={[typography.body, { color: colors.textMuted, marginBottom: spacing.xl }]}>
-          The two of us. One shared calendar, lists, chores, notebook and money pot for two people
-          on two different phones.
+          Your household, in one place. One shared calendar, lists, chores, notebook and money pot
+          for the people you live with, on whatever phones they have.
         </Text>
       </View>
 
@@ -191,7 +191,7 @@ export default function Onboarding() {
           placeholder="Ev"
           value={spaceName}
           onChangeText={setSpaceName}
-          hint="Whatever you'd call the two of you."
+          hint="Whatever you call your household."
         />
       ) : (
         <>
@@ -249,7 +249,7 @@ export default function Onboarding() {
           keyboardType="url"
           value={serverUrl}
           onChangeText={setServerUrl}
-          hint="The address of your Ikimiz server. Both phones talk to the same one."
+          hint="The address of your Hane server. Both phones talk to the same one."
         />
       ) : (
         <Disclosure
@@ -273,7 +273,7 @@ export default function Onboarding() {
 
       <View style={{ marginTop: spacing.xl }}>
         <Muted>
-          Ikimiz keeps your data on your own server. Nothing is sent anywhere else, and the calendar
+          Hane keeps your data on your own server. Nothing is sent anywhere else, and the calendar
           entries it creates go straight into the calendar app already on your phone.
         </Muted>
       </View>

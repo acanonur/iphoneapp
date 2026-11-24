@@ -1,17 +1,19 @@
 /**
- * The Ikimiz design system — "Two Inks" — as tokens.
+ * The Hane design system — "Two Inks" — as tokens.
  *
- * The idea the whole system hangs on: the app is for two people, so it has two
- * inks. **Coral** is one of you, **teal** is the other, and everything that is
- * shared sits on a warm neutral ground between them. The logo is the same
- * thought drawn once — two lowercase i's standing side by side, one in each
- * ink — and the app name starts with them: *iki*, "two".
+ * *Hane* is Turkish for "household", and the system is built around the people
+ * in one. Everyone gets an ink: **coral** for the first person to join,
+ * **teal** for the second, then plum, gold, blue and rose. Everything shared
+ * sits on a warm neutral ground between them. The system is named for the first
+ * two because they also carry the interface — coral acts, teal answers — and
+ * the logo is those two inks making one letter: an **h** whose coral stem and
+ * teal arch stand like a doorway.
  *
  *  - **Warm ground, soft cards.** Oat paper with white cards floating a step
  *    above it. Things you can touch are rounded; nothing is boxed in by rules.
- *  - **Coral acts, teal answers.** Coral is the primary action and "you";
- *    teal is the other person and every secondary highlight. Because there are
- *    two, colour can carry *who*, which a single accent never could.
+ *  - **Coral acts, teal answers.** Coral is the primary action; teal is every
+ *    secondary highlight. Because people have colours of their own, colour can
+ *    carry *who*, which a single accent never could.
  *  - **Meaning has its own colours again.** Green for done, amber for due soon,
  *    red for overdue or destructive. They are never used as decoration.
  *  - **A serif for the headline, a sans for the work.** Fraunces sets titles —
@@ -143,8 +145,8 @@ const palette: Palette = scheme === 'dark' ? dark : light;
 export const colors = {
   ...palette,
   /**
-   * Member inks, by the order people joined: coral, then teal. A third or
-   * fourth person (a trip can have friends in it) gets plum, gold and so on.
+   * Member inks, by the order people joined: coral, teal, plum, gold, blue,
+   * rose. Friends who exist only on a ledger continue the same sequence.
    */
   members:
     scheme === 'dark'

@@ -119,7 +119,7 @@ export default function ArchiveScreen() {
                 </Text>
                 <Muted>
                   In WhatsApp, open a chat → ⋮ (or the contact name on iOS) → Export chat → Without
-                  media, then share the file into Ikimiz. Everything in it becomes searchable and
+                  media, then share the file into Hane. Everything in it becomes searchable and
                   stops disappearing up the scrollback.
                 </Muted>
                 <Button

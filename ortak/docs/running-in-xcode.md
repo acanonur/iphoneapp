@@ -1,17 +1,17 @@
-# Running Ikimiz on your iPhone from Xcode
+# Running Hane on your iPhone from Xcode
 
-Ikimiz is an **Expo / React Native** app, not a hand-written Swift project, so
+Hane is an **Expo / React Native** app, not a hand-written Swift project, so
 there is no `.xcodeproj` in the repository to double-click. Xcode's project is
 **generated** from `app.json` and the installed packages, and it is deliberately
 not committed — regenerating it is how config changes take effect.
 
 > **Careful, two things are easy to get wrong:**
 >
-> 1. The repository's **default branch does not contain Ikimiz.** The app lives on
+> 1. The repository's **default branch does not contain Hane.** The app lives on
 >    the branch `claude/daily-life-collab-app-5g3p5p`. A plain `git clone` checks
 >    out the other branch and you will not find `ortak/` anywhere.
 > 2. This repository holds more than one app. `ios/` at the top level is the
->    **AI Secretary**, a different SwiftUI project. Ikimiz lives in
+>    **AI Secretary**, a different SwiftUI project. Hane lives in
 >    `ortak/mobile/`. Everything below happens there.
 
 Every command block below is meant to be pasted whole. Copy the block, paste it,
@@ -107,7 +107,7 @@ From `ortak/mobile`:
 ```bash
 npm ci
 npx expo prebuild --platform ios
-open ios/Ikimiz.xcworkspace
+open ios/Hane.xcworkspace
 ```
 
 `prebuild` is what writes the `ios/` folder and runs `pod install`; it takes a
@@ -146,8 +146,8 @@ Release builds skip it because they embed the bundle.
 
 Then in Xcode:
 
-1. Select the **Ikimiz** project in the navigator.
-2. Target **Ikimiz** → *Signing & Capabilities* → set **Team** to your Apple ID.
+1. Select the **Hane** project in the navigator.
+2. Target **Hane** → *Signing & Capabilities* → set **Team** to your Apple ID.
 3. Do the same for the **ShareExtension** target — it is a second target and
    needs its own signing.
 4. If Xcode complains the bundle identifier is taken, change it to something of
@@ -163,7 +163,7 @@ Settings → General → VPN & Device Management → trust your certificate.
 
 ## App Groups and the iOS share extension
 
-The share extension — what would put Ikimiz in the iOS share sheet, so you could
+The share extension — what would put Hane in the iOS share sheet, so you could
 send a WhatsApp message straight into it — needs an **App Group**
 (`group.com.ortak.app`) shared between the app and the extension.
 
@@ -180,10 +180,10 @@ What that costs, and what it does not:
 
 - **Android is unaffected.** Tugce keeps the full share sheet either way; the
   `disableIOS` flag is iOS-only.
-- **Sharing into Ikimiz on iOS still works** through the Shortcut recipe in the
+- **Sharing into Hane on iOS still works** through the Shortcut recipe in the
   main README. The `ortak://` scheme is still registered, so
   `ortak://save?text=…` opens the capture screen exactly as before.
-- You lose only Ikimiz's own row in the iOS share sheet.
+- You lose only Hane's own row in the iOS share sheet.
 
 **With a paid account**, turn it back on by removing `"disableIOS": true` from
 the `expo-share-intent` entry in `app.json` and running
@@ -328,11 +328,11 @@ looks for Simulator.app and gives up if it cannot find it. The build itself does
 not need it — from `ortak/mobile`:
 
 ```bash
-xcodebuild -workspace ios/Ikimiz.xcworkspace -scheme Ikimiz -configuration Release \
+xcodebuild -workspace ios/Hane.xcworkspace -scheme Hane -configuration Release \
   -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17' \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 xcrun simctl boot "iPhone 17"
-xcrun simctl install "iPhone 17" build/Build/Products/Release-iphonesimulator/Ikimiz.app
+xcrun simctl install "iPhone 17" build/Build/Products/Release-iphonesimulator/Hane.app
 xcrun simctl launch "iPhone 17" com.canonur.ortak
 ```
 

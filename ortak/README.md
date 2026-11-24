@@ -1,9 +1,9 @@
-# Ikimiz
+# Hane
 
-A shared daily-life app for two people on two different phones, with two
-different calendars.
+A shared daily-life app for a household — two people or more — on different
+phones, with different calendars.
 
-*Ikimiz* is Turkish for "the two of us" — which is the whole idea. One calendar
+*Hane* is Turkish for "household" — which is the whole idea. One calendar
 that writes into **both** of your real calendars, one to-do list, the chores
 that come round again and whose turn they are, one shopping list you can both
 watch update while you're in the shop, one notebook, one place to keep the
@@ -14,7 +14,7 @@ day to day and on holiday.
 > so are the bundle identifier (`com.canonur.ortak`), the `ortak://` link scheme
 > and the `ORTAK_SERVER_URL` build variable — renaming those would orphan the
 > app already on your phones and break invites already sent. Everything a person
-> sees says Ikimiz.
+> sees says Hane.
 
 It runs on **iOS and Android** from one codebase, and on **your own server** —
 your household's data doesn't go to anyone else.
@@ -34,9 +34,9 @@ equivalent system list — and it is hidden on Android rather than shown broken.
 </p>
 
 It is designed on its own **Two Inks** system — a warm oat ground, white rounded
-cards, coral for one of you and teal for the other, Fraunces for titles and DM
-Sans for everything else, in light and dark. The logo is two lowercase i's side
-by side, one in each ink. See [`docs/design.md`](docs/design.md) for how that
+cards, a colour for each person (coral and teal first), Fraunces for titles and
+DM Sans for everything else, in light and dark. The logo is a lowercase h in
+two inks, a coral stem and a teal arch. See [`docs/design.md`](docs/design.md) for how that
 maps onto the code.
 
 ---
@@ -65,7 +65,7 @@ A survey of ten leading productivity apps (Fantastical, Things 3, OmniFocus,
 Structured, Craft, Ulysses, BBEdit, Agenda, GoodNotes, Bear) found that none of
 them does all three of: run on iOS *and* Android, support real shared
 collaboration, and write two-way into each person's own native calendar. That
-intersection is exactly what Ikimiz is.
+intersection is exactly what Hane is.
 
 Its "best-of features worth adopting" list is implemented here:
 
@@ -94,25 +94,26 @@ Before this version the category was surveyed again (November 2026) — couples
 and household organisers this time, not general productivity apps. What it
 found, and what was done about it:
 
-| Finding | What Ikimiz does |
+| Finding | What Hane does |
 |---|---|
 | Incumbents charge roughly $30–80 a year and put basics — ad-free use, month view, reminders, even sharing itself — behind the subscription. | Nothing is gated. It runs on your own server; there is no account, plan or ad. |
 | Cupla, the closest couples app, has calendar, lists and chores but **no shared money**; a reviewer asks for it outright. | Money is a tab, with an everyday ledger alongside trips. |
 | Recurring chores with turns are now expected in the category. | **Chores**, with rotation and a 30-day split of who did what. |
 | "Busy, too many options" is the complaint even in a five-star review of the category leader. | Five tabs instead of six; the chat archive moved under Notes. The new design groups by card instead of ruling everything into a ledger. |
-| TimeTree does not keep external calendars in sync inside a shared calendar (its own support pages say so). | Already Ikimiz's strongest point — it reads and writes each person's real calendar — so it was left alone. |
+| TimeTree does not keep external calendars in sync inside a shared calendar (its own support pages say so). | Already Hane's strongest point — it reads and writes each person's real calendar — so it was left alone. |
 | Privacy-first rivals exist but are Apple-only (iCloud sync) or web-only; none found is self-hosted *and* native on both iOS and Android. | That intersection is still what this is. |
 
 The research was narrow in places and says so: user complaints rest on single
 reviews, Android listings and Reddit were not covered, and "name not in use"
-means no App Store listing called Ikimiz turned up in a search — not a
-trademark clearance.
+means no App Store listing called Hane turned up in a search — not a
+trademark clearance. (The name was briefly Ikimiz, "the two of us", and was
+changed because a household is not always two.)
 
 ## Three honest constraints
 
 Two of the things you asked for are limited by the phone platforms rather than
 by effort. Rather than pretend otherwise, here is exactly what is and isn't
-possible, and what Ikimiz does instead.
+possible, and what Hane does instead.
 
 ### ✅ Calendar — works fully, no compromise
 
@@ -123,13 +124,13 @@ database that every configured account feeds into:
   Exchange account you've added in Settings → Calendar → Accounts
 - **Android** — the Calendar Provider lists the Google accounts on the device
 
-So Ikimiz writes **native calendar events** through `expo-calendar`. No OAuth, no
+So Hane writes **native calendar events** through `expo-calendar`. No OAuth, no
 Google API key, no separate calendar to check. Onur picks his iCloud calendar,
 Tugce picks her Google one, and the same shared event is written into each. Once
 it's in iCloud or Google, it syncs onward on its own — to your Mac, your watch,
 calendar.google.com, everywhere.
 
-Ikimiz remembers which native event belongs to which shared event **per person**,
+Hane remembers which native event belongs to which shared event **per person**,
 so editing an event updates the existing entry instead of leaving a duplicate,
 and deleting it removes the entry from both your calendars.
 
@@ -148,7 +149,7 @@ create, read or edit notes in it. That's an Apple restriction; no library or
 trick works around it, and anything claiming otherwise is doing something that
 will break.
 
-So Ikimiz keeps the shared note as the original and gives you three real ways to
+So Hane keeps the shared note as the original and gives you three real ways to
 get a copy across:
 
 1. **Share sheet** — every note has an Export button. Tap it, tap Notes. Two
@@ -158,31 +159,31 @@ get a copy across:
    action can consume.
 3. **On your MacBook**, where AppleScript *is* allowed to write to Notes:
    `scripts/sync-notes-to-apple-notes.sh` pulls every shared note into a
-   dedicated "Ikimiz" folder in Notes. Put it on a cron and it's automatic.
+   dedicated "Hane" folder in Notes. Put it on a cron and it's automatic.
 
 For **to-dos** the picture is better, because Reminders *is* part of EventKit and
-fully writable. Point Ikimiz at a Reminders list (Settings → Apple Reminders) and
+fully writable. Point Hane at a Reminders list (Settings → Apple Reminders) and
 your shared to-dos are copied into it, where Siri, your watch and the Lock Screen
-can all see them. One direction only — Ikimiz stays the shared original.
+can all see them. One direction only — Hane stays the shared original.
 
 ### ⚠️ WhatsApp — no API for reading your chats
 
 WhatsApp has no API that lets another app read your personal conversations. The
 Business API only covers messages sent to a business number. Libraries that
 drive WhatsApp Web (`whatsapp-web.js`, Baileys and friends) violate WhatsApp's
-Terms of Service and get phone numbers banned — so Ikimiz doesn't use them.
+Terms of Service and get phone numbers banned — so Hane doesn't use them.
 
 What WhatsApp *does* support is the export built into the app, and that turns
 out to be enough for what you actually wanted — not losing information, and
 finding it again:
 
 - **Whole conversations.** In WhatsApp: open the chat → tap the contact or group
-  name → **Export chat** → **Without media** → share the `.txt` into Ikimiz. Every
+  name → **Export chat** → **Without media** → share the `.txt` into Hane. Every
   message becomes searchable forever. Re-exporting the same group next year is
   safe and cheap: message ids are fingerprints of the content, so only genuinely
   new messages are added.
 - **Single messages, as they happen.** Long-press a message in WhatsApp → Share
-  → Ikimiz. On **Android** that is a real share-sheet target, an `ACTION_SEND`
+  → Hane. On **Android** that is a real share-sheet target, an `ACTION_SEND`
   filter generated by the `expo-share-intent` config plugin. On **iOS** the
   equivalent extension needs an App Group, which a free Apple ID cannot create,
   so it ships disabled and a [Shortcut](#ios-shortcut-recipes) fills the same
@@ -203,7 +204,7 @@ Turkish.
 ┌───────────────────┐        ┌───────────────────┐
 │  iPhone (Onur)    │        │  Android (Tugce)  │
 │                   │        │                   │
-│  Ikimiz app        │        │  Ikimiz app        │
+│  Hane app        │        │  Hane app        │
 │    ↓ EventKit     │        │    ↓ CalendarProvider
 │  iCloud calendar  │        │  Google calendar  │
 └─────────┬─────────┘        └─────────┬─────────┘
@@ -211,7 +212,7 @@ Turkish.
           └──────────────┬─────────────┘
                          ▼
               ┌─────────────────────┐
-              │  Ikimiz server       │
+              │  Hane server       │
               │  Fastify + SQLite   │
               │  delta sync · FTS5  │
               └─────────────────────┘
@@ -243,7 +244,7 @@ ortak/
 
 ### 0. Get the code
 
-Ikimiz lives on the branch `claude/daily-life-collab-app-5g3p5p`, not on the
+Hane lives on the branch `claude/daily-life-collab-app-5g3p5p`, not on the
 repository's default branch, so the clone needs `--branch`:
 
 ```bash
@@ -296,7 +297,7 @@ npx expo install --fix
 
 `expo install --fix` aligns the native module versions with your Expo SDK.
 
-Ikimiz uses native calendar access and a native share extension, so it needs a
+Hane uses native calendar access and a native share extension, so it needs a
 **development build** rather than Expo Go. Build each phone once:
 
 On the iPhone:
@@ -338,7 +339,8 @@ On first launch:
    (Onur picks iCloud, Tugce picks her Google calendar)
 5. Once you've both joined, Settings → Rotate code
 
-The first person to join is coral and the second is teal, on both phones.
+The first person to join is coral, the second teal, and anyone after that gets
+a colour of their own — the same on every phone.
 
 The invite carries the server address with it, so step 3 is one paste and
 nothing else — tapping the link opens the app with both fields already filled.
@@ -355,9 +357,9 @@ calendar entries land in your own calendars automatically.
 Two small Shortcuts fill the gaps iOS leaves. Both take about two minutes in the
 Shortcuts app.
 
-### "Save to Ikimiz" — how sharing into Ikimiz works on iOS
+### "Save to Hane" — how sharing into Hane works on iOS
 
-Ikimiz ships with its iOS share extension **turned off**, because the extension
+Hane ships with its iOS share extension **turned off**, because the extension
 needs an App Group and a free Apple ID cannot create one — see
 [`docs/running-in-xcode.md`](docs/running-in-xcode.md) for the details and for
 how to turn it on with a paid developer account.
@@ -365,17 +367,17 @@ how to turn it on with a paid developer account.
 This Shortcut does the same job without the extension, and is the route to use
 otherwise. **Android is unaffected either way**: it has the full share sheet.
 
-1. Shortcuts → **+** → name it *Save to Ikimiz*
+1. Shortcuts → **+** → name it *Save to Hane*
 2. Tap ⓘ → turn on **Show in Share Sheet**, accept **Text** and **URLs**
 3. Add action **URL** → set it to:
    `ortak://save?text=` — then add a **Text** action containing
    *Shortcut Input*, and a **URL Encode** action between them
 4. Add action **Open URLs**
 
-Now: long-press a message in WhatsApp → Share → *Save to Ikimiz*, and Ikimiz opens
+Now: long-press a message in WhatsApp → Share → *Save to Hane*, and Hane opens
 on the capture screen with the text already filled in.
 
-### "Ikimiz note → Apple Notes" — automatic note export
+### "Hane note → Apple Notes" — automatic note export
 
 1. New Shortcut → **Get Contents of URL**
    - URL: `https://your-server/api/notes/NOTE_ID.txt`
@@ -410,15 +412,15 @@ since Notes syncs through iCloud. On a cron it's fully automatic:
 The first run needs permission: System Settings → Privacy & Security →
 Automation → allow your terminal to control Notes.
 
-It's **one direction** — Ikimiz → Notes. Editing the copy in Notes doesn't come
-back, and the next run overwrites it. Ikimiz stays the shared original.
+It's **one direction** — Hane → Notes. Editing the copy in Notes doesn't come
+back, and the next run overwrites it. Hane stays the shared original.
 
 ---
 
 ## A few details worth knowing
 
 **Sharing availability is opt-in and time-only by default.** You choose which of
-your calendars Ikimiz may read, and titles stay private unless you turn them on.
+your calendars Hane may read, and titles stay private unless you turn them on.
 A phone republishes on a timer, and the server only records what actually
 changed — so an unchanged calendar doesn't wake the other phone.
 
@@ -442,7 +444,7 @@ Anything with no date in it becomes a to-do instead of an appointment.
 
 **Search folds the characters SQLite won't.** `remove_diacritics` handles ş, ğ,
 ö, ü and ç, but not the Turkish dotless **ı** — which is exactly the character
-you'd skip typing on a German or English keyboard. Ikimiz folds ı, İ and ß itself
+you'd skip typing on a German or English keyboard. Hane folds ı, İ and ß itself
 at both index and query time, so "alisveris" finds "Alışveriş" and "strasse"
 finds "Straße".
 
@@ -488,7 +490,7 @@ Honest list of what a second pass would add:
   nudges you; that waits on push notifications
 - **Live theme switching** — light and dark follow the phone, but a change made
   while the app is open applies at the next launch
-- **Name clearance** — "Ikimiz" was only checked against App Store search
+- **Name clearance** — "Hane" was only checked against App Store search
   results, not trademarks or domains
 - **Reading Reminders back** — the mirror is one-way; a two-way merge between
   two independent to-do stores is a much bigger promise than it looks

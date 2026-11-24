@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-Generate Ikimiz's app icons.
+Generate Hane's app icons.
 
-The mark is two lowercase i's standing side by side — a dot over a rounded stem
-each, which is also the simplest drawing of two people. One is coral and one is
-teal, the app's two inks, on its plum ground; the name begins with them: *iki*,
-"two". Two solid shapes, no gradient, no shadow — so the mark survives being
-tinted, desaturated or cut out by whichever icon style the phone is set to.
+The mark is a lowercase h in the app's two inks: a coral stem and a teal arch
+on the plum ground. Two inks making one letter — and a shape that stands like a
+doorway, which is what *hane*, "household", is about. Solid shapes, no gradient,
+no shadow, so the mark survives being tinted, desaturated or cut out by
+whichever icon style the phone is set to.
 
-It is drawn here rather than kept as opaque binaries nobody can edit. The
-geometry lives once, in MARK below, and the same numbers are used by the in-app
-logo (`mobile/src/ui/Logo.tsx`) and written out as `mobile/assets/logo.svg`.
+It is drawn here rather than kept as opaque binaries nobody can edit. The same
+geometry is used by the in-app logo (`mobile/src/ui/Logo.tsx`) and written out
+as `mobile/assets/logo.svg`.
 
 Needs Pillow:  python3 -m pip install pillow
 Run from anywhere:  python3 ortak/scripts/make-icons.py
 Writes into ortak/mobile/assets/.
 """
+
 
 from pathlib import Path
 
@@ -27,15 +28,12 @@ TEAL = (0x4C, 0xB7, 0xB1, 255)
 WHITE = (255, 255, 255, 255)
 CLEAR = (0, 0, 0, 0)
 
-# The mark on a 100 × 100 grid: (centre x, dot centre y, stem top, stem bottom).
-# The second figure stands a little taller, so the pair reads as two different
-# people rather than a pause button.
-DOT_RADIUS = 9.5
-STEM_WIDTH = 17.0
-MARK = [
-    (38.5, 31.0, 45.0, 79.0, "coral"),
-    (61.5, 24.0, 38.0, 79.0, "teal"),
-]
+# The mark on a 100 × 100 grid.
+STEM = (28.0, 18.0, 45.0, 82.0)  # the coral stem: left, top, right, bottom
+STROKE = 17.0  # every stroke of the letter is this wide, with fully round ends
+ARCH_TOP = 44.0  # where the teal arch leaves the stem
+LEG = (58.0, 75.0, 82.0)  # the arch's leg: left, right, bottom
+INNER_RADIUS = 6.0  # the curve inside the arch
 
 SUPERSAMPLE = 4
 
@@ -49,42 +47,45 @@ def draw_mark(size: int, scale: float, ground, inks: dict) -> Image.Image:
     unit = big * scale / 100.0
     origin = (big - 100.0 * unit) / 2.0
 
-    def at(value: float) -> float:
-        return origin + value * unit
+    def box(left: float, top: float, right: float, bottom: float) -> list[float]:
+        return [origin + v * unit for v in (left, top, right, bottom)]
 
-    for cx, dot_y, top, bottom, ink in MARK:
-        colour = inks[ink]
-        half = STEM_WIDTH / 2.0
-        draw.rounded_rectangle(
-            [at(cx - half), at(top), at(cx + half), at(bottom)],
-            radius=half * unit,
-            fill=colour,
-        )
-        draw.ellipse(
-            [at(cx - DOT_RADIUS), at(dot_y - DOT_RADIUS), at(cx + DOT_RADIUS), at(dot_y + DOT_RADIUS)],
-            fill=colour,
-        )
+    leg_left, leg_right, leg_bottom = LEG
+    half = STROKE / 2.0
+    teal, coral = inks["teal"], inks["coral"]
+
+    # The arch: a block with one big rounded shoulder, a leg with a round foot,
+    # and the counter cut back out of it in the ground colour.
+    draw.rounded_rectangle(
+        box(STEM[2] - 1, ARCH_TOP, leg_right, leg_bottom - half),
+        radius=STROKE * unit,
+        fill=teal,
+        corners=(False, True, False, False),
+    )
+    draw.rectangle(box(STEM[2] - 1, ARCH_TOP, leg_left + 0.5, ARCH_TOP + STROKE), fill=teal)
+    draw.rounded_rectangle(box(leg_left, ARCH_TOP + STROKE, leg_right, leg_bottom), radius=half * unit, fill=teal)
+    draw.rounded_rectangle(
+        box(STEM[2] - 6, ARCH_TOP + STROKE, leg_left, leg_bottom + 10),
+        radius=INNER_RADIUS * unit,
+        fill=ground,
+        corners=(False, True, False, False),
+    )
+
+    # The stem goes on last, over the join.
+    draw.rounded_rectangle(box(*STEM), radius=half * unit, fill=coral)
 
     return image.resize((size, size), Image.LANCZOS)
 
 
 def write_svg(path: Path) -> None:
-    """The same mark as an SVG, one group per layer, for Icon Composer or print."""
-    shapes = []
-    for cx, dot_y, top, bottom, ink in MARK:
-        colour = "#f0704f" if ink == "coral" else "#4cb7b1"
-        half = STEM_WIDTH / 2.0
-        shapes.append(
-            f'  <g id="{ink}" fill="{colour}">\n'
-            f'    <circle cx="{cx}" cy="{dot_y}" r="{DOT_RADIUS}"/>\n'
-            f'    <rect x="{cx - half}" y="{top}" width="{STEM_WIDTH}" height="{bottom - top}" rx="{half}"/>\n'
-            f"  </g>"
-        )
+    """The same mark as an SVG, one shape per ink, for Icon Composer or print."""
     path.write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n'
         '  <rect id="ground" width="100" height="100" fill="#231f2b"/>\n'
-        + "\n".join(shapes)
-        + "\n</svg>\n"
+        '  <path id="teal" fill="#4cb7b1" d="M44 44 H58 A17 17 0 0 1 75 61 V73.5 '
+        'A8.5 8.5 0 0 1 58 73.5 V67 A6 6 0 0 0 52 61 H44 Z"/>\n'
+        '  <rect id="coral" fill="#f0704f" x="28" y="18" width="17" height="64" rx="8.5"/>\n'
+        "</svg>\n"
     )
 
 

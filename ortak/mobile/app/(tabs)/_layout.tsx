@@ -28,7 +28,7 @@ const TABS: { name: string; label: string; Icon: (p: IconProps) => React.ReactEl
  * Search, because "too many options" is the standing complaint about apps in
  * this category and a tab is the most expensive place to put a rarely-used one.
  */
-function IkimizTabBar({ state, navigation }: BottomTabBarProps) {
+function HaneTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -99,7 +99,7 @@ function IkimizTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function TabsLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <IkimizTabBar {...props} />}>
+    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <HaneTabBar {...props} />}>
       {TABS.map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.label }} />
       ))}
