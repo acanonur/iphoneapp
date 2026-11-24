@@ -17,7 +17,7 @@ import { Timeline } from '../../src/ui/Timeline.js';
 import { SearchIcon, SettingsIcon } from '../../src/ui/icons.js';
 import { useAvailabilityPublisher, useTimedBusyIntervals } from '../../src/calendar/useAvailability.js';
 import { MemberSquare, Button, Card, Field, Muted, Row } from '../../src/ui/components.js';
-import { colors, clockTime, relativeDay, spacing, typography } from '../../src/ui/theme.js';
+import { clockTime, colors, fonts, relativeDay, spacing, typography } from '../../src/ui/theme.js';
 
 export default function TodayScreen() {
   const router = useRouter();
@@ -141,7 +141,7 @@ export default function TodayScreen() {
         <Row style={{ justifyContent: 'space-between', marginBottom: spacing.md }}>
           <View>
             <Text style={typography.title}>
-              {store.user ? `Hi ${store.user.name.split(' ')[0]}` : 'Ortak'}
+              {store.user ? `Hi ${store.user.name.split(' ')[0]}` : 'Ikimiz'}
             </Text>
             <Muted>{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</Muted>
           </View>
@@ -235,7 +235,7 @@ export default function TodayScreen() {
                     <Text
                       style={[
                         typography.tiny,
-                        { color: task.dueAt < now ? colors.accent700 : colors.textMuted },
+                        { color: task.dueAt < now ? colors.danger : colors.textMuted },
                       ]}
                     >
                       {relativeDay(task.dueAt)}
@@ -288,7 +288,7 @@ function Section({
         <Text style={typography.heading}>{title}</Text>
         {actionLabel && onAction ? (
           <Pressable onPress={onAction} hitSlop={8}>
-            <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>{actionLabel}</Text>
+            <Text style={{ color: colors.accent, fontSize: 13, fontFamily: fonts.headingSemi }}>{actionLabel}</Text>
           </Pressable>
         ) : null}
       </Row>

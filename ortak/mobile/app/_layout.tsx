@@ -3,25 +3,22 @@ import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-  useFonts,
-  Archivo_400Regular,
-  Archivo_600SemiBold,
-  Archivo_800ExtraBold,
-} from '@expo-google-fonts/archivo';
+import { useFonts } from 'expo-font';
+import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
+import { DMSans_400Regular, DMSans_600SemiBold, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import { useStore } from '../src/store/useStore.js';
 import { useShareIntake, useSharedPayload } from '../src/share/incoming.js';
 import { connectSocket, disconnectSocket } from '../src/store/socket.js';
-import { colors, fonts } from '../src/ui/theme.js';
+import { colors, fonts, scheme } from '../src/ui/theme.js';
 
 export default function RootLayout() {
-  // Archivo carries the whole Modernist system — 800 for anything structural,
-  // 400 for body. Holding the splash until it loads avoids a flash of the
-  // system font in a design where the typeface *is* the identity.
+  // Fraunces sets the titles and DM Sans everything else. Holding the first
+  // frame until they load avoids a flash of the system font.
   const [fontsLoaded] = useFonts({
-    Archivo_400Regular,
-    Archivo_600SemiBold,
-    Archivo_800ExtraBold,
+    Fraunces_600SemiBold,
+    DMSans_400Regular,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
   });
 
   const status = useStore((s) => s.status);
@@ -77,13 +74,15 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.bg },
           headerTintColor: colors.text,
           headerTitleStyle: { fontFamily: fonts.heading, fontSize: 17 },
           headerShadowVisible: false,
+          // The back button is a chevron, not the name of the route behind it.
+          headerBackButtonDisplayMode: 'minimal',
           contentStyle: { backgroundColor: colors.bg },
         }}
       >
@@ -92,10 +91,11 @@ export default function RootLayout() {
         <Stack.Screen name="join" options={{ headerShown: false }} />
         <Stack.Screen name="search" options={{ title: 'Search' }} />
         <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        <Stack.Screen name="archive" options={{ title: 'Chat archive' }} />
         <Stack.Screen name="import" options={{ title: 'Import chat' }} />
         <Stack.Screen name="capture" options={{ title: 'Save', presentation: 'modal' }} />
         <Stack.Screen name="note/[id]" options={{ title: 'Note' }} />
-        <Stack.Screen name="trip/[id]" options={{ title: 'Trip' }} />
+        <Stack.Screen name="trip/[id]" options={{ title: 'Ledger' }} />
         <Stack.Screen name="chat/[name]" options={{ title: 'Chat' }} />
       </Stack>
     </SafeAreaProvider>

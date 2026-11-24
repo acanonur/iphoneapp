@@ -93,13 +93,13 @@ export function buildInviteMessage(input: {
   const code = normaliseInviteCode(input.inviteCode) ?? input.inviteCode.trim();
 
   const opening = project
-    ? `Join ${project} on Ortak${from ? ` — ${from} invited you` : ''}.`
-    : `Join me on Ortak${from ? ` — ${from}` : ''}.`;
+    ? `Join ${project} on Ikimiz${from ? ` — ${from} invited you` : ''}.`
+    : `Join me on Ikimiz${from ? ` — ${from}` : ''}.`;
 
   return [
     opening,
     '',
-    'Open Ortak and tap Join, then paste this:',
+    'Open Ikimiz and tap Join, then paste this:',
     buildJoinLink({ serverUrl: input.serverUrl, inviteCode: input.inviteCode }),
     '',
     `Or type the code by hand: ${code}`,

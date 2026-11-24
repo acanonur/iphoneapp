@@ -9,13 +9,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useStore, selectAll } from '../../src/store/useStore.js';
+import { useStore, selectAll, memberColor } from '../../src/store/useStore.js';
 import { newId } from '../../src/util/id.js';
 import { summarizeTrip } from '../../../shared/src/split.js';
 import { formatCents, parseAmountToCents } from '../../../shared/src/money.js';
 import type { Expense, Settlement, SplitMode, Trip, TripMember } from '../../../shared/src/types.js';
 import { MemberSquare, Button, Card, Tag, Field, Muted, Row } from '../../src/ui/components.js';
-import { colors, relativeDay, spacing, typography } from '../../src/ui/theme.js';
+import { colors, fonts, memberInk, relativeDay, spacing, typography } from '../../src/ui/theme.js';
 
 export default function TripScreen() {
   const { id: tripId } = useLocalSearchParams<{ id: string }>();
@@ -47,13 +47,21 @@ export default function TripScreen() {
   if (!trip || trip.deleted) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, padding: spacing.lg }}>
-        <Muted>This trip has been deleted.</Muted>
+        <Muted>This ledger has been deleted.</Muted>
       </View>
     );
   }
 
   const nameOf = (memberId: string) => members.find((m) => m.id === memberId)?.name ?? 'Unknown';
-  const colorOf = (memberId: string) => members.find((m) => m.id === memberId)?.color ?? colors.accent;
+  // Household members keep their own ink here too; friends who are only on
+  // this ledger take the inks after the first two, in the order they were added.
+  const guests = members.filter((m) => !m.userId);
+  const colorOf = (memberId: string) => {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) return colors.neutral500;
+    if (member.userId) return memberColor(store, member.userId);
+    return memberInk(2 + guests.indexOf(member));
+  };
 
   function addMember() {
     const name = newMember.trim();
@@ -63,7 +71,7 @@ export default function TripScreen() {
       tripId: trip!.id,
       name,
       userId: null,
-      color: colors.members[members.length % colors.members.length]!,
+      color: memberInk(2 + guests.length),
     });
     setNewMember('');
   }
@@ -136,7 +144,7 @@ export default function TripScreen() {
                 )
               }
             >
-              <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>
+              <Text style={{ color: colors.text, fontSize: 13, fontFamily: fonts.headingSemi }}>
                 Mark as paid
               </Text>
             </Pressable>
@@ -174,7 +182,7 @@ export default function TripScreen() {
             <Text
               style={{
                 fontSize: 15,
-                fontWeight: '700',
+                fontFamily: fonts.heading,
                 color:
                   balance.netCents > 0
                     ? colors.text
@@ -194,7 +202,7 @@ export default function TripScreen() {
       <Row style={{ marginTop: spacing.sm }}>
         <View style={{ flex: 1 }}>
           <Field
-            placeholder="Add someone to the trip"
+            placeholder="Add someone to this ledger"
             value={newMember}
             onChangeText={setNewMember}
             onSubmitEditing={addMember}
@@ -208,7 +216,7 @@ export default function TripScreen() {
       <Row style={{ justifyContent: 'space-between', marginTop: spacing.lg, marginBottom: spacing.sm }}>
         <Text style={typography.heading}>Expenses</Text>
         <Pressable onPress={() => setShowAdd((v) => !v)} hitSlop={8}>
-          <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
+          <Text style={{ color: colors.accent, fontSize: 13, fontFamily: fonts.headingSemi }}>
             {showAdd ? 'Cancel' : '+ Add'}
           </Text>
         </Pressable>

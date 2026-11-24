@@ -18,6 +18,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, OrtakApi, normaliseServerUrl, type Session } from '../api/client.js';
+import { colors, memberInk } from '../ui/theme.js';
 import { ENTITY_KINDS, type EntityKind, type Member, type PresenceEntry } from '../../../shared/src/types.js';
 
 /** Kinds the phone keeps a local copy of. */
@@ -79,6 +80,18 @@ export interface StoreState {
   refreshMembers: () => Promise<void>;
   setPresence: (entries: PresenceEntry[]) => void;
   api: () => OrtakApi;
+}
+
+/**
+ * Gives each member their ink by join order: coral first, teal second.
+ *
+ * The server stores a colour per member, but it was chosen for an earlier
+ * design and knows nothing about light and dark. Deciding it here means both
+ * phones, and both themes, agree on who is which colour.
+ */
+function inked(members: Member[]): Member[] {
+  const order = [...members].sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
+  return members.map((m) => ({ ...m, color: memberInk(order.indexOf(m)) }));
 }
 
 /** Shared client instance; its base URL and token follow the store. */
@@ -161,7 +174,7 @@ export const useStore = create<StoreState>((set, get) => ({
         token: saved.token ?? null,
         user: saved.user ?? null,
         space: saved.space ?? null,
-        members: saved.members ?? [],
+        members: inked(saved.members ?? []),
         rev: saved.rev ?? 0,
         // Merge over a fresh skeleton so a stored snapshot from an older
         // version that predates an entity kind still loads.
@@ -186,7 +199,7 @@ export const useStore = create<StoreState>((set, get) => ({
       token: session.token,
       user: session.user,
       space: session.space,
-      members: [session.user],
+      members: inked([session.user]),
       rev: 0,
       entities: emptyEntities(),
       pending: emptyPending(),
@@ -273,7 +286,7 @@ export const useStore = create<StoreState>((set, get) => ({
   async refreshMembers() {
     try {
       const me = await api.me();
-      set({ members: me.members, space: me.space, user: me.user, presence: me.presence, online: true });
+      set({ members: inked(me.members), space: me.space, user: me.user, presence: me.presence, online: true });
       schedulePersist(get);
     } catch (error) {
       if (error instanceof ApiError && error.isTransient) set({ online: false });
@@ -419,9 +432,9 @@ export function memberName(state: StoreState, userId: string | null | undefined)
 }
 
 export function memberColor(state: StoreState, userId: string | null | undefined): string {
-  // Falls back to the system's muted ink rather than a colour of its own.
-  if (!userId) return '#605d5d';
-  return state.members.find((m) => m.id === userId)?.color ?? '#605d5d';
+  // Someone who is not a member — or nobody — is neutral, not a third ink.
+  if (!userId) return colors.neutral500;
+  return state.members.find((m) => m.id === userId)?.color ?? colors.neutral500;
 }
 
 export function pendingCount(state: StoreState): number {

@@ -1,5 +1,5 @@
 /**
- * Entity types shared by the Ortak server and the mobile app.
+ * Entity types shared by the Ikimiz server and the mobile app.
  *
  * Every syncable record carries the same four sync fields so one delta-sync
  * engine can move all of them:
@@ -25,6 +25,7 @@ export const ENTITY_KINDS = [
   'busyBlocks',
   'notes',
   'tasks',
+  'chores',
   'shoppingItems',
   'links',
   'archiveMessages',
@@ -41,7 +42,7 @@ export type EntityKind = (typeof ENTITY_KINDS)[number];
 // ---------------------------------------------------------------------------
 
 /**
- * A shared calendar entry. It lives in Ortak, and each member's phone mirrors
+ * A shared calendar entry. It lives in Ikimiz, and each member's phone mirrors
  * it into whichever device calendar that member picked (iCloud, Google, …).
  * The mirror bookkeeping is per-device and lives in `CalendarMirror`.
  */
@@ -145,6 +146,28 @@ export interface TaskItem extends SyncFields {
   priority: 0 | 1 | 2;
   /** Sort key inside its category; fractional so reordering never renumbers. */
   position: number;
+}
+
+/**
+ * A recurring household job — the bins, the laundry — with a turn and a log.
+ *
+ * Unlike a to-do it is never finished: ticking it schedules the next one and,
+ * in rotate mode, hands it to the other person. The rules live in `chores.ts`.
+ */
+export interface Chore extends SyncFields {
+  title: string;
+  /** Repeat interval in days. */
+  everyDays: number;
+  /** Epoch ms; the start of the local day it is next due. */
+  nextDueAt: number;
+  mode: 'rotate' | 'fixed' | 'anyone';
+  /** Whose turn it is now; null in `anyone` mode. */
+  assigneeId: string | null;
+  /** 1 light, 2 medium, 3 heavy. */
+  effort: number;
+  /** Completions, oldest first, capped at CHORE_HISTORY_LIMIT. */
+  history: { by: string; at: number }[];
+  paused: boolean;
 }
 
 export interface ShoppingItem extends SyncFields {

@@ -1,5 +1,5 @@
 /**
- * The landing pad for anything shared into Ortak from another app — a WhatsApp
+ * The landing pad for anything shared into Ikimiz from another app — a WhatsApp
  * message someone forwarded, a link, an address.
  *
  * Reached from the share sheet on both platforms, from an `ortak://save?text=…`
@@ -223,8 +223,8 @@ export default function CaptureScreen() {
       <Card style={{ marginTop: spacing.lg }}>
         <Text style={[typography.small, { marginBottom: spacing.xs }]}>Getting here faster</Text>
         <Muted>
-          Share into Ortak from any app on either phone — long-press a WhatsApp message, tap Share,
-          pick Ortak. Sharing a whole exported chat opens the importer instead.
+          Share into Ikimiz from any app on either phone — long-press a WhatsApp message, tap Share,
+          pick Ikimiz. Sharing a whole exported chat opens the importer instead.
         </Muted>
       </Card>
     </Screen>

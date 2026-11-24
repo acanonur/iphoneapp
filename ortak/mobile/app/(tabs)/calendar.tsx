@@ -1,10 +1,10 @@
 /**
- * The shared calendar, in Modernist.
+ * The shared calendar.
  *
- * Days are ruled sections rather than cards: an uppercase day heading with the
- * date at the right, a 2px rule, then one hairline-separated row per plan. Each
- * row is a three-column grid — time, title, the square of whoever added it —
- * so the times form a column you can read straight down.
+ * Days are sections: a day heading with the date at the right, then one
+ * hairline-separated row per plan. Each row is a three-column grid — time,
+ * title, the avatar of whoever added it — so the times form a column you can
+ * read straight down.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -257,7 +257,7 @@ function EventRow({
 
   return (
     <Pressable onPress={onToggle} style={styles.eventRow}>
-      <View style={{ width: 56 }}>
+      <View style={{ width: 74 }}>
         {event.allDay ? (
           <Text style={styles.timeStart}>All day</Text>
         ) : (

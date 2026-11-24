@@ -1,13 +1,20 @@
-# Ortak 🏠
+# Ikimiz
 
 A shared daily-life app for two people on two different phones, with two
 different calendars.
 
-*Ortak* is Turkish for "joint" or "shared" — which is the whole idea. One
-calendar that writes into **both** of your real calendars, one to-do list, one
-shopping list you can both watch update while you're in the shop, one notebook,
-one place to keep the things that scroll away in WhatsApp, and one ledger for
-working out who owes whom after a holiday.
+*Ikimiz* is Turkish for "the two of us" — which is the whole idea. One calendar
+that writes into **both** of your real calendars, one to-do list, the chores
+that come round again and whose turn they are, one shopping list you can both
+watch update while you're in the shop, one notebook, one place to keep the
+things that scroll away in WhatsApp, and one ledger for the money you share —
+day to day and on holiday.
+
+> **It used to be called Ortak** ("shared"). The folder is still `ortak/`, and
+> so are the bundle identifier (`com.canonur.ortak`), the `ortak://` link scheme
+> and the `ORTAK_SERVER_URL` build variable — renaming those would orphan the
+> app already on your phones and break invites already sent. Everything a person
+> sees says Ikimiz.
 
 It runs on **iOS and Android** from one codebase, and on **your own server** —
 your household's data doesn't go to anyone else.
@@ -19,9 +26,18 @@ share sheet works on both, and every screen is shared code. Exactly one feature
 is iOS-only — copying to-dos into Apple Reminders, because Android has no
 equivalent system list — and it is hidden on Android rather than shown broken.
 
-It is designed on the **Modernist** system — ink on warm paper, Archivo, one
-red, zero radius, and structure made from 2px rules rather than cards. See
-[`docs/design.md`](docs/design.md) for how that maps onto the code.
+<p>
+  <img src="docs/screenshots/chores.png" width="190" alt="Chores, with the split of who did what">
+  <img src="docs/screenshots/money.png" width="190" alt="Money: the everyday ledger and a trip">
+  <img src="docs/screenshots/calendar.png" width="190" alt="The shared calendar">
+  <img src="docs/screenshots/shopping.png" width="190" alt="The live shopping list">
+</p>
+
+It is designed on its own **Two Inks** system — a warm oat ground, white rounded
+cards, coral for one of you and teal for the other, Fraunces for titles and DM
+Sans for everything else, in light and dark. The logo is two lowercase i's side
+by side, one in each ink. See [`docs/design.md`](docs/design.md) for how that
+maps onto the code.
 
 ---
 
@@ -34,10 +50,11 @@ red, zero radius, and structure made from 2px rules rather than cards. See
 | 📊 **Your day** | A visual timeline where the **gaps** are as clear as the bookings — including the other person's commitments, so you can see they are in the office until five. |
 | 📝 **Notes** | Shared notes both of you can edit, with nested `#ev/tamirat` tags, `[[wiki links]]` and backlinks, and notes you can attach to a calendar entry. One-tap export into Apple Notes, plus a Mac script that writes into Notes automatically. |
 | ✅ **To-dos** | Today / Upcoming / Anytime / Someday, sorted by dates rather than filed by hand, with start dates that hide work you can't begin yet. Ticking something off shows up on the other phone with who did it. Optionally mirrored into Apple Reminders. |
+| 🔁 **Chores** | The jobs that come round again — bins, laundry, the bathroom. Ticking one schedules the next and hands the turn to the other person. A bar in each person's colour shows who actually did what over the last 30 days, weighted by how big the job is. |
 | 🛒 **Shopping** | Live: while you're both in the shop, each tick appears on the other phone within a second, and you can see the other person is there. Prices, totals and a spending history per shop. |
 | 🗂️ **Chat archive** | Import a WhatsApp chat export and it becomes permanently searchable — the plumber's number from three years ago is one search away instead of gone. |
 | 🔗 **Links** | Save links from any app, with titles and previews. |
-| ✈️ **Trips** | Splitwise-style expense splitting for holidays with friends, including people who don't use the app. Works out the *fewest* transfers that settle everyone up. |
+| 💶 **Money** | An **Everyday** ledger for the running costs of living together, plus one per holiday with friends — including people who don't use the app. Splitwise-style splitting that works out the *fewest* transfers that settle everyone up. |
 | 🔍 **Search** | One box over all of it. Turkish and German spellings are interchangeable — "alisveris" finds "Alışveriş", "strasse" finds "Straße". |
 
 ---
@@ -48,7 +65,7 @@ A survey of ten leading productivity apps (Fantastical, Things 3, OmniFocus,
 Structured, Craft, Ulysses, BBEdit, Agenda, GoodNotes, Bear) found that none of
 them does all three of: run on iOS *and* Android, support real shared
 collaboration, and write two-way into each person's own native calendar. That
-intersection is exactly what Ortak is.
+intersection is exactly what Ikimiz is.
 
 Its "best-of features worth adopting" list is implemented here:
 
@@ -71,11 +88,31 @@ Deliberately **not** adopted, following the survey's own feature-bloat warning
 ("the most-loved apps win by doing one thing beautifully"): handwriting and OCR,
 GTD perspectives, publishing, habit tracking and focus timers.
 
+## What the market looks like, and what changed because of it
+
+Before this version the category was surveyed again (November 2026) — couples
+and household organisers this time, not general productivity apps. What it
+found, and what was done about it:
+
+| Finding | What Ikimiz does |
+|---|---|
+| Incumbents charge roughly $30–80 a year and put basics — ad-free use, month view, reminders, even sharing itself — behind the subscription. | Nothing is gated. It runs on your own server; there is no account, plan or ad. |
+| Cupla, the closest couples app, has calendar, lists and chores but **no shared money**; a reviewer asks for it outright. | Money is a tab, with an everyday ledger alongside trips. |
+| Recurring chores with turns are now expected in the category. | **Chores**, with rotation and a 30-day split of who did what. |
+| "Busy, too many options" is the complaint even in a five-star review of the category leader. | Five tabs instead of six; the chat archive moved under Notes. The new design groups by card instead of ruling everything into a ledger. |
+| TimeTree does not keep external calendars in sync inside a shared calendar (its own support pages say so). | Already Ikimiz's strongest point — it reads and writes each person's real calendar — so it was left alone. |
+| Privacy-first rivals exist but are Apple-only (iCloud sync) or web-only; none found is self-hosted *and* native on both iOS and Android. | That intersection is still what this is. |
+
+The research was narrow in places and says so: user complaints rest on single
+reviews, Android listings and Reddit were not covered, and "name not in use"
+means no App Store listing called Ikimiz turned up in a search — not a
+trademark clearance.
+
 ## Three honest constraints
 
 Two of the things you asked for are limited by the phone platforms rather than
 by effort. Rather than pretend otherwise, here is exactly what is and isn't
-possible, and what Ortak does instead.
+possible, and what Ikimiz does instead.
 
 ### ✅ Calendar — works fully, no compromise
 
@@ -86,13 +123,13 @@ database that every configured account feeds into:
   Exchange account you've added in Settings → Calendar → Accounts
 - **Android** — the Calendar Provider lists the Google accounts on the device
 
-So Ortak writes **native calendar events** through `expo-calendar`. No OAuth, no
+So Ikimiz writes **native calendar events** through `expo-calendar`. No OAuth, no
 Google API key, no separate calendar to check. Onur picks his iCloud calendar,
 Tugce picks her Google one, and the same shared event is written into each. Once
 it's in iCloud or Google, it syncs onward on its own — to your Mac, your watch,
 calendar.google.com, everywhere.
 
-Ortak remembers which native event belongs to which shared event **per person**,
+Ikimiz remembers which native event belongs to which shared event **per person**,
 so editing an event updates the existing entry instead of leaving a duplicate,
 and deleting it removes the entry from both your calendars.
 
@@ -111,7 +148,7 @@ create, read or edit notes in it. That's an Apple restriction; no library or
 trick works around it, and anything claiming otherwise is doing something that
 will break.
 
-So Ortak keeps the shared note as the original and gives you three real ways to
+So Ikimiz keeps the shared note as the original and gives you three real ways to
 get a copy across:
 
 1. **Share sheet** — every note has an Export button. Tap it, tap Notes. Two
@@ -121,31 +158,31 @@ get a copy across:
    action can consume.
 3. **On your MacBook**, where AppleScript *is* allowed to write to Notes:
    `scripts/sync-notes-to-apple-notes.sh` pulls every shared note into a
-   dedicated "Ortak" folder in Notes. Put it on a cron and it's automatic.
+   dedicated "Ikimiz" folder in Notes. Put it on a cron and it's automatic.
 
 For **to-dos** the picture is better, because Reminders *is* part of EventKit and
-fully writable. Point Ortak at a Reminders list (Settings → Apple Reminders) and
+fully writable. Point Ikimiz at a Reminders list (Settings → Apple Reminders) and
 your shared to-dos are copied into it, where Siri, your watch and the Lock Screen
-can all see them. One direction only — Ortak stays the shared original.
+can all see them. One direction only — Ikimiz stays the shared original.
 
 ### ⚠️ WhatsApp — no API for reading your chats
 
 WhatsApp has no API that lets another app read your personal conversations. The
 Business API only covers messages sent to a business number. Libraries that
 drive WhatsApp Web (`whatsapp-web.js`, Baileys and friends) violate WhatsApp's
-Terms of Service and get phone numbers banned — so Ortak doesn't use them.
+Terms of Service and get phone numbers banned — so Ikimiz doesn't use them.
 
 What WhatsApp *does* support is the export built into the app, and that turns
 out to be enough for what you actually wanted — not losing information, and
 finding it again:
 
 - **Whole conversations.** In WhatsApp: open the chat → tap the contact or group
-  name → **Export chat** → **Without media** → share the `.txt` into Ortak. Every
+  name → **Export chat** → **Without media** → share the `.txt` into Ikimiz. Every
   message becomes searchable forever. Re-exporting the same group next year is
   safe and cheap: message ids are fingerprints of the content, so only genuinely
   new messages are added.
 - **Single messages, as they happen.** Long-press a message in WhatsApp → Share
-  → Ortak. On **Android** that is a real share-sheet target, an `ACTION_SEND`
+  → Ikimiz. On **Android** that is a real share-sheet target, an `ACTION_SEND`
   filter generated by the `expo-share-intent` config plugin. On **iOS** the
   equivalent extension needs an App Group, which a free Apple ID cannot create,
   so it ships disabled and a [Shortcut](#ios-shortcut-recipes) fills the same
@@ -166,7 +203,7 @@ Turkish.
 ┌───────────────────┐        ┌───────────────────┐
 │  iPhone (Onur)    │        │  Android (Tugce)  │
 │                   │        │                   │
-│  Ortak app        │        │  Ortak app        │
+│  Ikimiz app        │        │  Ikimiz app        │
 │    ↓ EventKit     │        │    ↓ CalendarProvider
 │  iCloud calendar  │        │  Google calendar  │
 └─────────┬─────────┘        └─────────┬─────────┘
@@ -174,7 +211,7 @@ Turkish.
           └──────────────┬─────────────┘
                          ▼
               ┌─────────────────────┐
-              │  Ortak server       │
+              │  Ikimiz server       │
               │  Fastify + SQLite   │
               │  delta sync · FTS5  │
               └─────────────────────┘
@@ -194,7 +231,7 @@ ortak/
              natural-language date parser, the WhatsApp export parser
   server/    Fastify + SQLite: sync, search, imports, trip balances
   mobile/    Expo app (iOS + Android)
-               src/ui/theme.ts       the Modernist tokens
+               src/ui/theme.ts       the Two Inks tokens
                src/ui/components.tsx the components built from them
   docs/      How the design maps onto the code
   scripts/   The macOS Apple Notes script
@@ -206,7 +243,7 @@ ortak/
 
 ### 0. Get the code
 
-Ortak lives on the branch `claude/daily-life-collab-app-5g3p5p`, not on the
+Ikimiz lives on the branch `claude/daily-life-collab-app-5g3p5p`, not on the
 repository's default branch, so the clone needs `--branch`:
 
 ```bash
@@ -243,6 +280,14 @@ npm run typecheck
 
 ### 2. The phones
 
+> **Building with Xcode 27 / for iOS 27.** Two things in this version exist only
+> to make that work, both as config plugins in `mobile/plugins/` so they survive
+> `expo prebuild`: `withPodDeploymentTarget` raises two libraries' out-of-date
+> iOS targets, which Xcode 27 treats as errors, and `withSceneLifecycle` adopts
+> the scene lifecycle iOS 27 insists on — without it the app closes the moment
+> it is opened. Both can go when the app moves to a newer Expo SDK (it is on 54).
+
+
 ```bash
 cd ortak/mobile
 npm install
@@ -251,7 +296,7 @@ npx expo install --fix
 
 `expo install --fix` aligns the native module versions with your Expo SDK.
 
-Ortak uses native calendar access and a native share extension, so it needs a
+Ikimiz uses native calendar access and a native share extension, so it needs a
 **development build** rather than Expo Go. Build each phone once:
 
 On the iPhone:
@@ -293,6 +338,8 @@ On first launch:
    (Onur picks iCloud, Tugce picks her Google calendar)
 5. Once you've both joined, Settings → Rotate code
 
+The first person to join is coral and the second is teal, on both phones.
+
 The invite carries the server address with it, so step 3 is one paste and
 nothing else — tapping the link opens the app with both fields already filled.
 There is still an 8-character code for reading down the phone, but it only works
@@ -308,9 +355,9 @@ calendar entries land in your own calendars automatically.
 Two small Shortcuts fill the gaps iOS leaves. Both take about two minutes in the
 Shortcuts app.
 
-### "Save to Ortak" — how sharing into Ortak works on iOS
+### "Save to Ikimiz" — how sharing into Ikimiz works on iOS
 
-Ortak ships with its iOS share extension **turned off**, because the extension
+Ikimiz ships with its iOS share extension **turned off**, because the extension
 needs an App Group and a free Apple ID cannot create one — see
 [`docs/running-in-xcode.md`](docs/running-in-xcode.md) for the details and for
 how to turn it on with a paid developer account.
@@ -318,17 +365,17 @@ how to turn it on with a paid developer account.
 This Shortcut does the same job without the extension, and is the route to use
 otherwise. **Android is unaffected either way**: it has the full share sheet.
 
-1. Shortcuts → **+** → name it *Save to Ortak*
+1. Shortcuts → **+** → name it *Save to Ikimiz*
 2. Tap ⓘ → turn on **Show in Share Sheet**, accept **Text** and **URLs**
 3. Add action **URL** → set it to:
    `ortak://save?text=` — then add a **Text** action containing
    *Shortcut Input*, and a **URL Encode** action between them
 4. Add action **Open URLs**
 
-Now: long-press a message in WhatsApp → Share → *Save to Ortak*, and Ortak opens
+Now: long-press a message in WhatsApp → Share → *Save to Ikimiz*, and Ikimiz opens
 on the capture screen with the text already filled in.
 
-### "Ortak note → Apple Notes" — automatic note export
+### "Ikimiz note → Apple Notes" — automatic note export
 
 1. New Shortcut → **Get Contents of URL**
    - URL: `https://your-server/api/notes/NOTE_ID.txt`
@@ -363,15 +410,15 @@ since Notes syncs through iCloud. On a cron it's fully automatic:
 The first run needs permission: System Settings → Privacy & Security →
 Automation → allow your terminal to control Notes.
 
-It's **one direction** — Ortak → Notes. Editing the copy in Notes doesn't come
-back, and the next run overwrites it. Ortak stays the shared original.
+It's **one direction** — Ikimiz → Notes. Editing the copy in Notes doesn't come
+back, and the next run overwrites it. Ikimiz stays the shared original.
 
 ---
 
 ## A few details worth knowing
 
 **Sharing availability is opt-in and time-only by default.** You choose which of
-your calendars Ortak may read, and titles stay private unless you turn them on.
+your calendars Ikimiz may read, and titles stay private unless you turn them on.
 A phone republishes on a timer, and the server only records what actually
 changed — so an unchanged calendar doesn't wake the other phone.
 
@@ -395,7 +442,7 @@ Anything with no date in it becomes a to-do instead of an appointment.
 
 **Search folds the characters SQLite won't.** `remove_diacritics` handles ş, ğ,
 ö, ü and ç, but not the Turkish dotless **ı** — which is exactly the character
-you'd skip typing on a German or English keyboard. Ortak folds ı, İ and ß itself
+you'd skip typing on a German or English keyboard. Ikimiz folds ı, İ and ß itself
 at both index and query time, so "alisveris" finds "Alışveriş" and "strasse"
 finds "Straße".
 
@@ -418,9 +465,9 @@ cd ortak/shared && npm test
 cd ortak/server && npm test
 ```
 
-274 tests in total: 186 in `shared` covering splitting, dates, WhatsApp parsing,
-availability, buckets, timeline and tags, and 88 in `server` covering the HTTP
-API end to end.
+348 tests in total: 249 in `shared` covering splitting, dates, WhatsApp parsing,
+availability, buckets, chores, timeline and tags, and 99 in `server` covering the
+HTTP API end to end.
 
 The domain logic is where the subtle bugs live, so that's where the tests are
 concentrated: cent-exact splitting across awkward remainders, date-order
@@ -436,7 +483,13 @@ Honest list of what a second pass would add:
 
 - **Push notifications** ("Tugce added milk to the list") — needs Expo push
   credentials and a token table
-- **Recurring events** — the sync engine models single events only
+- **Recurring events** — chores repeat, but calendar events are still single
+- **Chore reminders** — a chore that is due shows in the list, but nothing
+  nudges you; that waits on push notifications
+- **Live theme switching** — light and dark follow the phone, but a change made
+  while the app is open applies at the next launch
+- **Name clearance** — "Ikimiz" was only checked against App Store search
+  results, not trademarks or domains
 - **Reading Reminders back** — the mirror is one-way; a two-way merge between
   two independent to-do stores is a much bigger promise than it looks
 - **Widgets and App Intents** — table stakes on iOS, and the survey flags them;

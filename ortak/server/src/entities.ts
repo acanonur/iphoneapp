@@ -97,6 +97,21 @@ export const ENTITY_SPECS: Record<EntityKind, EntitySpec> = {
     },
   },
 
+  chores: {
+    kind: 'chores',
+    table: 'chores',
+    fields: {
+      title: { column: 'title', type: 'text', maxLength: 500 },
+      everyDays: { column: 'every_days', type: 'int', fallback: 7 },
+      nextDueAt: { column: 'next_due_at', type: 'int' },
+      mode: { column: 'mode', type: 'text', fallback: 'rotate', oneOf: ['rotate', 'fixed', 'anyone'] },
+      assigneeId: { column: 'assignee_id', type: 'text', nullable: true, maxLength: 64 },
+      effort: { column: 'effort', type: 'int', fallback: 1 },
+      history: { column: 'history', type: 'json', fallback: [] },
+      paused: { column: 'paused', type: 'bool', fallback: false },
+    },
+  },
+
   shoppingItems: {
     kind: 'shoppingItems',
     table: 'shopping_items',

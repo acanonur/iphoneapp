@@ -8,7 +8,7 @@
  *
  * Deliberately one-way. Reading changes back would mean merging two independent
  * to-do stores with their own edits and deletions, which is a much larger
- * promise than it looks and not one this makes: Ortak stays the shared original.
+ * promise than it looks and not one this makes: Ikimiz stays the shared original.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,7 +22,7 @@ import {
 } from './deviceCalendar.js';
 import type { TaskItem } from '../../../shared/src/types.js';
 
-/** Ortak task id → native reminder id, kept per device. */
+/** Ikimiz task id → native reminder id, kept per device. */
 const MIRROR_KEY = 'ortak:reminders:v1';
 
 /** Don't touch EventKit more often than this, however often tasks change. */
@@ -91,7 +91,7 @@ export function useReminderMirror(): { lastReport: ReminderReport | null; mirror
           known,
         );
 
-        // Tasks deleted in Ortak leave their reminder behind on purpose —
+        // Tasks deleted in Ikimiz leave their reminder behind on purpose —
         // silently removing something from a person's Reminders list is worse
         // than leaving one stale entry they can tick off themselves.
         await saveMirrors(report.mirrors);

@@ -1,70 +1,162 @@
 /**
- * The Modernist design system, as tokens.
+ * The Ikimiz design system — "Two Inks" — as tokens.
  *
- * Ported from the Claude Design handoff (`_ds/modernist-…/styles.css`). The
- * character of the system is worth stating, because it decides a lot of small
- * calls further down:
+ * The idea the whole system hangs on: the app is for two people, so it has two
+ * inks. **Coral** is one of you, **teal** is the other, and everything that is
+ * shared sits on a warm neutral ground between them. The logo is the same
+ * thought drawn once — two lowercase i's standing side by side, one in each
+ * ink — and the app name starts with them: *iki*, "two".
  *
- *  - **A light ground.** Ink on warm paper, not a dark surface.
- *  - **One red.** A single accent carries every emphasis; there is no palette
- *    of semantic colours, so "overdue" and "active" and "primary" all use it.
- *  - **Zero radius.** Nothing is rounded. Not the buttons, not the tick boxes,
- *    not the avatars — those become squares.
- *  - **Rules, not cards.** Structure comes from 2px rules between sections and
- *    1px between rows. Nothing floats on a shadow.
- *  - **Flush left.** Labels, buttons and tab items all align to the same edge;
- *    button icons are pushed to the far side rather than centred with the text.
- *
- * The two household members are the two inks of the system rather than two
- * arbitrary hues: you are ink, the other person is the accent.
+ *  - **Warm ground, soft cards.** Oat paper with white cards floating a step
+ *    above it. Things you can touch are rounded; nothing is boxed in by rules.
+ *  - **Coral acts, teal answers.** Coral is the primary action and "you";
+ *    teal is the other person and every secondary highlight. Because there are
+ *    two, colour can carry *who*, which a single accent never could.
+ *  - **Meaning has its own colours again.** Green for done, amber for due soon,
+ *    red for overdue or destructive. They are never used as decoration.
+ *  - **A serif for the headline, a sans for the work.** Fraunces sets titles —
+ *    it is what makes the app feel like a household notebook rather than a
+ *    dashboard — and DM Sans sets everything you read or tap.
+ *  - **Light and dark.** The palette follows the phone's appearance setting,
+ *    read once at launch (see `scheme` below).
  */
 
-export const colors = {
-  bg: '#f3f2f2',
-  surface: '#eae9e9',
-  text: '#201e1d',
-  accent: '#ec3013',
-  accent2: '#e15b47',
+import { Appearance } from 'react-native';
 
-  /**
-   * 40% ink. Written out rather than composed at runtime because React Native
-   * has no color-mix(), and every rule in the app uses it.
-   */
-  divider: 'rgba(32, 30, 29, 0.4)',
-  /** A lighter rule for rows inside a section, where 40% would shout. */
-  dividerSoft: 'rgba(32, 30, 29, 0.16)',
+/**
+ * The appearance the app launched in.
+ *
+ * Read once, at module load, on purpose: every screen builds its styles from
+ * these tokens as plain values, so they can be imported anywhere without a hook
+ * or a provider. The cost is that flipping the phone between light and dark
+ * while the app is open takes effect the next time it launches.
+ */
+export const scheme: 'light' | 'dark' = Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
 
-  neutral100: '#f8f4f4',
-  neutral200: '#eae7e7',
-  neutral300: '#d7d3d3',
-  neutral400: '#bab6b6',
-  neutral500: '#9b9797',
-  neutral600: '#7d7979',
-  neutral700: '#605d5d',
-  neutral800: '#444141',
-  neutral900: '#2d2b2b',
+const light = {
+  bg: '#faf6ef',
+  /** Cards and inputs — one step above the ground. */
+  surface: '#ffffff',
+  /** Quiet fills: the tab bar pill, segmented track, pressed states. */
+  surfaceAlt: '#f1eadf',
+  text: '#231f2b',
+  textMuted: '#655e70',
+  textFaint: '#787183',
 
-  accent100: '#fff2ef',
-  accent200: '#ffe0d9',
-  accent300: '#ffc4b8',
-  accent400: '#ff9783',
-  accent500: '#ff563c',
-  accent600: '#dd2b0f',
-  accent700: '#ae1800',
-  accent800: '#7c1405',
-  accent900: '#4d170e',
+  /** Coral. The primary action, and the first person's ink. */
+  accent: '#c9432a',
+  /** Teal. The second ink. */
+  accent2: '#167a78',
+  /** What sits on top of `accent` and `accent2`. */
+  onAccent: '#ffffff',
 
-  /** Muted body text — the system's `--color-neutral-700`. */
-  textMuted: '#605d5d',
-  textFaint: '#7d7979',
+  success: '#2a744a',
+  successSoft: '#e2f1e7',
+  warning: '#925809',
+  warningSoft: '#fbeed4',
+  danger: '#bf3030',
+  dangerSoft: '#fbe4e1',
 
-  /**
-   * Member inks. First member is ink, second is the accent — Modernist is a
-   * mono red palette, so a third or fourth person borrows from the neutral
-   * ramp rather than inventing new hues.
-   */
-  members: ['#201e1d', '#ec3013', '#605d5d', '#ae1800', '#9b9797', '#7c1405'],
+  divider: 'rgba(35, 31, 43, 0.14)',
+  dividerSoft: 'rgba(35, 31, 43, 0.07)',
+
+  neutral100: '#f6f1e8',
+  neutral200: '#ece5d9',
+  neutral300: '#ddd5c8',
+  neutral400: '#c2bab0',
+  neutral500: '#a19aa0',
+  neutral600: '#817a88',
+  neutral700: '#655e70',
+  neutral800: '#453f50',
+  neutral900: '#2e2937',
+
+  accent100: '#fdeee8',
+  accent200: '#fbdbd0',
+  accent300: '#f6bba9',
+  accent400: '#ee8f75',
+  accent500: '#e2623f',
+  accent600: '#c9432a',
+  accent700: '#ae3a22',
+  accent800: '#862d1b',
+  accent900: '#5a2014',
+
+  teal100: '#e1f2f0',
+  teal200: '#c3e4e1',
+  teal700: '#136865',
+  teal800: '#0f4f4d',
 } as const;
+
+type Palette = { [K in keyof typeof light]: string };
+
+const dark: Palette = {
+  bg: '#16131c',
+  surface: '#211d2a',
+  surfaceAlt: '#2b2636',
+  text: '#f4efe8',
+  textMuted: '#b0a9bb',
+  textFaint: '#8a8395',
+
+  accent: '#f0704f',
+  accent2: '#4cb7b1',
+  onAccent: '#1b1210',
+
+  success: '#6cc48e',
+  successSoft: '#1d3327',
+  warning: '#e3a94a',
+  warningSoft: '#3a2c14',
+  danger: '#f07b72',
+  dangerSoft: '#3d1f1f',
+
+  divider: 'rgba(244, 239, 232, 0.16)',
+  dividerSoft: 'rgba(244, 239, 232, 0.08)',
+
+  // The neutral ramp runs the other way in the dark: 100 is still "the
+  // quietest fill" and 900 still "nearly text", so call sites read the same.
+  neutral100: '#262231',
+  neutral200: '#2f2a3b',
+  neutral300: '#3b3549',
+  neutral400: '#514a60',
+  neutral500: '#746d82',
+  neutral600: '#948da1',
+  neutral700: '#b0a9bb',
+  neutral800: '#cfc9d6',
+  neutral900: '#e8e3ea',
+
+  accent100: '#3a211b',
+  accent200: '#4d2a21',
+  accent300: '#6e392b',
+  accent400: '#a34d37',
+  accent500: '#d95f41',
+  accent600: '#f0704f',
+  accent700: '#f6937a',
+  accent800: '#fab7a5',
+  accent900: '#fddcd2',
+
+  teal100: '#17302f',
+  teal200: '#1e4442',
+  teal700: '#7bcec9',
+  teal800: '#a9e0dc',
+};
+
+const palette: Palette = scheme === 'dark' ? dark : light;
+
+export const colors = {
+  ...palette,
+  /**
+   * Member inks, by the order people joined: coral, then teal. A third or
+   * fourth person (a trip can have friends in it) gets plum, gold and so on.
+   */
+  members:
+    scheme === 'dark'
+      ? ['#f0704f', '#4cb7b1', '#b49bf0', '#e3a94a', '#7fb8ee', '#e58bb5']
+      : ['#c9432a', '#167a78', '#6b4fb3', '#925809', '#2c6fb0', '#b0457a'],
+} as const;
+
+/** The ink for the nth member, wrapping for unusually large households. */
+export function memberInk(index: number): string {
+  const inks = colors.members;
+  return inks[((index % inks.length) + inks.length) % inks.length]!;
+}
 
 export const spacing = {
   xs: 4,
@@ -75,48 +167,65 @@ export const spacing = {
   xxl: 32,
 } as const;
 
-/** Zero, everywhere. Kept as a named export so the intent is explicit at use sites. */
 export const radius = {
-  sm: 0,
-  md: 0,
-  lg: 0,
-  pill: 0,
+  /** Tags, tick boxes, small chips. */
+  sm: 8,
+  /** Inputs and buttons. */
+  md: 14,
+  /** Cards. */
+  lg: 20,
+  pill: 999,
 } as const;
 
-/** Rule weights: 2px separates sections, 1px separates rows within one. */
+/** Hairlines. Sections are separated by space now, rows by a soft line. */
 export const rules = {
-  section: 2,
+  section: 1,
   row: 1,
 } as const;
 
+/** The one shadow in the system: a card lifting a step off the ground. */
+export const elevation = {
+  card:
+    scheme === 'dark'
+      ? {}
+      : {
+          shadowColor: '#3b2a1a',
+          shadowOpacity: 0.06,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 1,
+        },
+} as const;
+
 export const fonts = {
-  /** Archivo 800 — every heading, and anything that has to read as a label. */
-  heading: 'Archivo_800ExtraBold',
-  headingSemi: 'Archivo_600SemiBold',
-  body: 'Archivo_400Regular',
+  /** Fraunces 600 — screen titles and the big numbers. */
+  display: 'Fraunces_600SemiBold',
+  /** DM Sans 700 — headings, button labels, anything structural. */
+  heading: 'DMSans_700Bold',
+  headingSemi: 'DMSans_600SemiBold',
+  body: 'DMSans_400Regular',
 } as const;
 
 export const typography = {
-  /** h3 in the system: 25px/1.12, -0.015em. The screen title. */
+  /** The screen title, in the serif. */
   title: {
-    fontFamily: fonts.heading,
-    fontSize: 25,
-    lineHeight: 28,
-    letterSpacing: -0.4,
+    fontFamily: fonts.display,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.3,
     color: colors.text,
   },
-  /** h5. */
   heading: {
     fontFamily: fonts.heading,
     fontSize: 17,
-    lineHeight: 21,
+    lineHeight: 22,
     color: colors.text,
   },
   /** Card titles and note titles. */
   subheading: {
     fontFamily: fonts.headingSemi,
     fontSize: 16,
-    lineHeight: 20,
+    lineHeight: 21,
     color: colors.text,
   },
   body: {
@@ -133,26 +242,25 @@ export const typography = {
   },
   tiny: {
     fontFamily: fonts.body,
-    fontSize: 11,
+    fontSize: 11.5,
     lineHeight: 15,
     color: colors.textMuted,
   },
   /**
-   * The system's h6: uppercase, tracked out. Used for day headings and section
-   * labels, which is what gives the screens their ruled-ledger feel.
+   * Section labels: small, semi-bold and muted, in sentence case. They name a
+   * group without shouting over what is in it.
    */
   kicker: {
-    fontFamily: fonts.heading,
-    fontSize: 11,
-    lineHeight: 15,
-    letterSpacing: 0.9,
-    textTransform: 'uppercase',
-    color: colors.text,
+    fontFamily: fonts.headingSemi,
+    fontSize: 13,
+    lineHeight: 17,
+    letterSpacing: 0.1,
+    color: colors.textMuted,
   },
 } as const;
 
 // ---------------------------------------------------------------------------
-// Formatting helpers (unchanged by the redesign — they shape words, not pixels)
+// Formatting helpers (they shape words, not pixels)
 // ---------------------------------------------------------------------------
 
 /** Formats a timestamp the way a person would say it. */
@@ -195,7 +303,7 @@ export function shortDateTime(ms: number): string {
   return `${relativeDay(ms)}, ${clockTime(ms)}`;
 }
 
-/** Initials for a member square. Two letters, upper case. */
+/** Initials for a member avatar. Two letters, upper case. */
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';

@@ -205,6 +205,65 @@ describe('sync', () => {
     expect(removed.body.applied.shoppingItems).toEqual(['s1']);
   });
 
+  it('carries a chore, its turn and its log to the other phone', async () => {
+    const { onur, tugce } = await setup();
+    const due = Date.UTC(2025, 7, 16);
+
+    const pushed = await push(onur.token, {
+      chores: [
+        {
+          id: 'chore-1',
+          updatedAt: 1000,
+          deleted: false,
+          title: 'Take out the bins',
+          everyDays: 7,
+          nextDueAt: due,
+          mode: 'rotate',
+          assigneeId: tugce.userId,
+          effort: 2,
+          history: [{ by: onur.userId, at: due - 1000 }],
+          paused: false,
+        },
+      ],
+    });
+    expect(pushed.body.applied.chores).toEqual(['chore-1']);
+
+    const seen = await pull(tugce.token, 0);
+    expect(seen.changes.chores).toHaveLength(1);
+    expect(seen.changes.chores[0]).toMatchObject({
+      title: 'Take out the bins',
+      everyDays: 7,
+      nextDueAt: due,
+      mode: 'rotate',
+      assigneeId: tugce.userId,
+      effort: 2,
+      history: [{ by: onur.userId, at: due - 1000 }],
+      paused: false,
+    });
+  });
+
+  it('fills in a chore’s defaults and rejects an unknown mode', async () => {
+    const { onur } = await setup();
+    const res = await push(onur.token, {
+      chores: [
+        { id: 'plain', updatedAt: 1000, deleted: false, title: 'Laundry', nextDueAt: 5 },
+        { id: 'odd', updatedAt: 1000, deleted: false, title: 'Windows', nextDueAt: 5, mode: 'never' },
+      ],
+    });
+    expect(res.body.applied.chores).toEqual(['plain']);
+    expect(res.body.errors.map((e: { id: string }) => e.id)).toEqual(['odd']);
+
+    const seen = await pull(onur.token, 0);
+    expect(seen.changes.chores[0]).toMatchObject({
+      everyDays: 7,
+      mode: 'rotate',
+      assigneeId: null,
+      effort: 1,
+      history: [],
+      paused: false,
+    });
+  });
+
   it('reports invalid rows without failing the whole batch', async () => {
     const { onur } = await setup();
     const res = await push(onur.token, {
