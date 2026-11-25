@@ -1,5 +1,5 @@
 {
-  "name": "ortak-mobile",
+  "name": "hane-mobile",
   "version": "0.1.0",
   "private": true,
   "main": "expo-router/entry",
@@ -11,7 +11,8 @@
     "fix-deps": "expo install --fix"
   },
   "dependencies": {
-    "@expo-google-fonts/archivo": "^0.4.2",
+    "@expo-google-fonts/dm-sans": "^0.4.2",
+    "@expo-google-fonts/fraunces": "^0.4.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "expo": "~54.0.0",

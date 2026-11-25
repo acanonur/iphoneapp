@@ -21,7 +21,8 @@ import { useStore } from '../src/store/useStore.js';
 import { ApiError, OrtakApi, normaliseServerUrl } from '../src/api/client.js';
 import { parseJoinInput } from '../../shared/src/invite.js';
 import { Button, Card, Field, Muted, Rule, Screen, Title } from '../src/ui/components.js';
-import { colors, spacing, typography } from '../src/ui/theme.js';
+import { Logo } from '../src/ui/Logo.js';
+import { colors, fonts, radius, spacing, typography } from '../src/ui/theme.js';
 
 type Mode = 'create' | 'join';
 
@@ -101,7 +102,7 @@ export default function Onboarding() {
       return setError(
         mode === 'join'
           ? 'That invite has no address in it. Ask for the link, or fill in where the project is kept.'
-          : 'Ortak needs somewhere to keep the project. Fill in the address of your server.',
+          : 'Hane needs somewhere to keep the project. Fill in the address of your server.',
       );
     }
 
@@ -145,10 +146,13 @@ export default function Onboarding() {
   return (
     <Screen scroll>
       <View style={{ marginTop: spacing.xxl }}>
-        <Title>Ortak</Title>
+        <View style={{ marginBottom: spacing.lg }}>
+          <Logo size={72} />
+        </View>
+        <Title>Hane</Title>
         <Text style={[typography.body, { color: colors.textMuted, marginBottom: spacing.xl }]}>
-          One shared calendar, list, notebook and expense pot for two people and two different
-          phones.
+          Your household, in one place. One shared calendar, lists, chores, notebook and money pot
+          for the people you live with, on whatever phones they have.
         </Text>
       </View>
 
@@ -187,7 +191,7 @@ export default function Onboarding() {
           placeholder="Ev"
           value={spaceName}
           onChangeText={setSpaceName}
-          hint="Whatever you'd call the two of you."
+          hint="Whatever you call your household."
         />
       ) : (
         <>
@@ -245,7 +249,7 @@ export default function Onboarding() {
           keyboardType="url"
           value={serverUrl}
           onChangeText={setServerUrl}
-          hint="The address of your Ortak server. Both phones talk to the same one."
+          hint="The address of your Hane server. Both phones talk to the same one."
         />
       ) : (
         <Disclosure
@@ -269,7 +273,7 @@ export default function Onboarding() {
 
       <View style={{ marginTop: spacing.xl }}>
         <Muted>
-          Ortak keeps your data on your own server. Nothing is sent anywhere else, and the calendar
+          Hane keeps your data on your own server. Nothing is sent anywhere else, and the calendar
           entries it creates go straight into the calendar app already on your phone.
         </Muted>
       </View>
@@ -296,20 +300,21 @@ function Choice({
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.md,
         marginBottom: spacing.sm,
-        backgroundColor: selected ? colors.text : colors.surface,
-        borderLeftWidth: 3,
-        borderLeftColor: selected ? colors.accent : 'transparent',
+        borderRadius: radius.md,
+        backgroundColor: selected ? colors.accent100 : colors.surface,
+        borderWidth: 1.5,
+        borderColor: selected ? colors.accent : colors.divider,
       }}
     >
       <Text
         style={[
           typography.body,
-          { fontWeight: '600', color: selected ? colors.bg : colors.text },
+          { fontFamily: fonts.headingSemi, color: selected ? colors.accent800 : colors.text },
         ]}
       >
         {label}
       </Text>
-      <Text style={[typography.small, { color: selected ? colors.neutral300 : colors.textMuted }]}>
+      <Text style={[typography.small, { color: selected ? colors.accent700 : colors.textMuted }]}>
         {detail}
       </Text>
     </Pressable>

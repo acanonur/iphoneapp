@@ -2,7 +2,7 @@
  * Link previews.
  *
  * Saving a link should show a title and a picture rather than a bare URL, which
- * means the server fetches the page. That makes this the one place in Ortak that
+ * means the server fetches the page. That makes this the one place in Hane that
  * will follow a URL a user hands it, so it is written defensively:
  *
  *  - http/https only

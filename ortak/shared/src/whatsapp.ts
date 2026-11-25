@@ -5,7 +5,7 @@
  * that scrape WhatsApp Web violate the Terms of Service and get numbers banned.
  * The supported, ToS-clean route is the one built into the app itself:
  * Chat → ⋮ / contact name → Export chat → Without media, which produces a .txt
- * you can share straight into Ortak. This module turns that file into rows.
+ * you can share straight into Hane. This module turns that file into rows.
  *
  * The format is not documented and differs by platform, locale and OS version.
  * Handled here:

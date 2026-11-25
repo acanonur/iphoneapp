@@ -1,10 +1,10 @@
 /**
- * Shared notes and the saved-links shelf, in Modernist.
+ * Shared notes and the saved-links shelf.
  *
- * The filter row pairs a full-width input with a 44px square primary button —
- * the system's icon button — and nested tags become the system's tags rather
- * than pills. Notes are ruled rows: an 800-weight title, two lines of preview,
- * then the meta line with the tag path in accent.
+ * The filter row pairs a full-width input with a 44px primary icon button, and
+ * nested tags are chips. Notes are rows: a bold title, two lines of preview,
+ * then the meta line with the tag path in accent. The chat archive opens from
+ * the icon in the header.
  */
 
 import { useMemo, useState } from 'react';
@@ -23,7 +23,7 @@ import {
   Seg,
   Tag,
 } from '../../src/ui/components.js';
-import { PinIcon, PlusIcon } from '../../src/ui/icons.js';
+import { ArchiveIcon, PinIcon, PlusIcon } from '../../src/ui/icons.js';
 import { colors, fonts, relativeDay, rules, spacing, typography } from '../../src/ui/theme.js';
 
 type Half = 'notes' | 'links';
@@ -31,11 +31,23 @@ type Half = 'notes' | 'links';
 export default function NotesScreen() {
   const [half, setHalf] = useState<Half>('notes');
   const store = useStore();
+  const router = useRouter();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
       <ScreenHeader
         title="Notes"
+        right={
+          <Pressable
+            onPress={() => router.push('/archive')}
+            accessibilityRole="button"
+            accessibilityLabel="Chat archive"
+            hitSlop={10}
+            style={{ paddingBottom: 6 }}
+          >
+            <ArchiveIcon size={22} color={colors.textMuted} />
+          </Pressable>
+        }
         members={store.members.map((m) => ({ id: m.id, name: m.name, color: m.color }))}
       />
       <ScrollView
@@ -129,8 +141,9 @@ function NoteList() {
           accessibilityLabel="New note"
           style={({ pressed }) => [
             {
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
+              borderRadius: 24,
               backgroundColor: colors.accent,
               alignItems: 'center',
               justifyContent: 'center',
@@ -285,7 +298,7 @@ function LinkList() {
 
       {links.length === 0 ? (
         <Text style={[typography.small, { marginTop: spacing.xl }]}>
-          Nothing saved yet. Links shared into Ortak from any app land here too, and everything is
+          Nothing saved yet. Links shared into Hane from any app land here too, and everything is
           searchable.
         </Text>
       ) : (

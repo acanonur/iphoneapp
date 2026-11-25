@@ -1,87 +1,108 @@
-# Ortak in Modernist
+# Hane in Two Inks
 
-The app's visual system, and how the Claude Design handoff maps onto the code.
+The app's visual system, and where each decision lives in the code.
 
-The design was made in [Claude Design](https://claude.ai/design) on the
-**Modernist** system and handed off as HTML prototypes. Those prototypes are not
-in this repo — they were mockups, not source. This is the record of what they
-specified and where each decision now lives.
+## The name and the mark
+
+The app was called Ortak (Turkish: "shared"). It is now Hane — Turkish for
+"household". It was briefly Ikimiz, "the two of us", which was dropped because
+a household is not always two people.
+
+The logo is a lowercase h in the app's two inks: a coral stem and a teal arch
+on a dark plum ground (`#231f2b`). Two inks making one letter, in a shape that
+stands like a doorway.
+
+It is drawn by a script, [`scripts/make-icons.py`](../scripts/make-icons.py),
+not kept as an opaque binary. Run it to regenerate `mobile/assets/`: the icon,
+the Android adaptive foreground and its monochrome layer, the splash, the
+favicon and `logo.svg`. The same geometry is drawn in-app by
+[`mobile/src/ui/Logo.tsx`](../mobile/src/ui/Logo.tsx).
+
+The mark is two solid shapes with no gradient, so it stays recognisable when
+the OS tints or desaturates icons.
 
 ## The system in one paragraph
 
-Ink on warm paper. Archivo throughout — 800 for anything structural, 400 for
-body. **One red** (`#ec3013`) carries every emphasis, so there is no green for
-success or amber for warning. **Zero radius** everywhere. Structure comes from
-**rules** — 2px between sections, 1px between rows — rather than from cards,
-borders or shadows. Everything is **flush left**, including button labels, with
-icons pushed to the far edge.
+A warm oat ground (`#faf6ef`) with white rounded cards a step above it. Every
+member has an ink, and the first two carry the interface: coral (`#c9432a`) is
+the primary action and the first person; teal (`#167a78`) is the second person
+and the secondary highlight. Fraunces 600, a
+soft serif, sets screen titles; DM Sans (400 / 600 / 700) sets everything else.
+Radii are 8 for chips, 14 for inputs, 20 for cards and full pills for buttons.
+Semantic colours exist again: green for done, amber for due soon, red for
+overdue and destructive. There is one soft shadow, under cards in light mode,
+and none in dark.
 
 Tokens live in [`mobile/src/ui/theme.ts`](../mobile/src/ui/theme.ts); the
 components built from them are in
 [`mobile/src/ui/components.tsx`](../mobile/src/ui/components.tsx).
 
-## What changed, and why
+## Palette
+
+| Token | Light | Dark | Used for |
+|---|---|---|---|
+| `bg` | `#faf6ef` | `#16131c` | the ground |
+| `surface` | `#ffffff` | `#211d2a` | cards, inputs |
+| `surfaceAlt` | `#f1eadf` | `#2b2636` | segmented track, quiet buttons, chips |
+| `text` | `#231f2b` | `#f4efe8` | text, and the active chip |
+| `textMuted` | `#655e70` | `#b0a9bb` | secondary text |
+| `accent` (coral) | `#c9432a` | `#f0704f` | primary button, first member |
+| `accent2` (teal) | `#167a78` | `#4cb7b1` | second member |
+| `success` | `#2a744a` | `#6cc48e` | ticked items, money you are owed |
+| `warning` | `#925809` | `#e3a94a` | due soon |
+| `danger` | `#bf3030` | `#f07b72` | overdue, delete |
+
+Contrast was computed against WCAG AA for the light palette: body text on the
+ground is 15:1, muted text 5.8:1, coral 4.5:1 and teal 4.8:1 on the ground, and
+white on the coral button 4.9:1. The dark palette's text and inks are all above
+5:1 on their grounds.
+
+## Light and dark
+
+The palette follows the phone's appearance setting. It is read once at launch
+(`scheme` in `theme.ts`), because every screen imports tokens as plain values
+with no provider or hook. The consequence, stated honestly: switching the phone
+between light and dark while the app is open takes effect the next time the app
+is launched.
+
+This answers the question the previous design left open — whether a shopping
+list should be light in a dim supermarket at 8pm.
+
+## What changed from Modernist, and why
 
 | Before | Now | Reason |
 |---|---|---|
-| Dark palette, 12px radii | Light ground, zero radius | The system's ground and geometry |
-| System font | Archivo (400 / 600 / 800) | The typeface *is* the identity here |
-| Emoji tab icons | Lucide, drawn as SVG | Matching stroke weight to the 2px rule |
-| Bordered rounded cards for every row | Ruled rows inside ruled sections | Modernist organises by alignment, not containers |
-| Round avatars | Squares of solid ink | Nothing is rounded |
-| Round tick circles | Squares that fill with the accent | Same |
-| Pill chips for two modes | Segmented control | The system's own control for exclusive modes |
-| Pill chips for many filters | Flush-left text tabs, 2px accent underline | Reads as a ledger heading rather than a toolbar |
-| Coloured borders for notices | Surface panel with an accent kicker | The system has one red and no semantic palette |
-| Blue / coral member colours | Ink and accent | Two people are the system's two inks |
+| Zero radius, 2px rules | Rounded cards, hairlines | "Busy, too many options" is the complaint that turned up in the market research; grouping by card is calmer than a ruled ledger |
+| One red for everything | An ink per person, plus semantic colours | People need colours of their own, and a single accent could not tell "done" from "urgent" |
+| Archivo 800, uppercase kickers | Fraunces titles, sentence-case labels | Warmer; reads as a household notebook rather than a form |
+| Square member tiles in ink and red | Round avatars in coral and teal | A member's colour now means the same person on every screen |
+| Six tabs | Five tabs | The chat archive moved under Notes; fewer destinations |
+| Trips tab | Money tab | Everyday shared costs as well as holidays |
+| Light only | Light and dark | See above |
 
-Semantic colours were folded into the single accent: `danger` and `warning` both
-became the red, and `success` became plain ink. That is a real loss of signal —
-a mono palette cannot distinguish "done" from "urgent" by hue — so the screens
-lean on weight, position and the kicker label instead.
+## Navigation
 
-## Screens
+Five tabs: Today, Calendar, Lists, Notes, Money. The tab bar is a rounded bar
+floating above the bottom edge; the active tab is a coral-tinted pill. Lists has
+three segments: To do, Chores, Shopping. The chat archive opens from the archive
+icon in the Notes header, and its messages still turn up in Search.
 
-The handoff specified three screens in full, and they are built to match:
+## Member colours
 
-- **Calendar** — labelled quick-add with a hint line, calendar sets as text
-  tabs, ruled day groups with a time column, member square per row.
-  [`app/(tabs)/calendar.tsx`](../mobile/app/(tabs)/calendar.tsx)
-- **Lists** — segmented To do / Shopping, buckets as underline tabs with counts,
-  square tick at the left, overdue as a kicker card. Ticking draws a 2px accent
-  rule through the title rather than fading it.
-  [`app/(tabs)/lists.tsx`](../mobile/app/(tabs)/lists.tsx)
-- **Notes** — filter field paired with a 44px square primary button, nested tags
-  as system tags, pinned and exported marks.
-  [`app/(tabs)/notes.tsx`](../mobile/app/(tabs)/notes.tsx)
+Colours are assigned by join order on the phone (`memberInk` in `theme.ts`,
+applied in the store), not taken from the server, so both phones and both themes
+agree: first to join is coral, second is teal, then plum, gold, blue and rose.
+Friends who exist only on a ledger continue the same sequence after the first
+two.
 
-Today, Archive and Trips were explicitly left for a later round. They were **not**
-replaced with the prototype's "not in this round" placeholder — they work, and
-removing working screens to match a mockup would be a regression. They inherit
-the new tokens and components, so they are consistent but not individually
-recomposed.
+## Not done
 
-## The open decision
-
-The handoff flags this itself, and it is worth repeating:
-
-> Light ground is a real change: `theme.ts` keeps the app dark for one-handed
-> use in a shop or in bed.
-
-The redesign is light, and that is what is built. Whether a shared shopping list
-should be light when you are using it in a dim supermarket at 8pm is a genuine
-question the design leaves open. A dark Modernist variant is a natural next
-round — the tokens are already centralised, so it is a `theme.ts` change plus a
-pass over the few places that assume a light ground.
-
-## Variations not built
-
-The handoff offered four interaction variations alongside the by-the-book
-screens. The by-the-book versions are what shipped; these remain available:
-
-- **Quick-add as parsed tokens** — show what the parser understood as tags
-  (kind · when · where) with an Add button, instead of the hint line.
-- **Tick on the thumb side** — a 44px target on the right for one-handed use.
-- **Tick the whole row** — no box at all; tap the to-do, `···` for dates.
-- **Day strip on the calendar** — 08:00–22:00 per day with shared plans in ink,
-  the other person's busy time in grey and free time hatched.
+- Live theme switching without a relaunch.
+- A layered icon file for Apple's Icon Composer. The flat icon is accepted by
+  the App Store, but a layered one renders better in the tinted and clear icon
+  modes; `mobile/assets/logo.svg` has the mark as one shape per ink to start
+  from.
+- Screens beyond the shared components were not individually recomposed. They
+  take the new tokens and components, so they are consistent, but Calendar,
+  Notes and the ledger detail keep the row structure they had.
+- Widgets, which need native targets.

@@ -96,13 +96,14 @@ function newInviteCode(): string {
 }
 
 /**
- * Member inks, in the app's Modernist palette.
+ * Member inks: coral for the first person, teal for the second.
  *
- * The first member is ink and the second is the accent — the system is mono
- * red, so two people are the system's two inks rather than two arbitrary hues.
- * Anyone after that borrows from the neutral and accent ramps.
+ * These are the light-theme values and only a fallback. The phones assign the
+ * ink themselves by join order (`memberInk` in the app's theme), so that light
+ * and dark each get the right shade; what is stored here is what a client that
+ * does not know better would show.
  */
-const MEMBER_COLORS = ['#201e1d', '#ec3013', '#605d5d', '#ae1800', '#9b9797', '#7c1405'];
+const MEMBER_COLORS = ['#c9432a', '#167a78', '#6b4fb3', '#925809', '#2c6fb0', '#b0457a'];
 
 export interface AuthenticatedUser {
   id: string;

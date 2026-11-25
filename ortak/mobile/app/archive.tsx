@@ -2,7 +2,7 @@
  * The chat archive: imported WhatsApp conversations, kept so the useful bits
  * stop scrolling away.
  *
- * Unlike the rest of the app this tab talks to the server directly rather than
+ * Unlike the rest of the app this screen talks to the server directly rather than
  * reading local state — a multi-year group chat is far too much to mirror onto
  * the phone, and searching it is a job the database does better anyway.
  */
@@ -11,10 +11,10 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useStore } from '../../src/store/useStore.js';
-import type { ArchiveChat, SearchHit } from '../../src/api/client.js';
-import { Button, Card, Field, Muted, Row } from '../../src/ui/components.js';
-import { colors, relativeDay, spacing, typography } from '../../src/ui/theme.js';
+import { useStore } from '../src/store/useStore.js';
+import type { ArchiveChat, SearchHit } from '../src/api/client.js';
+import { Button, Card, Field, Muted, Row } from '../src/ui/components.js';
+import { colors, fonts, relativeDay, spacing, typography } from '../src/ui/theme.js';
 
 export default function ArchiveScreen() {
   // Stable across renders, so the focus effect doesn't refetch on every sync.
@@ -66,7 +66,7 @@ export default function ArchiveScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}
         keyboardShouldPersistTaps="handled"
@@ -106,7 +106,7 @@ export default function ArchiveScreen() {
             <Row style={{ justifyContent: 'space-between', marginBottom: spacing.sm }}>
               <Text style={typography.heading}>Chats</Text>
               <Pressable onPress={() => router.push('/import')} hitSlop={8}>
-                <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>Import</Text>
+                <Text style={{ color: colors.accent, fontSize: 13, fontFamily: fonts.headingSemi }}>Import</Text>
               </Pressable>
             </Row>
 
@@ -119,7 +119,7 @@ export default function ArchiveScreen() {
                 </Text>
                 <Muted>
                   In WhatsApp, open a chat → ⋮ (or the contact name on iOS) → Export chat → Without
-                  media, then share the file into Ortak. Everything in it becomes searchable and
+                  media, then share the file into Hane. Everything in it becomes searchable and
                   stops disappearing up the scrollback.
                 </Muted>
                 <Button

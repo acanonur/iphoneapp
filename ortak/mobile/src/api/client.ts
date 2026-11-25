@@ -1,5 +1,5 @@
 /**
- * HTTP client for the Ortak server.
+ * HTTP client for the Hane server.
  *
  * Every method throws `ApiError` on failure. Callers in the store treat network
  * errors as "we're offline, try again later" rather than as something to show

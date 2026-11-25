@@ -11,7 +11,7 @@ import { newId } from '../../src/util/id.js';
 import { parseTags, buildBacklinkIndex } from '../../../shared/src/tags.js';
 import type { EventItem, NoteItem } from '../../../shared/src/types.js';
 import { Button, Card, Tag, Field, Muted, Row } from '../../src/ui/components.js';
-import { colors, relativeDay, clockTime, shortDateTime, spacing, typography } from '../../src/ui/theme.js';
+import { clockTime, colors, fonts, relativeDay, shortDateTime, spacing, typography } from '../../src/ui/theme.js';
 
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -164,7 +164,7 @@ export default function NoteScreen() {
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Field placeholder="Title" value={title} onChangeText={setTitle} style={{ fontSize: 18, fontWeight: '600' }} />
+        <Field placeholder="Title" value={title} onChangeText={setTitle} style={{ fontSize: 18, fontFamily: fonts.headingSemi }} />
         <Field
           placeholder="Write anything. #ev/tamirat files it, [[another note]] links it."
           value={body}
@@ -323,7 +323,7 @@ export default function NoteScreen() {
           <Text style={[typography.subheading, { marginBottom: spacing.sm }]}>Send to Apple Notes</Text>
           <Muted>
             iOS doesn’t let any app write into Apple Notes directly — that’s an Apple restriction, not
-            something Ortak can work around. These get a copy across in a couple of taps.
+            something Hane can work around. These get a copy across in a couple of taps.
           </Muted>
 
           <Button

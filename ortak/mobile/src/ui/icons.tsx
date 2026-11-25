@@ -1,10 +1,10 @@
 /**
- * The Lucide icons the Modernist design calls for.
+ * The app's icons, from Lucide.
  *
- * Only the ones actually used are here, drawn from the same path data as the
- * prototype so the strokes match exactly. Hand-rolled rather than pulled from
- * an icon package: a dozen icons is not worth a dependency, and inlining them
- * keeps the stroke width — 2, the system's rule weight — under our control.
+ * Only the ones actually used are here. Hand-rolled from Lucide's path data
+ * rather than pulled from an icon package: a dozen icons is not worth a
+ * dependency, and inlining them keeps the stroke width under our control —
+ * the tab bar draws the active icon a touch heavier than the rest.
  */
 
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
@@ -57,7 +57,7 @@ export const CalendarIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M8 2v4" />
     <Path d="M16 2v4" />
-    <Rect width="18" height="18" x="3" y="4" />
+    <Rect width="18" height="18" x="3" y="4" rx="2" />
     <Path d="M3 10h18" />
   </Icon>
 );
@@ -84,9 +84,16 @@ export const FileTextIcon = (p: IconProps) => (
 
 export const ArchiveIcon = (p: IconProps) => (
   <Icon {...p}>
-    <Rect width="20" height="5" x="2" y="3" />
+    <Rect width="20" height="5" x="2" y="3" rx="1" />
     <Path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
     <Path d="M10 12h4" />
+  </Icon>
+);
+
+export const WalletIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+    <Path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
   </Icon>
 );
 

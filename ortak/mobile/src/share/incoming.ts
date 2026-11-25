@@ -1,22 +1,22 @@
 /**
- * Catching things shared into Ortak from other apps.
+ * Catching things shared into Hane from other apps.
  *
  * This is the quick way to keep a single WhatsApp message — the plumber's
  * number, the Airbnb link, the address for Saturday — without exporting a whole
- * chat: long-press the message in WhatsApp → Share → Ortak. Sharing an exported
+ * chat: long-press the message in WhatsApp → Share → Hane. Sharing an exported
  * chat `.txt` works the same way and goes straight to the import screen.
  *
  * Two mechanisms, because they cover different routes in:
  *
  *  - **A real share-sheet target**, via `expo-share-intent`. Its config plugin
  *    registers an Android `ACTION_SEND` filter and an iOS share extension, so
- *    Ortak appears in the share sheet on both platforms. It needs a development
+ *    Hane appears in the share sheet on both platforms. It needs a development
  *    build — the native side cannot exist in Expo Go — but the app already
  *    needs one for calendar access, so that costs nothing extra. The native
  *    module is loaded optionally, so a build without it still runs.
  *
  *  - **Deep links** (`ortak://save?text=…&url=…`), which is what an iOS
- *    Shortcut targets and what makes the "Save to Ortak" recipe in the README
+ *    Shortcut targets and what makes the "Save to Hane" recipe in the README
  *    work without any custom build at all.
  */
 

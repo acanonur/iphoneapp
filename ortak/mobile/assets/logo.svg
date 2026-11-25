@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect id="ground" width="100" height="100" fill="#231f2b"/>
+  <path id="teal" fill="#4cb7b1" d="M44 44 H58 A17 17 0 0 1 75 61 V73.5 A8.5 8.5 0 0 1 58 73.5 V67 A6 6 0 0 0 52 61 H44 Z"/>
+  <rect id="coral" fill="#f0704f" x="28" y="18" width="17" height="64" rx="8.5"/>
+</svg>

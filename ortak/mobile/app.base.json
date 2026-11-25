@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Ortak",
+    "name": "Hane",
     "slug": "ortak",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -14,17 +14,18 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.canonur.ortak",
       "infoPlist": {
-        "NSCalendarsFullAccessUsageDescription": "Ortak writes your shared plans into the calendar you choose, so they show up in Apple Calendar and any Google account on this phone.",
-        "NSCalendarsUsageDescription": "Ortak writes your shared plans into the calendar you choose.",
-        "NSRemindersFullAccessUsageDescription": "Ortak can add shared to-dos to Reminders.",
-        "NSRemindersUsageDescription": "Ortak can add shared to-dos to Reminders."
+        "NSCalendarsFullAccessUsageDescription": "Hane writes your shared plans into the calendar you choose, so they show up in Apple Calendar and any Google account on this phone.",
+        "NSCalendarsUsageDescription": "Hane writes your shared plans into the calendar you choose.",
+        "NSRemindersFullAccessUsageDescription": "Hane can add shared to-dos to Reminders.",
+        "NSRemindersUsageDescription": "Hane can add shared to-dos to Reminders."
       }
     },
     "android": {
       "package": "com.canonur.ortak",
       "adaptiveIcon": {
-        "backgroundColor": "#f3f2f2",
-        "foregroundImage": "./assets/adaptive-icon.png"
+        "backgroundColor": "#231f2b",
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-mono.png"
       },
       "permissions": [
         "android.permission.READ_CALENDAR",
@@ -36,7 +37,7 @@
       [
         "expo-calendar",
         {
-          "calendarPermission": "Ortak writes your shared plans into the calendar you choose."
+          "calendarPermission": "Hane writes your shared plans into the calendar you choose."
         }
       ],
       "expo-document-picker",
@@ -56,7 +57,9 @@
           "disableIOS": true
         }
       ],
-      "./plugins/withMetroCheck"
+      "./plugins/withMetroCheck",
+      "./plugins/withPodDeploymentTarget",
+      "./plugins/withSceneLifecycle"
     ],
     "experiments": {
       "typedRoutes": false
@@ -65,7 +68,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f3f2f2"
+      "backgroundColor": "#231f2b"
     },
     "web": {
       "favicon": "./assets/favicon.png"
