@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect id="ground" width="100" height="100" fill="#1f3d2f"/>
-  <circle id="plate" cx="42.0" cy="57.0" r="23.25" fill="none" stroke="#fbf7ee" stroke-width="7.5"/>
-  <circle id="gap" cx="69.0" cy="32.0" r="20.0" fill="#1f3d2f"/>
-  <circle id="glass" cx="69.0" cy="32.0" r="15.5" fill="#f0b84a"/>
-  <circle id="dish" cx="77.0" cy="68.0" r="7.5" fill="#e2623f"/>
-</svg>

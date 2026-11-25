@@ -34,7 +34,7 @@ android/*/build/
 android/local.properties
 android/.idea/
 
-# Meze (Expo) — generated native projects
-meze/.expo/
-meze/ios/
-meze/android/
+# Tutam (Expo) — generated native projects
+tutam/.expo/
+tutam/ios/
+tutam/android/

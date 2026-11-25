@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect id="ground" width="100" height="100" fill="#1f3d2f"/>
+  <circle id="plate" cx="42.0" cy="57.0" r="23.25" fill="none" stroke="#fbf7ee" stroke-width="7.5"/>
+  <circle id="gap" cx="69.0" cy="32.0" r="20.0" fill="#1f3d2f"/>
+  <circle id="glass" cx="69.0" cy="32.0" r="15.5" fill="#f0b84a"/>
+  <g id="pinch" fill="#e2623f">
+    <circle cx="76.0" cy="67.0" r="6.2"/>
+    <circle cx="88.0" cy="58.5" r="3.4"/>
+    <circle cx="86.5" cy="79.5" r="4.0"/>
+  </g>
+</svg>
