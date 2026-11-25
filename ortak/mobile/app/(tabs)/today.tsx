@@ -141,7 +141,7 @@ export default function TodayScreen() {
         <Row style={{ justifyContent: 'space-between', marginBottom: spacing.md }}>
           <View>
             <Text style={typography.title}>
-              {store.user ? `Hi ${store.user.name.split(' ')[0]}` : 'Ikimiz'}
+              {store.user ? `Hi ${store.user.name.split(' ')[0]}` : 'Hane'}
             </Text>
             <Muted>{new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</Muted>
           </View>

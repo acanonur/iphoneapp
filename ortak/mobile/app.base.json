@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Ikimiz",
+    "name": "Hane",
     "slug": "ortak",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -14,10 +14,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.canonur.ortak",
       "infoPlist": {
-        "NSCalendarsFullAccessUsageDescription": "Ikimiz writes your shared plans into the calendar you choose, so they show up in Apple Calendar and any Google account on this phone.",
-        "NSCalendarsUsageDescription": "Ikimiz writes your shared plans into the calendar you choose.",
-        "NSRemindersFullAccessUsageDescription": "Ikimiz can add shared to-dos to Reminders.",
-        "NSRemindersUsageDescription": "Ikimiz can add shared to-dos to Reminders."
+        "NSCalendarsFullAccessUsageDescription": "Hane writes your shared plans into the calendar you choose, so they show up in Apple Calendar and any Google account on this phone.",
+        "NSCalendarsUsageDescription": "Hane writes your shared plans into the calendar you choose.",
+        "NSRemindersFullAccessUsageDescription": "Hane can add shared to-dos to Reminders.",
+        "NSRemindersUsageDescription": "Hane can add shared to-dos to Reminders."
       }
     },
     "android": {
@@ -37,7 +37,7 @@
       [
         "expo-calendar",
         {
-          "calendarPermission": "Ikimiz writes your shared plans into the calendar you choose."
+          "calendarPermission": "Hane writes your shared plans into the calendar you choose."
         }
       ],
       "expo-document-picker",

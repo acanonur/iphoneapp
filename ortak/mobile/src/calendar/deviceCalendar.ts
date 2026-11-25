@@ -185,7 +185,7 @@ function toNativeDetails(
     location: event.location ?? undefined,
     // A breadcrumb, so it's obvious in Apple Calendar where the entry came from
     // and that editing it there won't reach the other person.
-    notes: [event.notes, `— shared in Ikimiz`].filter(Boolean).join('\n\n'),
+    notes: [event.notes, `— shared in Hane`].filter(Boolean).join('\n\n'),
     timeZone: event.timezone ?? undefined,
     alarms: reminder != null ? [{ relativeOffset: -Math.abs(reminder) }] : [],
   };
@@ -516,7 +516,7 @@ export interface ReminderReport {
   updated: number;
   completed: number;
   failed: number;
-  /** Ikimiz task id → native reminder id, to be stored by the caller. */
+  /** Hane task id → native reminder id, to be stored by the caller. */
   mirrors: Record<string, string>;
   blocked: 'unsupported' | 'permission' | 'no-list' | null;
 }
@@ -524,9 +524,9 @@ export interface ReminderReport {
 /**
  * Push shared to-dos into a Reminders list.
  *
- * `known` maps Ikimiz task ids to reminder ids from previous runs, so an edit
+ * `known` maps Hane task ids to reminder ids from previous runs, so an edit
  * updates the existing reminder rather than adding a second one. Ticking a task
- * off in Ikimiz completes the reminder; this does not read changes back, because
+ * off in Hane completes the reminder; this does not read changes back, because
  * a two-way merge between two independent to-do stores is a much bigger promise
  * than it looks and is not one this makes.
  */

@@ -23,7 +23,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { withDangerousMod } = require('@expo/config-plugins');
 
-const MARKER = '# ikimiz: raise pod deployment targets';
+const MARKER = '# hane: raise pod deployment targets';
 
 /** Matches Expo SDK 54's own minimum; no pod may sit below the app. */
 const MINIMUM = '15.1';

@@ -298,7 +298,7 @@ function LinkList() {
 
       {links.length === 0 ? (
         <Text style={[typography.small, { marginTop: spacing.xl }]}>
-          Nothing saved yet. Links shared into Ikimiz from any app land here too, and everything is
+          Nothing saved yet. Links shared into Hane from any app land here too, and everything is
           searchable.
         </Text>
       ) : (

@@ -27,7 +27,7 @@
  */
 const { withAppDelegate, withInfoPlist } = require('@expo/config-plugins');
 
-const MARKER = '// ikimiz: scene lifecycle';
+const MARKER = '// hane: scene lifecycle';
 
 const SCENE_DELEGATE = `
 ${MARKER}

@@ -323,7 +323,7 @@ export default function NoteScreen() {
           <Text style={[typography.subheading, { marginBottom: spacing.sm }]}>Send to Apple Notes</Text>
           <Muted>
             iOS doesn’t let any app write into Apple Notes directly — that’s an Apple restriction, not
-            something Ikimiz can work around. These get a copy across in a couple of taps.
+            something Hane can work around. These get a copy across in a couple of taps.
           </Muted>
 
           <Button

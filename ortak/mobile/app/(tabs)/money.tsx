@@ -107,7 +107,7 @@ export default function MoneyScreen() {
         {hasEveryday ? null : (
           <NoticeCard kicker="Everyday costs">
             <Muted>
-              One running ledger for the two of you — groceries, bills, the takeaway one of you paid
+              One running ledger for the household — groceries, bills, the takeaway one of you paid
               for. Log it as it happens and settle up whenever you like.
             </Muted>
             <Button
@@ -133,7 +133,7 @@ export default function MoneyScreen() {
             <Text style={typography.subheading}>No ledgers yet</Text>
             <Muted>
               Make one for a holiday, add whoever is coming — including friends who don’t use the app
-              — and log what each person pays. Ikimiz works out the fewest transfers that settle
+              — and log what each person pays. Hane works out the fewest transfers that settle
               everyone up.
             </Muted>
           </Card>

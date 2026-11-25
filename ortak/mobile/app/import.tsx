@@ -25,7 +25,7 @@ import { colors, relativeDay, spacing, typography } from '../src/ui/theme.js';
 export default function ImportScreen() {
   const store = useStore();
   const router = useRouter();
-  // Set when a chat export was shared into Ikimiz rather than picked by hand.
+  // Set when a chat export was shared into Hane rather than picked by hand.
   const { fileUri, fileName } = useLocalSearchParams<{ fileUri?: string; fileName?: string }>();
 
   const [file, setFile] = useState<{ name: string; content: string } | null>(null);
@@ -67,7 +67,7 @@ export default function ImportScreen() {
     [store, utcOffsetMinutes],
   );
 
-  // Opened by sharing an export into Ikimiz: skip straight to the preview.
+  // Opened by sharing an export into Hane: skip straight to the preview.
   useEffect(() => {
     if (!fileUri) return;
     void loadFile(fileUri, fileName || 'WhatsApp Chat.txt');
@@ -132,7 +132,7 @@ export default function ImportScreen() {
           2. Tap the contact or group name{'\n'}
           3. Scroll down to <Text style={{ color: colors.text }}>Export chat</Text>{'\n'}
           4. Choose <Text style={{ color: colors.text }}>Without media</Text>{'\n'}
-          5. Share it into Ikimiz, or save it and pick it below
+          5. Share it into Hane, or save it and pick it below
         </Text>
       </Card>
 

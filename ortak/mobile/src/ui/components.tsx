@@ -7,7 +7,7 @@
  *  - **Cards carry groups.** A white, rounded card a step above the oat ground
  *    holds anything that belongs together; rows inside it are split by a soft
  *    hairline. Nothing is boxed in by heavy rules.
- *  - **People are circles in their own ink.** Coral and teal, by join order.
+ *  - **People are circles in their own ink.** Coral, teal, plum… by join order.
  *  - **Modes are a segmented pill; filters are chips.** The active chip is
  *    solid ink, so it is findable at a glance without using either person's
  *    colour for something that is not about a person.
@@ -62,7 +62,7 @@ export function Screen({
 
 /**
  * The screen title bar: the serif title with the household's avatars at the
- * right, overlapping the way two people in one photo do.
+ * right, overlapping the way people in one photo do.
  */
 export function ScreenHeader({
   title,
