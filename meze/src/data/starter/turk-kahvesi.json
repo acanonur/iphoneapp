@@ -1,0 +1,114 @@
+{
+  "id": "starter-turk-kahvesi",
+  "kind": "drink",
+  "category": "coffee",
+  "title": {
+    "en": "Turkish Coffee",
+    "tr": "Türk Kahvesi",
+    "de": "Türkischer Kaffee"
+  },
+  "summary": {
+    "en": "Powder-fine coffee brewed slowly in a cezve until a thick foam rises, then shared out and served with a glass of water.",
+    "tr": "Toz gibi ince öğütülmüş kahvenin cezvede yavaş yavaş, kalın bir köpük yükselene kadar pişirilmesi; köpük paylaştırılır ve yanında bir bardak suyla servis edilir.",
+    "de": "Pulverfein gemahlener Kaffee, langsam in der Cezve gebrüht, bis sich dicker Schaum bildet; der Schaum wird aufgeteilt und mit einem Glas Wasser serviert."
+  },
+  "servings": 2,
+  "prepMinutes": 3,
+  "cookMinutes": 5,
+  "difficulty": 2,
+  "ingredients": [
+    {
+      "qty": 140,
+      "unit": "ml",
+      "name": {
+        "en": "cold water",
+        "tr": "soğuk su",
+        "de": "kaltes Wasser"
+      },
+      "note": {
+        "en": "2 coffee cups",
+        "tr": "2 fincan",
+        "de": "2 Mokkatassen"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "Turkish coffee",
+        "tr": "Türk kahvesi",
+        "de": "türkischer Kaffee"
+      },
+      "note": {
+        "en": "ground to a powder",
+        "tr": "toz gibi öğütülmüş",
+        "de": "pulverfein gemahlen"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      },
+      "note": {
+        "en": "optional",
+        "tr": "isteğe bağlı",
+        "de": "optional"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Pour the cold water into a cezve. Add the coffee and the sugar, if using, and stir until dissolved. Do not stir again after this.",
+        "tr": "Soğuk suyu cezveye koyun. Kahveyi ve kullanacaksanız şekeri ekleyin, eriyene kadar karıştırın. Bundan sonra bir daha karıştırmayın.",
+        "de": "Das kalte Wasser in eine Cezve gießen. Kaffee und, falls verwendet, Zucker zugeben und verrühren, bis alles gelöst ist. Danach nicht mehr rühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Warm over the lowest heat for 3 to 4 minutes. As the foam starts to rise to the rim, take the cezve off the heat just before it boils over.",
+        "tr": "En kısık ateşte 3-4 dakika ısıtın. Köpük kenara doğru yükselmeye başlayınca, taşmadan hemen önce cezveyi ocaktan alın.",
+        "de": "Bei kleinster Hitze 3 bis 4 Minuten erwärmen. Sobald der Schaum zum Rand steigt, die Cezve kurz vor dem Überkochen vom Herd nehmen."
+      }
+    },
+    {
+      "text": {
+        "en": "Spoon a little of the foam into each cup so everyone gets some.",
+        "tr": "Her fincana biraz köpük paylaştırın ki herkese düşsün.",
+        "de": "Etwas Schaum gleichmäßig auf die Tassen verteilen, damit jeder etwas bekommt."
+      }
+    },
+    {
+      "text": {
+        "en": "Return the cezve to the heat for a few seconds until it rises again, then take it off at once. It must not boil hard, or the foam collapses and the coffee turns bitter.",
+        "tr": "Cezveyi birkaç saniye tekrar ateşe koyup köpük yeniden yükselene kadar bekleyin ve hemen alın. Sert kaynamamalı; yoksa köpük söner ve kahve acılaşır.",
+        "de": "Die Cezve für wenige Sekunden zurück auf die Hitze stellen, bis der Schaum erneut steigt, und sofort wieder abnehmen. Der Kaffee darf nicht sprudelnd kochen, sonst fällt der Schaum zusammen und er wird bitter."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour slowly into the cups. Let the grounds settle for a minute and serve with a glass of water.",
+        "tr": "Fincanlara yavaşça dökün. Telvenin dibe çökmesi için bir dakika bekleyin ve yanında bir bardak suyla servis edin.",
+        "de": "Langsam in die Tassen gießen. Den Kaffeesatz eine Minute absetzen lassen und mit einem Glas Wasser servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Coffee is measured per cup: about 70 ml of water and 1 heaped teaspoon of coffee. Do not drink the grounds at the bottom. Sugar is ordered as sade (none), az şekerli (a little), orta (medium) or şekerli (sweet).",
+    "tr": "Kahve fincan başına ölçülür: yaklaşık 70 ml su ve 1 tepeleme çay kaşığı kahve. Dipteki telveyi içmeyin. Şeker sade, az şekerli, orta ya da şekerli diye istenir.",
+    "de": "Der Kaffee wird pro Tasse gemessen: etwa 70 ml Wasser und 1 gehäufter Teelöffel Kaffee. Den Kaffeesatz am Boden nicht mittrinken. Zucker wird als sade (keiner), az şekerli (wenig), orta (mittel) oder şekerli (süß) bestellt."
+  },
+  "tags": [
+    "vegan",
+    "gluten-free",
+    "quick",
+    "turkish"
+  ],
+  "glass": "cup",
+  "alcoholic": false,
+  "starter": true
+}

@@ -1,0 +1,182 @@
+{
+  "id": "starter-kaesespaetzle",
+  "kind": "food",
+  "category": "main",
+  "title": {
+    "en": "Cheese Spätzle",
+    "tr": "Peynirli Spätzle",
+    "de": "Käsespätzle"
+  },
+  "summary": {
+    "en": "Swabian egg noodles layered with melted cheese and topped with plenty of golden fried onions. Comfort food from southern Germany.",
+    "tr": "Eriyen peynirle katmanlanan ve bolca altın rengi kızarmış soğanla servis edilen Swabia usulü yumurtalı hamur makarnası. Güney Almanya'nın doyurucu klasiği.",
+    "de": "Schwäbische Eiernudeln, mit geschmolzenem Käse geschichtet und mit reichlich goldbraunen Röstzwiebeln belegt. Gemütliche Hausmannskost aus Süddeutschland."
+  },
+  "servings": 4,
+  "prepMinutes": 25,
+  "cookMinutes": 30,
+  "difficulty": 2,
+  "ingredients": [
+    {
+      "qty": 300,
+      "unit": "g",
+      "name": {
+        "en": "plain flour",
+        "tr": "un",
+        "de": "Weizenmehl"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "piece",
+      "name": {
+        "en": "eggs",
+        "tr": "yumurta",
+        "de": "Eier"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "ml",
+      "name": {
+        "en": "water",
+        "tr": "su",
+        "de": "Wasser"
+      },
+      "note": {
+        "en": "cold or sparkling",
+        "tr": "soğuk ya da maden suyu",
+        "de": "kalt oder mit Kohlensäure"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tbsp",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      },
+      "note": {
+        "en": "1 tsp for the dough, the rest for the cooking water",
+        "tr": "1 çay kaşığı hamur için, kalanı haşlama suyu için",
+        "de": "1 TL für den Teig, der Rest für das Kochwasser"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "pinch",
+      "name": {
+        "en": "grated nutmeg",
+        "tr": "rendelenmiş muskat",
+        "de": "geriebene Muskatnuss"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "piece",
+      "name": {
+        "en": "onions",
+        "tr": "kuru soğan",
+        "de": "Zwiebeln"
+      },
+      "note": {
+        "en": "halved and sliced into thin half-rings",
+        "tr": "ikiye bölünüp ince yarım halkalar halinde doğranmış",
+        "de": "halbiert und in dünne Halbringe geschnitten"
+      }
+    },
+    {
+      "qty": 30,
+      "unit": "g",
+      "name": {
+        "en": "butter",
+        "tr": "tereyağı",
+        "de": "Butter"
+      }
+    },
+    {
+      "qty": 200,
+      "unit": "g",
+      "name": {
+        "en": "Gruyère or Emmental",
+        "tr": "gruyère ya da Emmental peyniri",
+        "de": "Emmentaler oder Gruyère"
+      },
+      "note": {
+        "en": "coarsely grated",
+        "tr": "iri rendelenmiş",
+        "de": "grob gerieben"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "black pepper",
+        "tr": "karabiber",
+        "de": "schwarzer Pfeffer"
+      },
+      "note": {
+        "en": "freshly ground",
+        "tr": "taze çekilmiş",
+        "de": "frisch gemahlen"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Beat the flour, eggs, water, 1 teaspoon of the salt and the nutmeg with a wooden spoon for 3 to 4 minutes, until the dough is thick but still runny and bubbles form. It should fall slowly from the spoon. Leave to rest for 10 minutes.",
+        "tr": "Unu, yumurtaları, suyu, 1 çay kaşığı tuzu ve muskatı tahta kaşıkla 3-4 dakika, hamur koyu ama hâlâ akıcı olup kabarcıklar çıkana kadar çırpın. Kaşıktan yavaşça akmalı. 10 dakika dinlendirin.",
+        "de": "Mehl, Eier, Wasser, 1 Teelöffel Salz und Muskat mit einem Holzlöffel 3 bis 4 Minuten kräftig schlagen, bis der Teig zäh, aber noch fließend ist und Blasen wirft. Er soll langsam vom Löffel reißen. 10 Minuten ruhen lassen."
+      },
+      "timerMinutes": 10
+    },
+    {
+      "text": {
+        "en": "Melt the butter in a large pan over medium-low heat. Fry the onions for 12 to 15 minutes, stirring now and then, until deep golden. Set aside.",
+        "tr": "Tereyağını geniş bir tavada orta-kısık ateşte eritin. Soğanları arada karıştırarak 12-15 dakika, koyu altın rengi olana kadar kavurun. Kenara alın.",
+        "de": "Die Butter in einer großen Pfanne bei mittlerer bis niedriger Hitze zerlassen. Die Zwiebeln 12 bis 15 Minuten unter gelegentlichem Rühren tief goldbraun braten. Beiseitestellen."
+      }
+    },
+    {
+      "text": {
+        "en": "Bring a large pot of water to the boil with the remaining salt. Heat the oven to 100°C and put in an ovenproof dish.",
+        "tr": "Büyük bir tencerede suyu kalan tuzla kaynatın. Fırını 100°C'ye ısıtıp içine fırın kabı koyun.",
+        "de": "Einen großen Topf Wasser mit dem restlichen Salz zum Kochen bringen. Den Backofen auf 100 °C vorheizen und eine feuerfeste Form hineinstellen."
+      }
+    },
+    {
+      "text": {
+        "en": "Press or scrape the dough in batches through a spätzle press, or off a wet board with a knife, straight into the simmering water. When the spätzle float to the surface, after about 2 minutes, lift them out with a slotted spoon.",
+        "tr": "Hamuru kısım kısım spätzle presinden geçirin ya da ıslak bir tahtadan bıçakla doğrudan kaynayan suya kazıyın. Spätzle yüzeye çıkınca, yaklaşık 2 dakika sonra, süzgeç kaşıkla çıkarın.",
+        "de": "Den Teig portionsweise durch eine Spätzlepresse drücken oder mit einem Messer von einem nassen Brett direkt ins siedende Wasser schaben. Wenn die Spätzle nach etwa 2 Minuten an die Oberfläche steigen, mit einer Schaumkelle herausheben."
+      }
+    },
+    {
+      "text": {
+        "en": "Layer the hot spätzle in the warm dish with the cheese, a third at a time, so the cheese melts between the layers. Keep warm in the oven while you cook the remaining batches.",
+        "tr": "Sıcak spätzleleri ılık fırın kabına, her seferinde üçte biri peynirle, peynir katların arasında erisin diye katman katman dizin. Kalan partileri pişirirken fırında sıcak tutun.",
+        "de": "Die heißen Spätzle mit dem Käse in der vorgewärmten Form schichten, jeweils ein Drittel, damit der Käse zwischen den Lagen schmilzt. Im Ofen warm halten, während die restlichen Portionen kochen."
+      }
+    },
+    {
+      "text": {
+        "en": "Top with the fried onions and black pepper and serve straight from the dish, ideally with a green salad.",
+        "tr": "Üzerine kızarmış soğanları ve karabiberi koyup doğrudan kaptan servis edin; yanında yeşil salata iyi gider.",
+        "de": "Mit den Röstzwiebeln und Pfeffer belegen und direkt aus der Form servieren, am besten mit grünem Salat."
+      }
+    }
+  ],
+  "notes": {
+    "en": "In southern Germany Bergkäse or Allgäuer Emmentaler is used. The dough must be wet; if it is stiff, add a splash of water. Leftovers can be fried in butter the next day.",
+    "tr": "Güney Almanya'da Bergkäse ya da Allgäuer Emmentaler kullanılır. Hamur akıcı olmalıdır; sertse biraz su ekleyin. Artanı ertesi gün tereyağında kızartılabilir.",
+    "de": "In Süddeutschland nimmt man Bergkäse oder Allgäuer Emmentaler. Der Teig muss zähflüssig sein; ist er zu fest, einen Schuss Wasser zugeben. Reste lassen sich am nächsten Tag in Butter anbraten."
+  },
+  "tags": [
+    "vegetarian",
+    "german"
+  ],
+  "starter": true
+}

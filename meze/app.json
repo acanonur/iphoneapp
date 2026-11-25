@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Meze",
+    "slug": "meze",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "meze",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1f3d2f"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.canonur.meze",
+      "infoPlist": {
+        "CFBundleLocalizations": ["en", "tr", "de"],
+        "CFBundleAllowMixedLocalizations": true
+      }
+    },
+    "android": {
+      "package": "com.canonur.meze",
+      "adaptiveIcon": {
+        "backgroundColor": "#1f3d2f",
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-mono.png"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-font",
+      "./plugins/withPodDeploymentTarget",
+      "./plugins/withSceneLifecycle"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

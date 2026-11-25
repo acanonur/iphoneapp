@@ -1,0 +1,90 @@
+{
+  "id": "starter-ayran",
+  "kind": "drink",
+  "category": "cold",
+  "title": {
+    "en": "Ayran",
+    "tr": "Ayran",
+    "de": "Ayran"
+  },
+  "summary": {
+    "en": "Turkey's salty yoghurt drink: plain yoghurt whisked with cold water and salt until frothy. Perfect with kebabs and hot weather.",
+    "tr": "Türkiye'nin tuzlu yoğurt içeceği: sade yoğurt, soğuk su ve tuzla köpürene kadar çırpılır. Kebabın ve sıcak havaların vazgeçilmezi.",
+    "de": "Das salzige Joghurtgetränk der Türkei: Naturjoghurt mit kaltem Wasser und Salz schaumig geschlagen. Passt zu Kebab und heißen Tagen."
+  },
+  "servings": 2,
+  "prepMinutes": 5,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 250,
+      "unit": "g",
+      "name": {
+        "en": "plain yoghurt",
+        "tr": "sade yoğurt",
+        "de": "Naturjoghurt"
+      },
+      "note": {
+        "en": "full-fat, cold",
+        "tr": "tam yağlı, soğuk",
+        "de": "Vollfett, gekühlt"
+      }
+    },
+    {
+      "qty": 250,
+      "unit": "ml",
+      "name": {
+        "en": "cold water",
+        "tr": "soğuk su",
+        "de": "kaltes Wasser"
+      }
+    },
+    {
+      "qty": 0.5,
+      "unit": "tsp",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Put the yoghurt, salt and a splash of the water into a jug and whisk until smooth.",
+        "tr": "Yoğurdu, tuzu ve suyun bir kısmını bir sürahiye koyup pürüzsüz olana kadar çırpın.",
+        "de": "Joghurt, Salz und einen Schuss des Wassers in einen Krug geben und glatt rühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour in the rest of the cold water and whisk (or blend) for a minute, until frothy.",
+        "tr": "Kalan soğuk suyu ekleyin ve köpürene kadar bir dakika çırpın (ya da blenderdan geçirin).",
+        "de": "Das restliche kalte Wasser zugießen und etwa eine Minute schaumig schlagen (oder mixen)."
+      }
+    },
+    {
+      "text": {
+        "en": "Taste, adjust the salt and pour into tall glasses. Serve very cold.",
+        "tr": "Tadına bakıp tuzunu ayarlayın, uzun bardaklara paylaştırın. Çok soğuk servis edin.",
+        "de": "Abschmecken, bei Bedarf nachsalzen und in hohe Gläser füllen. Eiskalt servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Use more water for a thinner ayran. It separates on standing; give it a quick stir before serving. Keeps for a day in the fridge.",
+    "tr": "Daha sulu ayran için suyu artırın. Bekleyince ayrışır, servis etmeden önce çabucak karıştırın. Buzdolabında bir gün saklanır.",
+    "de": "Für einen dünneren Ayran mehr Wasser verwenden. Beim Stehen setzt er sich ab, deshalb vor dem Servieren kurz umrühren. Im Kühlschrank hält er einen Tag."
+  },
+  "tags": [
+    "vegetarian",
+    "gluten-free",
+    "quick",
+    "turkish"
+  ],
+  "glass": "highball",
+  "alcoholic": false,
+  "starter": true
+}

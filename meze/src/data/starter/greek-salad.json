@@ -1,0 +1,175 @@
+{
+  "id": "starter-greek-salad",
+  "kind": "food",
+  "category": "salad",
+  "title": {
+    "en": "Greek Salad",
+    "tr": "Yunan Salatası",
+    "de": "Griechischer Salat"
+  },
+  "summary": {
+    "en": "Ripe tomatoes, cucumber, red onion, peppers and olives with a slab of feta, olive oil and oregano. No lettuce, just summer.",
+    "tr": "Olgun domates, salatalık, kırmızı soğan, biber ve zeytin; üzerinde bir dilim feta, zeytinyağı ve kekik. Marul yok, sadece yaz var.",
+    "de": "Reife Tomaten, Gurke, rote Zwiebel, Paprika und Oliven mit einer Scheibe Feta, Olivenöl und Oregano. Kein Blattsalat, nur Sommer."
+  },
+  "servings": 2,
+  "prepMinutes": 15,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 300,
+      "unit": "g",
+      "name": {
+        "en": "ripe tomatoes",
+        "tr": "olgun domates",
+        "de": "reife Tomaten"
+      },
+      "note": {
+        "en": "cut into wedges",
+        "tr": "dilimlenmiş",
+        "de": "in Spalten geschnitten"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "cucumber",
+        "tr": "salatalık",
+        "de": "Gurke"
+      },
+      "note": {
+        "en": "thickly sliced",
+        "tr": "kalın halkalar halinde doğranmış",
+        "de": "in dicke Scheiben geschnitten"
+      }
+    },
+    {
+      "qty": 0.5,
+      "unit": "piece",
+      "name": {
+        "en": "red onion",
+        "tr": "kırmızı soğan",
+        "de": "rote Zwiebel"
+      },
+      "note": {
+        "en": "thinly sliced",
+        "tr": "ince halkalar halinde doğranmış",
+        "de": "in dünne Ringe geschnitten"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "green pepper",
+        "tr": "yeşil biber",
+        "de": "grüne Paprika"
+      },
+      "note": {
+        "en": "seeded, in rings",
+        "tr": "çekirdekleri çıkarılmış, halka doğranmış",
+        "de": "entkernt, in Ringe geschnitten"
+      }
+    },
+    {
+      "qty": 60,
+      "unit": "g",
+      "name": {
+        "en": "kalamata olives",
+        "tr": "kalamata zeytini",
+        "de": "Kalamata-Oliven"
+      }
+    },
+    {
+      "qty": 100,
+      "unit": "g",
+      "name": {
+        "en": "feta",
+        "tr": "beyaz peynir (feta)",
+        "de": "Feta"
+      },
+      "note": {
+        "en": "in one slab",
+        "tr": "tek parça dilim halinde",
+        "de": "am Stück"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "tbsp",
+      "name": {
+        "en": "extra virgin olive oil",
+        "tr": "sızma zeytinyağı",
+        "de": "natives Olivenöl extra"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "red wine vinegar",
+        "tr": "kırmızı şarap sirkesi",
+        "de": "Rotweinessig"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "dried oregano",
+        "tr": "kuru kekik",
+        "de": "getrockneter Oregano"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      },
+      "note": {
+        "en": "go easy: feta and olives are salty",
+        "tr": "az kullanın, feta ve zeytin zaten tuzlu",
+        "de": "sparsam, Feta und Oliven sind schon salzig"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Put the tomato wedges, cucumber, onion and pepper in a large bowl.",
+        "tr": "Domates, salatalık, soğan ve biberi geniş bir kaseye koyun.",
+        "de": "Tomatenspalten, Gurke, Zwiebel und Paprika in eine große Schüssel geben."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the olives. Sprinkle with a little salt, the vinegar and half the oil and toss gently.",
+        "tr": "Zeytinleri ekleyin. Az tuz, sirke ve zeytinyağının yarısını ilave edip hafifçe karıştırın.",
+        "de": "Die Oliven zugeben. Mit wenig Salz, dem Essig und der Hälfte des Öls beträufeln und vorsichtig vermengen."
+      }
+    },
+    {
+      "text": {
+        "en": "Lay the slab of feta on top, sprinkle with the oregano and drizzle over the remaining oil. Serve at once.",
+        "tr": "Fetayı tek parça halinde üzerine yerleştirin, kekik serpin ve kalan zeytinyağını gezdirin. Hemen servis edin.",
+        "de": "Die Feta-Scheibe obenauf legen, mit dem Oregano bestreuen und mit dem restlichen Öl beträufeln. Sofort servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Use the best tomatoes you can find; they carry the dish. Serve with bread to mop up the juices. Do not dress ahead of time or the vegetables turn watery.",
+    "tr": "Yemeği domates taşır, bulabildiğiniz en iyisini kullanın. Suyuna batırmak için ekmekle servis edin. Sebzeler su salmasın diye önceden soslamayın.",
+    "de": "Die besten Tomaten verwenden, die man finden kann; sie tragen das Gericht. Mit Brot zum Auftunken servieren. Nicht lange vorher anmachen, sonst zieht das Gemüse Wasser."
+  },
+  "tags": [
+    "vegetarian",
+    "gluten-free",
+    "quick"
+  ],
+  "starter": true
+}

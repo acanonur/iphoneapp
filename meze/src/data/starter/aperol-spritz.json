@@ -1,0 +1,107 @@
+{
+  "id": "starter-aperol-spritz",
+  "kind": "drink",
+  "category": "cocktail",
+  "title": {
+    "en": "Aperol Spritz",
+    "tr": "Aperol Spritz",
+    "de": "Aperol Spritz"
+  },
+  "summary": {
+    "en": "The classic Italian aperitif: Prosecco, Aperol and soda over ice with a slice of orange. Light, bittersweet and refreshing.",
+    "tr": "Klasik İtalyan aperitifi: buz üzerinde Prosecco, Aperol ve soda, yanında bir dilim portakal. Hafif, hafif acımsı ve ferah.",
+    "de": "Der italienische Aperitif-Klassiker: Prosecco, Aperol und Soda auf Eis mit einer Orangenscheibe. Leicht, bittersüß und erfrischend."
+  },
+  "servings": 1,
+  "prepMinutes": 2,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "ice cubes",
+        "tr": "buz küpü",
+        "de": "Eiswürfel"
+      }
+    },
+    {
+      "qty": 9,
+      "unit": "cl",
+      "name": {
+        "en": "Prosecco",
+        "tr": "Prosecco",
+        "de": "Prosecco"
+      }
+    },
+    {
+      "qty": 6,
+      "unit": "cl",
+      "name": {
+        "en": "Aperol",
+        "tr": "Aperol",
+        "de": "Aperol"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "cl",
+      "name": {
+        "en": "soda water",
+        "tr": "soda",
+        "de": "Sodawasser"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "slice",
+      "name": {
+        "en": "orange",
+        "tr": "portakal",
+        "de": "Orange"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Fill a large wine glass generously with ice.",
+        "tr": "Büyük bir şarap kadehini bolca buzla doldurun.",
+        "de": "Ein großes Weinglas reichlich mit Eiswürfeln füllen."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour in the Prosecco, then the Aperol.",
+        "tr": "Önce Prosecco'yu, sonra Aperol'ü ekleyin.",
+        "de": "Zuerst den Prosecco, dann den Aperol eingießen."
+      }
+    },
+    {
+      "text": {
+        "en": "Top up with the soda water and stir once, gently, from the bottom.",
+        "tr": "Sodayı ekleyin ve dipten yukarı doğru bir kez hafifçe karıştırın.",
+        "de": "Mit dem Sodawasser auffüllen und einmal vorsichtig von unten nach oben umrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Tuck the orange slice into the glass and serve.",
+        "tr": "Portakal dilimini kadehe yerleştirip servis edin.",
+        "de": "Die Orangenscheibe ins Glas stecken und servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "The classic ratio is 3 parts Prosecco, 2 parts Aperol, 1 part soda. Use well-chilled ingredients and plenty of ice so it does not go flat or watery.",
+    "tr": "Klasik oran 3 ölçü Prosecco, 2 ölçü Aperol, 1 ölçü soda. Malzemeler iyice soğuk olsun ve bol buz kullanın; böylece gazı kaçmaz, sulanmaz.",
+    "de": "Das klassische Verhältnis ist 3 Teile Prosecco, 2 Teile Aperol, 1 Teil Soda. Alle Zutaten gut gekühlt verwenden und reichlich Eis nehmen, damit der Drink nicht schal oder wässrig wird."
+  },
+  "tags": [
+    "quick"
+  ],
+  "glass": "wine",
+  "alcoholic": true,
+  "starter": true
+}

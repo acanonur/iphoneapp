@@ -1,0 +1,106 @@
+{
+  "id": "starter-apfelschorle",
+  "kind": "drink",
+  "category": "cold",
+  "title": {
+    "en": "Apple Spritzer (Apfelschorle)",
+    "tr": "Apfelschorle (Gazlı Elma Suyu)",
+    "de": "Apfelschorle"
+  },
+  "summary": {
+    "en": "Germany's everyday refresher: cloudy apple juice and sparkling water in equal parts, served ice cold.",
+    "tr": "Almanya'nın gündelik ferahlatıcısı: eşit ölçüde bulanık elma suyu ve gazlı su, buz gibi servis edilir.",
+    "de": "Der deutsche Alltagsdurstlöscher: naturtrüber Apfelsaft und Sprudelwasser zu gleichen Teilen, eiskalt serviert."
+  },
+  "servings": 1,
+  "prepMinutes": 2,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "ice cubes",
+        "tr": "buz küpü",
+        "de": "Eiswürfel"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "ml",
+      "name": {
+        "en": "cloudy apple juice",
+        "tr": "bulanık elma suyu",
+        "de": "naturtrüber Apfelsaft"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "ml",
+      "name": {
+        "en": "sparkling water",
+        "tr": "soda ya da maden suyu",
+        "de": "Mineralwasser mit Kohlensäure"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "slice",
+      "name": {
+        "en": "apple",
+        "tr": "elma",
+        "de": "Apfel"
+      },
+      "note": {
+        "en": "for garnish",
+        "tr": "süslemek için",
+        "de": "zum Garnieren"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Fill a tall glass with ice cubes.",
+        "tr": "Uzun bir bardağı buz küpleriyle doldurun.",
+        "de": "Ein hohes Glas mit Eiswürfeln füllen."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour in the apple juice.",
+        "tr": "Elma suyunu dökün.",
+        "de": "Den Apfelsaft einfüllen."
+      }
+    },
+    {
+      "text": {
+        "en": "Top up slowly with the sparkling water so it keeps its fizz.",
+        "tr": "Gazı kaçmasın diye gazlı suyu yavaşça ekleyerek bardağı doldurun.",
+        "de": "Langsam mit dem Mineralwasser auffüllen, damit die Kohlensäure erhalten bleibt."
+      }
+    },
+    {
+      "text": {
+        "en": "Garnish with the apple slice and serve at once.",
+        "tr": "Elma dilimiyle süsleyip hemen servis edin.",
+        "de": "Mit der Apfelscheibe garnieren und sofort servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Mix 1:1 for the classic; use 2 parts water to 1 part juice for a lighter, less sweet drink. Chill both ingredients beforehand.",
+    "tr": "Klasik tarif 1:1'dir; daha hafif ve az tatlı için 2 ölçü suya 1 ölçü meyve suyu kullanın. İki malzemeyi de önceden soğutun.",
+    "de": "Klassisch im Verhältnis 1:1; für eine leichtere, weniger süße Schorle 2 Teile Wasser auf 1 Teil Saft nehmen. Beide Zutaten vorher kühlen."
+  },
+  "tags": [
+    "vegan",
+    "gluten-free",
+    "quick",
+    "german"
+  ],
+  "glass": "highball",
+  "alcoholic": false,
+  "starter": true
+}

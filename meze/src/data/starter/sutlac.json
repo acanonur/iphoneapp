@@ -1,0 +1,152 @@
+{
+  "id": "starter-sutlac",
+  "kind": "food",
+  "category": "dessert",
+  "title": {
+    "en": "Baked Rice Pudding (Sütlaç)",
+    "tr": "Fırın Sütlaç",
+    "de": "Sütlaç (Türkischer Milchreis, überbacken)"
+  },
+  "summary": {
+    "en": "Turkey's famous creamy rice pudding, browned under the grill until speckled dark on top and chilled before serving.",
+    "tr": "Türkiye'nin meşhur kremamsı sütlacı; üzeri ızgarada yer yer kızarana kadar pişirilir ve soğuk servis edilir.",
+    "de": "Der berühmte türkische Milchreis: cremig, unter dem Grill gebräunt, bis die Oberfläche dunkle Flecken bekommt, und gekühlt serviert."
+  },
+  "servings": 6,
+  "prepMinutes": 15,
+  "cookMinutes": 170,
+  "difficulty": 2,
+  "ingredients": [
+    {
+      "qty": 100,
+      "unit": "g",
+      "name": {
+        "en": "short-grain rice",
+        "tr": "baldo ya da osmancık pirinç",
+        "de": "Rundkornreis"
+      },
+      "note": {
+        "en": "rinsed",
+        "tr": "yıkanmış",
+        "de": "gewaschen"
+      }
+    },
+    {
+      "qty": 250,
+      "unit": "ml",
+      "name": {
+        "en": "water",
+        "tr": "su",
+        "de": "Wasser"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "l",
+      "name": {
+        "en": "whole milk",
+        "tr": "tam yağlı süt",
+        "de": "Vollmilch"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "g",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tbsp",
+      "name": {
+        "en": "rice flour or cornflour",
+        "tr": "pirinç unu ya da mısır nişastası",
+        "de": "Reismehl oder Speisestärke"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "vanilla extract",
+        "tr": "vanilya özü",
+        "de": "Vanilleextrakt"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "ground cinnamon",
+        "tr": "tarçın",
+        "de": "Zimt"
+      },
+      "note": {
+        "en": "optional, to serve",
+        "tr": "isteğe bağlı, servis için",
+        "de": "optional, zum Bestreuen"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Bring the water to the boil in a large heavy pan, add the rice and simmer over low heat for about 12 minutes, until the water is absorbed and the rice is soft.",
+        "tr": "Suyu büyük ve kalın tabanlı bir tencerede kaynatın, pirinci ekleyip kısık ateşte suyunu çekip yumuşayana kadar yaklaşık 12 dakika pişirin.",
+        "de": "Das Wasser in einem großen, schweren Topf zum Kochen bringen, den Reis zugeben und bei niedriger Hitze etwa 12 Minuten köcheln lassen, bis das Wasser aufgesogen und der Reis weich ist."
+      },
+      "timerMinutes": 12
+    },
+    {
+      "text": {
+        "en": "Add 800 ml of the milk and simmer gently for 15 minutes, stirring often so it does not catch on the bottom.",
+        "tr": "Sütün 800 ml'sini ekleyin ve dibi tutmasın diye sık sık karıştırarak 15 dakika hafifçe kaynatın.",
+        "de": "800 ml der Milch zugießen und 15 Minuten sanft köcheln lassen, dabei oft rühren, damit nichts am Boden ansetzt."
+      },
+      "timerMinutes": 15
+    },
+    {
+      "text": {
+        "en": "Stir in the sugar. Whisk the rice flour into the remaining cold milk until smooth, then pour it into the pan, stirring constantly. Cook for 5 minutes, until thick and creamy, then stir in the vanilla.",
+        "tr": "Şekeri ekleyip karıştırın. Pirinç ununu kalan soğuk sütle topaksız olana kadar açın, tencereye sürekli karıştırarak dökün. Koyu ve kremamsı olana kadar 5 dakika pişirin, sonra vanilyayı ekleyin.",
+        "de": "Den Zucker einrühren. Das Reismehl mit der restlichen kalten Milch glatt rühren und unter ständigem Rühren in den Topf gießen. 5 Minuten kochen, bis der Pudding dick und cremig ist, dann die Vanille einrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Divide between 6 ovenproof bowls and leave to cool for 30 minutes so a skin forms.",
+        "tr": "6 fırın kabına paylaştırın ve üstünde ince bir zar oluşması için 30 dakika soğumaya bırakın.",
+        "de": "Auf 6 feuerfeste Schälchen verteilen und 30 Minuten abkühlen lassen, damit sich eine Haut bildet."
+      }
+    },
+    {
+      "text": {
+        "en": "Heat the grill to its highest setting. Place the bowls on a tray about 10 cm below it and grill for 3 to 5 minutes, watching closely, until the tops are speckled with dark brown.",
+        "tr": "Izgarayı en yüksek ısıya getirin. Kapları bir tepsiye dizip ızgaranın yaklaşık 10 cm altına koyun ve gözünüzü ayırmadan 3-5 dakika, üzeri yer yer koyu kahverengi olana kadar kızartın.",
+        "de": "Den Grill auf höchste Stufe vorheizen. Die Schälchen auf einem Blech etwa 10 cm unter den Grill schieben und 3 bis 5 Minuten unter genauer Beobachtung grillen, bis die Oberfläche dunkelbraune Flecken hat."
+      }
+    },
+    {
+      "text": {
+        "en": "Cool to room temperature, then chill for at least 2 hours. Dust with cinnamon if you like and serve cold.",
+        "tr": "Oda sıcaklığına gelene kadar soğutun, sonra en az 2 saat buzdolabında bekletin. İsterseniz tarçın serpip soğuk servis edin.",
+        "de": "Auf Zimmertemperatur abkühlen lassen, dann mindestens 2 Stunden kalt stellen. Nach Belieben mit Zimt bestäuben und gekühlt servieren."
+      },
+      "timerMinutes": 120
+    }
+  ],
+  "notes": {
+    "en": "It thickens a lot as it cools, so stop cooking while it is still a little looser than you want. Keeps for 3 days in the fridge. For more traditional colour, use a kitchen blowtorch instead of the grill.",
+    "tr": "Soğurken epeyce koyulaşır, bu yüzden istediğinizden biraz daha akışkan kıvamda ocaktan alın. Buzdolabında 3 gün saklanır. Daha geleneksel renk için ızgara yerine mutfak alev makinesi kullanabilirsiniz.",
+    "de": "Er dickt beim Abkühlen stark nach, deshalb vom Herd nehmen, wenn er noch etwas flüssiger ist als gewünscht. Im Kühlschrank 3 Tage haltbar. Für noch mehr Röstaroma statt des Grills einen Küchenbrenner verwenden."
+  },
+  "tags": [
+    "vegetarian",
+    "gluten-free",
+    "turkish"
+  ],
+  "starter": true
+}

@@ -1,0 +1,144 @@
+{
+  "id": "starter-pancakes",
+  "kind": "food",
+  "category": "breakfast",
+  "title": {
+    "en": "Fluffy Pancakes",
+    "tr": "Pankek",
+    "de": "Pancakes"
+  },
+  "summary": {
+    "en": "Thick, fluffy American-style pancakes. Whisk, rest, then cook on a medium pan until bubbles appear.",
+    "tr": "Kalın ve kabarık Amerikan usulü pankekler. Çırpın, dinlendirin, orta ateşte yüzeyde kabarcıklar çıkana kadar pişirin.",
+    "de": "Dicke, fluffige Pancakes nach amerikanischer Art. Verrühren, ruhen lassen und bei mittlerer Hitze backen, bis sich Blasen bilden."
+  },
+  "servings": 4,
+  "prepMinutes": 10,
+  "cookMinutes": 15,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 200,
+      "unit": "g",
+      "name": {
+        "en": "plain flour",
+        "tr": "un",
+        "de": "Weizenmehl"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "baking powder",
+        "tr": "kabartma tozu",
+        "de": "Backpulver"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tbsp",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "pinch",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    },
+    {
+      "qty": 250,
+      "unit": "ml",
+      "name": {
+        "en": "milk",
+        "tr": "süt",
+        "de": "Milch"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "egg",
+        "tr": "yumurta",
+        "de": "Ei"
+      }
+    },
+    {
+      "qty": 30,
+      "unit": "g",
+      "name": {
+        "en": "butter",
+        "tr": "tereyağı",
+        "de": "Butter"
+      },
+      "note": {
+        "en": "melted and cooled slightly, plus extra for the pan",
+        "tr": "eritilip biraz soğutulmuş, tava için biraz daha",
+        "de": "geschmolzen und leicht abgekühlt, plus mehr für die Pfanne"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Whisk the flour, baking powder, sugar and salt in a large bowl.",
+        "tr": "Unu, kabartma tozunu, şekeri ve tuzu geniş bir kapta çırpın.",
+        "de": "Mehl, Backpulver, Zucker und Salz in einer großen Schüssel verrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "In another bowl, whisk the milk, egg and the melted butter.",
+        "tr": "Başka bir kapta sütü, yumurtayı ve eritilmiş tereyağını çırpın.",
+        "de": "In einer zweiten Schüssel Milch, Ei und die geschmolzene Butter verquirlen."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour the wet mixture into the dry ingredients and stir only until just combined. A few lumps are fine; overmixing makes the pancakes tough.",
+        "tr": "Sıvı karışımı kuru malzemelerin üzerine dökün ve yalnızca birleşene kadar karıştırın. Birkaç topak olabilir; fazla karıştırmak pankekleri sertleştirir.",
+        "de": "Die flüssige Mischung zu den trockenen Zutaten gießen und nur kurz verrühren, bis alles gerade vermengt ist. Ein paar Klümpchen sind in Ordnung; zu langes Rühren macht die Pancakes zäh."
+      }
+    },
+    {
+      "text": {
+        "en": "Leave the batter to rest for 5 minutes.",
+        "tr": "Hamuru 5 dakika dinlendirin.",
+        "de": "Den Teig 5 Minuten ruhen lassen."
+      },
+      "timerMinutes": 5
+    },
+    {
+      "text": {
+        "en": "Heat a non-stick pan over medium heat and rub it with a little butter. Pour in about 60 ml of batter per pancake and cook for 2 to 3 minutes, until bubbles appear and the edges look set.",
+        "tr": "Yapışmaz bir tavayı orta ateşte ısıtıp azıcık tereyağı sürün. Her pankek için yaklaşık 60 ml hamur dökün ve yüzeyde kabarcıklar çıkıp kenarlar tutana kadar 2-3 dakika pişirin.",
+        "de": "Eine beschichtete Pfanne bei mittlerer Hitze erhitzen und mit etwas Butter einreiben. Pro Pancake etwa 60 ml Teig hineingeben und 2 bis 3 Minuten backen, bis sich Blasen bilden und die Ränder fest wirken."
+      }
+    },
+    {
+      "text": {
+        "en": "Flip and cook for another 1 to 2 minutes, until golden. Keep the finished pancakes warm in a low oven while you cook the rest.",
+        "tr": "Çevirip 1-2 dakika daha, altın rengi olana kadar pişirin. Kalanını pişirirken bitenleri düşük ısılı fırında sıcak tutun.",
+        "de": "Wenden und weitere 1 bis 2 Minuten goldbraun backen. Die fertigen Pancakes im niedrig temperierten Ofen warm halten, bis alle gebacken sind."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Serve with maple syrup, honey, fruit or butter. The batter can be made the evening before and kept in the fridge; stir in a splash of milk if it thickens.",
+    "tr": "Akçaağaç şurubu, bal, meyve ya da tereyağıyla servis edin. Hamur bir akşam önceden hazırlanıp buzdolabında bekletilebilir; koyulaşırsa bir miktar süt ekleyin.",
+    "de": "Mit Ahornsirup, Honig, Obst oder Butter servieren. Der Teig lässt sich am Vorabend zubereiten und im Kühlschrank aufbewahren; wird er dicker, einen Schuss Milch einrühren."
+  },
+  "tags": [
+    "vegetarian",
+    "quick"
+  ],
+  "starter": true
+}
