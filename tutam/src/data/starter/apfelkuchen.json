@@ -1,0 +1,235 @@
+{
+  "id": "starter-apfelkuchen",
+  "kind": "food",
+  "category": "baking",
+  "title": {
+    "en": "German Apple Cake",
+    "tr": "Alman Elmalı Keki",
+    "de": "Apfelkuchen"
+  },
+  "summary": {
+    "en": "A simple, moist cake with apple slices baked into a buttery batter. Lovely with afternoon coffee.",
+    "tr": "Tereyağlı hamura gömülmüş elma dilimleriyle pişen, yumuşacık ve basit bir kek. Öğleden sonra kahvesinin yanına çok yakışır.",
+    "de": "Ein einfacher, saftiger Kuchen mit Apfelspalten im Butterteig. Schmeckt wunderbar zum Nachmittagskaffee."
+  },
+  "servings": 12,
+  "prepMinutes": 25,
+  "cookMinutes": 45,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 600,
+      "unit": "g",
+      "name": {
+        "en": "apples",
+        "tr": "elma",
+        "de": "Äpfel"
+      },
+      "note": {
+        "en": "tart, firm",
+        "tr": "ekşimsi, sert",
+        "de": "säuerlich, fest"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "lemon juice",
+        "tr": "limon suyu",
+        "de": "Zitronensaft"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "g",
+      "name": {
+        "en": "butter",
+        "tr": "tereyağı",
+        "de": "Butter"
+      },
+      "note": {
+        "en": "at room temperature",
+        "tr": "oda sıcaklığında",
+        "de": "zimmerwarm"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "g",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "pinch",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "piece",
+      "name": {
+        "en": "eggs",
+        "tr": "yumurta",
+        "de": "Eier"
+      },
+      "note": {
+        "en": "at room temperature",
+        "tr": "oda sıcaklığında",
+        "de": "zimmerwarm"
+      }
+    },
+    {
+      "qty": 250,
+      "unit": "g",
+      "name": {
+        "en": "plain flour",
+        "tr": "un",
+        "de": "Weizenmehl"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "baking powder",
+        "tr": "kabartma tozu",
+        "de": "Backpulver"
+      }
+    },
+    {
+      "qty": 100,
+      "unit": "ml",
+      "name": {
+        "en": "milk",
+        "tr": "süt",
+        "de": "Milch"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "ground cinnamon",
+        "tr": "tarçın",
+        "de": "Zimt"
+      },
+      "note": {
+        "en": "for the topping",
+        "tr": "üzeri için",
+        "de": "für die Oberfläche"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      },
+      "note": {
+        "en": "for the topping",
+        "tr": "üzeri için",
+        "de": "für die Oberfläche"
+      }
+    },
+    {
+      "qty": 10,
+      "unit": "g",
+      "name": {
+        "en": "butter",
+        "tr": "tereyağı",
+        "de": "Butter"
+      },
+      "note": {
+        "en": "for greasing the tin",
+        "tr": "kalıbı yağlamak için",
+        "de": "zum Einfetten der Form"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "icing sugar",
+        "tr": "pudra şekeri",
+        "de": "Puderzucker"
+      },
+      "note": {
+        "en": "for dusting",
+        "tr": "üzeri için",
+        "de": "zum Bestäuben"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Heat the oven to 180°C (160°C fan). Grease a 26 cm springform tin with the butter and line the base with baking paper.",
+        "tr": "Fırını 180°C'ye (fanlı fırında 160°C) ısıtın. 26 cm'lik kelepçeli kalıbı tereyağıyla yağlayın, tabanına yağlı kâğıt serin.",
+        "de": "Den Backofen auf 180 °C (Umluft 160 °C) vorheizen. Eine Springform (26 cm) mit der Butter einfetten und den Boden mit Backpapier auslegen."
+      }
+    },
+    {
+      "text": {
+        "en": "Peel and core the apples, cut them into thin wedges and toss with the lemon juice so they do not brown.",
+        "tr": "Elmaları soyun, çekirdeklerini çıkarın, ince dilimler halinde kesin ve kararmasınlar diye limon suyuyla karıştırın.",
+        "de": "Die Äpfel schälen, entkernen, in dünne Spalten schneiden und mit dem Zitronensaft mischen, damit sie nicht braun werden."
+      }
+    },
+    {
+      "text": {
+        "en": "Beat the soft butter, 150 g sugar and the salt for 3 to 4 minutes, until pale and fluffy. Beat in the eggs one at a time.",
+        "tr": "Yumuşak tereyağını, 150 g şekeri ve tuzu 3-4 dakika, açık renkli ve kabarık olana kadar çırpın. Yumurtaları tek tek ekleyip çırpın.",
+        "de": "Die weiche Butter mit 150 g Zucker und dem Salz 3 bis 4 Minuten hell und schaumig rühren. Die Eier einzeln unterrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Mix the flour with the baking powder and fold it in, alternating with the milk, until just combined.",
+        "tr": "Unu kabartma tozuyla karıştırın ve süt ile dönüşümlü olarak, sadece birleşene kadar karıştırarak ekleyin.",
+        "de": "Das Mehl mit dem Backpulver mischen und abwechselnd mit der Milch unterheben, bis gerade ein glatter Teig entsteht."
+      }
+    },
+    {
+      "text": {
+        "en": "Spoon the batter into the tin and smooth the top. Press the apple wedges lightly into the batter in a ring, then sprinkle with the cinnamon mixed with 1 tablespoon of sugar.",
+        "tr": "Hamuru kalıba alın ve üstünü düzleyin. Elma dilimlerini halka şeklinde hamura hafifçe bastırın, üzerine 1 yemek kaşığı şekerle karıştırılmış tarçını serpin.",
+        "de": "Den Teig in die Form füllen und glattstreichen. Die Apfelspalten kreisförmig leicht in den Teig drücken und mit dem Zimt, vermischt mit 1 Esslöffel Zucker, bestreuen."
+      }
+    },
+    {
+      "text": {
+        "en": "Bake for 45 minutes, until golden and a skewer comes out clean.",
+        "tr": "45 dakika, üstü altın sarısı olup kürdan temiz çıkana kadar pişirin.",
+        "de": "45 Minuten backen, bis der Kuchen goldbraun ist und beim Einstechen mit einem Holzstäbchen kein Teig mehr kleben bleibt."
+      },
+      "timerMinutes": 45
+    },
+    {
+      "text": {
+        "en": "Leave to cool in the tin for 10 minutes, then loosen the edge and release the ring. Dust with icing sugar before serving.",
+        "tr": "Kalıpta 10 dakika soğumaya bırakın, kenarlarını bıçakla ayırıp kalıbı açın. Servis etmeden önce pudra şekeri serpin.",
+        "de": "10 Minuten in der Form abkühlen lassen, dann den Rand lösen und den Springformrand öffnen. Vor dem Servieren mit Puderzucker bestäuben."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Tastes best on the day, still slightly warm, with cream or vanilla ice cream. Keeps for 3 days in a tin.",
+    "tr": "En lezzetli hâli, aynı gün, hafif ılıkken krema ya da vanilyalı dondurmayla yenen hâlidir. Kapalı bir kapta 3 gün saklanır.",
+    "de": "Am besten am selben Tag, noch leicht warm, mit Sahne oder Vanilleeis. In einer Dose hält er sich 3 Tage."
+  },
+  "tags": [
+    "vegetarian",
+    "german"
+  ],
+  "starter": true
+}

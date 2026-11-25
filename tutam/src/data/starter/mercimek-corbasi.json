@@ -1,0 +1,44 @@
+{
+  "id": "starter-mercimek-corbasi",
+  "kind": "food",
+  "category": "soup",
+  "title": { "en": "Red Lentil Soup", "tr": "Mercimek Çorbası", "de": "Rote Linsensuppe" },
+  "summary": {
+    "en": "The soup every Turkish kitchen starts with: red lentils simmered soft, blended smooth and finished with paprika butter and lemon.",
+    "tr": "Her Türk mutfağının baş tacı: yumuşayana kadar pişirilip pürüzsüz hale getirilen kırmızı mercimek, üzerine pul biberli tereyağı ve limon.",
+    "de": "Die Suppe, mit der jede türkische Küche beginnt: rote Linsen, weich gekocht, fein püriert und mit Paprikabutter und Zitrone vollendet."
+  },
+  "servings": 4,
+  "prepMinutes": 10,
+  "cookMinutes": 30,
+  "difficulty": 1,
+  "ingredients": [
+    { "qty": 200, "unit": "g", "name": { "en": "red lentils", "tr": "kırmızı mercimek", "de": "rote Linsen" }, "note": { "en": "rinsed", "tr": "yıkanmış", "de": "gewaschen" } },
+    { "qty": 1, "unit": "piece", "name": { "en": "onion", "tr": "kuru soğan", "de": "Zwiebel" }, "note": { "en": "chopped", "tr": "doğranmış", "de": "gewürfelt" } },
+    { "qty": 1, "unit": "piece", "name": { "en": "carrot", "tr": "havuç", "de": "Karotte" }, "note": { "en": "diced", "tr": "küp doğranmış", "de": "gewürfelt" } },
+    { "qty": 1, "unit": "piece", "name": { "en": "potato", "tr": "patates", "de": "Kartoffel" }, "note": { "en": "diced", "tr": "küp doğranmış", "de": "gewürfelt" } },
+    { "qty": 2, "unit": "tbsp", "name": { "en": "olive oil", "tr": "zeytinyağı", "de": "Olivenöl" } },
+    { "qty": 1, "unit": "tbsp", "name": { "en": "tomato paste", "tr": "domates salçası", "de": "Tomatenmark" } },
+    { "qty": 1.2, "unit": "l", "name": { "en": "hot water", "tr": "sıcak su", "de": "heißes Wasser" } },
+    { "qty": 1, "unit": "tsp", "name": { "en": "ground cumin", "tr": "kimyon", "de": "gemahlener Kreuzkümmel" } },
+    { "qty": 30, "unit": "g", "name": { "en": "butter", "tr": "tereyağı", "de": "Butter" } },
+    { "qty": 1, "unit": "tsp", "name": { "en": "Turkish red pepper flakes", "tr": "pul biber", "de": "Pul Biber (türkische Chiliflocken)" } },
+    { "qty": null, "unit": null, "name": { "en": "salt", "tr": "tuz", "de": "Salz" } },
+    { "qty": 1, "unit": "piece", "name": { "en": "lemon", "tr": "limon", "de": "Zitrone" }, "note": { "en": "in wedges, to serve", "tr": "dilimlenmiş, servis için", "de": "in Spalten, zum Servieren" } }
+  ],
+  "steps": [
+    { "text": { "en": "Heat the olive oil in a large pot over medium heat. Cook the onion until soft and translucent, about 4 minutes.", "tr": "Zeytinyağını büyük bir tencerede orta ateşte ısıtın. Soğanı yumuşayıp şeffaflaşana kadar yaklaşık 4 dakika kavurun.", "de": "Das Olivenöl in einem großen Topf bei mittlerer Hitze erwärmen. Die Zwiebel etwa 4 Minuten glasig dünsten." } },
+    { "text": { "en": "Stir in the tomato paste and cook for a minute, then add the carrot, potato and lentils.", "tr": "Salçayı ekleyip bir dakika kavurun, ardından havucu, patatesi ve mercimeği ekleyin.", "de": "Das Tomatenmark einrühren und eine Minute anrösten, dann Karotte, Kartoffel und Linsen dazugeben." } },
+    { "text": { "en": "Pour in the hot water, add the cumin and bring to a boil. Lower the heat, cover and simmer until everything is very soft.", "tr": "Sıcak suyu ve kimyonu ekleyip kaynatın. Ateşi kısın, kapağını kapatın ve her şey iyice yumuşayana kadar pişirin.", "de": "Das heiße Wasser angießen, den Kreuzkümmel zugeben und aufkochen. Die Hitze reduzieren und zugedeckt köcheln lassen, bis alles sehr weich ist." }, "timerMinutes": 25 },
+    { "text": { "en": "Blend until smooth with a hand blender. Season with salt, and thin with a little hot water if it is too thick.", "tr": "El blenderi ile pürüzsüz olana kadar çekin. Tuzunu ayarlayın; çok koyu olduysa biraz sıcak su ekleyin.", "de": "Mit dem Stabmixer fein pürieren. Mit Salz abschmecken und bei Bedarf mit etwas heißem Wasser verdünnen." } },
+    { "text": { "en": "Melt the butter in a small pan, stir in the pepper flakes and let it foam for a few seconds.", "tr": "Tereyağını küçük bir tavada eritin, pul biberi ekleyip birkaç saniye köpürmesini bekleyin.", "de": "Die Butter in einer kleinen Pfanne schmelzen, die Chiliflocken einrühren und kurz aufschäumen lassen." } },
+    { "text": { "en": "Ladle the soup into bowls, drizzle with the paprika butter and serve with lemon wedges.", "tr": "Çorbayı kaselere paylaştırın, üzerine pul biberli tereyağını gezdirin ve limon dilimleriyle servis edin.", "de": "Die Suppe in Schalen füllen, mit der Paprikabutter beträufeln und mit Zitronenspalten servieren." } }
+  ],
+  "notes": {
+    "en": "Keeps for three days in the fridge and freezes well. It thickens as it cools; loosen it with water when reheating.",
+    "tr": "Buzdolabında üç gün dayanır, dondurucuya da uygundur. Soğudukça koyulaşır; ısıtırken biraz su ekleyin.",
+    "de": "Hält sich drei Tage im Kühlschrank und lässt sich gut einfrieren. Beim Abkühlen dickt sie nach; beim Aufwärmen mit Wasser verdünnen."
+  },
+  "tags": ["vegetarian", "turkish", "gluten-free"],
+  "starter": true
+}

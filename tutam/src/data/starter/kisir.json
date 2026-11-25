@@ -1,0 +1,205 @@
+{
+  "id": "starter-kisir",
+  "kind": "food",
+  "category": "salad",
+  "title": {
+    "en": "Bulgur Salad (Kısır)",
+    "tr": "Kısır",
+    "de": "Bulgursalat (Kısır)"
+  },
+  "summary": {
+    "en": "The Turkish tea-time bulgur salad: fine bulgur kneaded with pepper paste, tomato paste and pomegranate molasses, then loaded with herbs and spring onions.",
+    "tr": "Çay saatinin klasiği Türk bulgur salatası: ince bulgur, biber salçası, domates salçası ve nar ekşisiyle yoğrulur, bolca yeşillik ve taze soğanla tamamlanır.",
+    "de": "Der türkische Bulgursalat zur Teezeit: feiner Bulgur, mit Paprikamark, Tomatenmark und Granatapfelsirup geknetet und mit viel Kräutern und Frühlingszwiebeln vollendet."
+  },
+  "servings": 4,
+  "prepMinutes": 15,
+  "cookMinutes": 10,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 150,
+      "unit": "g",
+      "name": {
+        "en": "fine bulgur",
+        "tr": "ince bulgur",
+        "de": "feiner Bulgur"
+      }
+    },
+    {
+      "qty": 200,
+      "unit": "ml",
+      "name": {
+        "en": "boiling water",
+        "tr": "kaynar su",
+        "de": "kochendes Wasser"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "red pepper paste",
+        "tr": "biber salçası",
+        "de": "Paprikamark"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "tomato paste",
+        "tr": "domates salçası",
+        "de": "Tomatenmark"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "tbsp",
+      "name": {
+        "en": "olive oil",
+        "tr": "zeytinyağı",
+        "de": "Olivenöl"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "pomegranate molasses",
+        "tr": "nar ekşisi",
+        "de": "Granatapfelsirup"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "lemon",
+        "tr": "limon",
+        "de": "Zitrone"
+      },
+      "note": {
+        "en": "juiced",
+        "tr": "suyu sıkılmış",
+        "de": "ausgepresst"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "Turkish red pepper flakes",
+        "tr": "pul biber",
+        "de": "Pul Biber (türkische Chiliflocken)"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "tomato",
+        "tr": "domates",
+        "de": "Tomate"
+      },
+      "note": {
+        "en": "finely diced",
+        "tr": "ince küp doğranmış",
+        "de": "fein gewürfelt"
+      }
+    },
+    {
+      "qty": 4,
+      "unit": "piece",
+      "name": {
+        "en": "spring onions",
+        "tr": "taze soğan",
+        "de": "Frühlingszwiebeln"
+      },
+      "note": {
+        "en": "thinly sliced",
+        "tr": "ince doğranmış",
+        "de": "in dünne Ringe geschnitten"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "bunch",
+      "name": {
+        "en": "flat-leaf parsley",
+        "tr": "maydanoz",
+        "de": "glatte Petersilie"
+      },
+      "note": {
+        "en": "finely chopped",
+        "tr": "ince kıyılmış",
+        "de": "fein gehackt"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "fresh mint",
+        "tr": "taze nane",
+        "de": "frische Minze"
+      },
+      "note": {
+        "en": "finely chopped",
+        "tr": "ince kıyılmış",
+        "de": "fein gehackt"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Put the bulgur in a large bowl, mix in the pepper paste and tomato paste, and pour over the boiling water. Cover and leave for 10 minutes, until all the water is absorbed.",
+        "tr": "Bulguru geniş bir kaseye alın, biber ve domates salçasını ekleyip karıştırın, kaynar suyu dökün. Kapağını kapatıp tüm su çekilene kadar 10 dakika bekletin.",
+        "de": "Den Bulgur in eine große Schüssel geben, Paprikamark und Tomatenmark einrühren und mit dem kochenden Wasser übergießen. Zugedeckt 10 Minuten quellen lassen, bis das Wasser vollständig aufgesogen ist."
+      },
+      "timerMinutes": 10
+    },
+    {
+      "text": {
+        "en": "Add the olive oil, pomegranate molasses, lemon juice, pepper flakes and a pinch of salt. Knead well with your hands until the bulgur is evenly coloured and the grains separate.",
+        "tr": "Zeytinyağını, nar ekşisini, limon suyunu, pul biberi ve bir tutam tuzu ekleyin. Bulgur eşit renk alıp taneler birbirinden ayrılana kadar elinizle iyice yoğurun.",
+        "de": "Olivenöl, Granatapfelsirup, Zitronensaft, Chiliflocken und eine Prise Salz zugeben. Mit den Händen gut durchkneten, bis der Bulgur gleichmäßig gefärbt ist und sich die Körner lösen."
+      }
+    },
+    {
+      "text": {
+        "en": "Let it cool to room temperature, then mix in the tomato, spring onions, parsley and mint. Taste and adjust the salt and lemon.",
+        "tr": "Oda sıcaklığına gelene kadar soğumasını bekleyin, sonra domatesi, taze soğanı, maydanozu ve naneyi ekleyip karıştırın. Tuzunu ve limonunu ayarlayın.",
+        "de": "Auf Zimmertemperatur abkühlen lassen, dann Tomate, Frühlingszwiebeln, Petersilie und Minze untermischen. Mit Salz und Zitrone abschmecken."
+      }
+    },
+    {
+      "text": {
+        "en": "Serve at room temperature or chilled, traditionally spooned into lettuce leaves.",
+        "tr": "Oda sıcaklığında ya da soğuk, geleneksel olarak marul yapraklarına sarılarak servis edin.",
+        "de": "Bei Zimmertemperatur oder gekühlt servieren, traditionell in Salatblättern gereicht."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Keeps for 2 days in the fridge; the herbs darken, so stir in a little extra fresh parsley before serving.",
+    "tr": "Buzdolabında 2 gün saklanır; yeşillikler kararır, bu yüzden servis öncesi biraz taze maydanoz ekleyin.",
+    "de": "Im Kühlschrank 2 Tage haltbar; die Kräuter dunkeln nach, daher vor dem Servieren etwas frische Petersilie unterrühren."
+  },
+  "tags": [
+    "vegan",
+    "quick",
+    "turkish"
+  ],
+  "starter": true
+}

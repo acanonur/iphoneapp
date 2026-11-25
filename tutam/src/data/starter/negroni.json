@@ -1,0 +1,112 @@
+{
+  "id": "starter-negroni",
+  "kind": "drink",
+  "category": "cocktail",
+  "title": {
+    "en": "Negroni",
+    "tr": "Negroni",
+    "de": "Negroni"
+  },
+  "summary": {
+    "en": "Equal parts gin, Campari and sweet vermouth, stirred over ice. Bitter, boozy and sophisticated.",
+    "tr": "Eşit ölçüde cin, Campari ve tatlı vermut, buzla karıştırılır. Acımsı, sert ve sofistike.",
+    "de": "Gin, Campari und süßer Wermut zu gleichen Teilen, auf Eis gerührt. Bitter, kräftig und elegant."
+  },
+  "servings": 1,
+  "prepMinutes": 3,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "ice cubes",
+        "tr": "buz küpü",
+        "de": "Eiswürfel"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "cl",
+      "name": {
+        "en": "gin",
+        "tr": "cin",
+        "de": "Gin"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "cl",
+      "name": {
+        "en": "Campari",
+        "tr": "Campari",
+        "de": "Campari"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "cl",
+      "name": {
+        "en": "sweet red vermouth",
+        "tr": "tatlı kırmızı vermut",
+        "de": "roter Wermut (süß)"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "orange peel",
+        "tr": "portakal kabuğu",
+        "de": "Orangenschale"
+      },
+      "note": {
+        "en": "one wide strip",
+        "tr": "geniş bir şerit halinde",
+        "de": "ein breiter Streifen"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Fill a mixing glass two-thirds full with ice. Pour in the gin, Campari and vermouth.",
+        "tr": "Bir karıştırma bardağını üçte iki oranında buzla doldurun. Cin, Campari ve vermutu ekleyin.",
+        "de": "Ein Rührglas zu zwei Dritteln mit Eis füllen. Gin, Campari und Wermut zugießen."
+      }
+    },
+    {
+      "text": {
+        "en": "Stir with a long spoon for 20 to 30 seconds, until the glass is frosty. Never shake a Negroni; it would turn cloudy and over-diluted.",
+        "tr": "Uzun bir kaşıkla 20-30 saniye, bardak buğulanana kadar karıştırın. Negroni asla çalkalanmaz; bulanır ve fazla sulanır.",
+        "de": "Mit einem langen Löffel 20 bis 30 Sekunden rühren, bis das Glas beschlägt. Einen Negroni niemals schütteln; er würde trüb und zu stark verwässert."
+      }
+    },
+    {
+      "text": {
+        "en": "Strain into a rocks glass over a large fresh ice cube.",
+        "tr": "Karışımı büyük bir buz küpüyle dolu rocks bardağa süzün.",
+        "de": "In ein Tumblerglas über einen großen frischen Eiswürfel abseihen."
+      }
+    },
+    {
+      "text": {
+        "en": "Squeeze the orange peel over the drink to release its oils, rub it around the rim and drop it in.",
+        "tr": "Portakal kabuğunu içkinin üzerinde sıkarak yağını bırakın, bardağın kenarında gezdirin ve içine bırakın.",
+        "de": "Die Orangenschale über dem Drink ausdrücken, damit die Öle austreten, am Glasrand entlangfahren und ins Glas geben."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Equal parts is the classic. For a softer version, use 4 cl gin and 2 cl each of the others. Serve very cold.",
+    "tr": "Klasik tarif eşit ölçüdür. Daha yumuşak bir sürüm için 4 cl cin, diğerlerinden 2 cl'er kullanın. Çok soğuk servis edin.",
+    "de": "Gleiche Teile sind der Klassiker. Für eine mildere Variante 4 cl Gin und je 2 cl der anderen nehmen. Sehr kalt servieren."
+  },
+  "tags": [
+    "quick"
+  ],
+  "glass": "rocks",
+  "alcoholic": true,
+  "starter": true
+}

@@ -1,0 +1,157 @@
+{
+  "id": "starter-aglio-e-olio",
+  "kind": "food",
+  "category": "main",
+  "title": {
+    "en": "Spaghetti Aglio e Olio",
+    "tr": "Aglio e Olio Spagetti",
+    "de": "Spaghetti Aglio e Olio"
+  },
+  "summary": {
+    "en": "Italy's quickest supper: spaghetti tossed in garlic and chilli oil with parsley and a splash of starchy pasta water.",
+    "tr": "İtalya'nın en hızlı akşam yemeği: sarımsaklı, pul biberli zeytinyağında çevrilmiş spagetti; üzerine maydanoz ve biraz makarna suyu.",
+    "de": "Italiens schnellstes Abendessen: Spaghetti in Knoblauch-Chili-Öl geschwenkt, mit Petersilie und einem Schuss stärkehaltigem Nudelwasser."
+  },
+  "servings": 2,
+  "prepMinutes": 5,
+  "cookMinutes": 12,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 200,
+      "unit": "g",
+      "name": {
+        "en": "spaghetti",
+        "tr": "spagetti",
+        "de": "Spaghetti"
+      }
+    },
+    {
+      "qty": 4,
+      "unit": "clove",
+      "name": {
+        "en": "garlic",
+        "tr": "sarımsak",
+        "de": "Knoblauch"
+      },
+      "note": {
+        "en": "thinly sliced",
+        "tr": "ince dilimlenmiş",
+        "de": "in dünne Scheiben geschnitten"
+      }
+    },
+    {
+      "qty": 4,
+      "unit": "tbsp",
+      "name": {
+        "en": "extra virgin olive oil",
+        "tr": "sızma zeytinyağı",
+        "de": "natives Olivenöl extra"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "Turkish red pepper flakes",
+        "tr": "pul biber",
+        "de": "Chiliflocken"
+      },
+      "note": {
+        "en": "or to taste",
+        "tr": "isteğe göre",
+        "de": "oder nach Geschmack"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "bunch",
+      "name": {
+        "en": "flat-leaf parsley",
+        "tr": "maydanoz",
+        "de": "glatte Petersilie"
+      },
+      "note": {
+        "en": "leaves chopped",
+        "tr": "yaprakları ince kıyılmış",
+        "de": "Blätter gehackt"
+      }
+    },
+    {
+      "qty": 100,
+      "unit": "ml",
+      "name": {
+        "en": "pasta cooking water",
+        "tr": "makarna suyu",
+        "de": "Nudelwasser"
+      },
+      "note": {
+        "en": "reserved",
+        "tr": "ayrılmış",
+        "de": "aufgehoben"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      },
+      "note": {
+        "en": "for the cooking water",
+        "tr": "haşlama suyu için",
+        "de": "für das Kochwasser"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Bring a large pot of water to the boil and salt it generously. Cook the spaghetti for about 9 minutes, until just al dente.",
+        "tr": "Büyük bir tencerede suyu kaynatın ve bolca tuzlayın. Spagettiyi yaklaşık 9 dakika, diş arasında hafif sertlik kalacak (al dente) kıvama gelene kadar haşlayın.",
+        "de": "Einen großen Topf Wasser zum Kochen bringen und kräftig salzen. Die Spaghetti etwa 9 Minuten kochen, bis sie gerade bissfest (al dente) sind."
+      },
+      "timerMinutes": 9
+    },
+    {
+      "text": {
+        "en": "Meanwhile, pour the olive oil into a large frying pan and add the garlic and pepper flakes. Warm over low heat for about 2 minutes, until the garlic is pale gold. Do not let it brown, or it turns bitter.",
+        "tr": "Bu arada zeytinyağını geniş bir tavaya alın, sarımsağı ve pul biberi ekleyin. Kısık ateşte yaklaşık 2 dakika, sarımsaklar açık altın rengi olana kadar ısıtın. Kızarmasına izin vermeyin, yoksa acılaşır.",
+        "de": "Währenddessen das Olivenöl in eine große Pfanne geben, Knoblauch und Chiliflocken zufügen. Bei niedriger Hitze etwa 2 Minuten erwärmen, bis der Knoblauch hellgolden ist. Er darf nicht braun werden, sonst schmeckt er bitter."
+      }
+    },
+    {
+      "text": {
+        "en": "Just before draining, scoop out a mugful of the cooking water (about 100 ml), then drain the spaghetti.",
+        "tr": "Süzmeden hemen önce bir kupa (yaklaşık 100 ml) haşlama suyunu ayırın, ardından spagettiyi süzün.",
+        "de": "Kurz vor dem Abgießen eine Tasse Nudelwasser (etwa 100 ml) abschöpfen, dann die Spaghetti abgießen."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the spaghetti to the pan with 3 to 4 tablespoons of the cooking water. Toss over medium heat for a minute, until the sauce turns glossy and clings to the pasta. Add more water if it looks dry.",
+        "tr": "Spagettiyi 3-4 yemek kaşığı haşlama suyuyla birlikte tavaya ekleyin. Orta ateşte bir dakika, sos parlak olup makarnaya yapışana kadar çevirin. Kuru görünürse biraz daha su ekleyin.",
+        "de": "Die Spaghetti mit 3 bis 4 Esslöffeln Nudelwasser in die Pfanne geben. Bei mittlerer Hitze eine Minute schwenken, bis die Sauce glänzt und an den Nudeln haftet. Wirkt es trocken, noch etwas Wasser zugeben."
+      }
+    },
+    {
+      "text": {
+        "en": "Stir in the parsley and serve straight away.",
+        "tr": "Maydanozu ekleyip karıştırın ve hemen servis edin.",
+        "de": "Die Petersilie untermischen und sofort servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Serve at once: the sauce is at its best while the pasta is hot. Cheese is not part of the classic dish.",
+    "tr": "Hemen servis edin; sos makarna sıcakken en iyisidir. Klasik tarifte peynir kullanılmaz.",
+    "de": "Sofort servieren, solange die Nudeln heiß sind. Käse gehört nicht zum klassischen Gericht."
+  },
+  "tags": [
+    "vegan",
+    "quick"
+  ],
+  "starter": true
+}

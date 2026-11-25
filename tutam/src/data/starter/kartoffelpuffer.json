@@ -1,0 +1,160 @@
+{
+  "id": "starter-kartoffelpuffer",
+  "kind": "food",
+  "category": "side",
+  "title": {
+    "en": "Potato Pancakes (Kartoffelpuffer)",
+    "tr": "Patates Mücveri (Kartoffelpuffer)",
+    "de": "Kartoffelpuffer"
+  },
+  "summary": {
+    "en": "Crisp, golden pancakes of grated potato and onion, fried in a shallow pool of oil and eaten with apple sauce.",
+    "tr": "Rendelenmiş patates ve soğandan yapılan, az yağda kızartılan, çıtır çıtır ve altın rengi mücverler; elma püresiyle yenir.",
+    "de": "Knusprige, goldbraune Puffer aus geriebenen Kartoffeln und Zwiebel, in reichlich Öl ausgebacken und mit Apfelmus gegessen."
+  },
+  "servings": 4,
+  "prepMinutes": 20,
+  "cookMinutes": 20,
+  "difficulty": 2,
+  "ingredients": [
+    {
+      "qty": 800,
+      "unit": "g",
+      "name": {
+        "en": "floury potatoes",
+        "tr": "unlu patates",
+        "de": "mehligkochende Kartoffeln"
+      },
+      "note": {
+        "en": "peeled",
+        "tr": "soyulmuş",
+        "de": "geschält"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "onion",
+        "tr": "kuru soğan",
+        "de": "Zwiebel"
+      },
+      "note": {
+        "en": "peeled",
+        "tr": "soyulmuş",
+        "de": "geschält"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "egg",
+        "tr": "yumurta",
+        "de": "Ei"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tbsp",
+      "name": {
+        "en": "plain flour",
+        "tr": "un",
+        "de": "Weizenmehl"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "pinch",
+      "name": {
+        "en": "grated nutmeg",
+        "tr": "rendelenmiş muskat",
+        "de": "geriebene Muskatnuss"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "ml",
+      "name": {
+        "en": "sunflower oil",
+        "tr": "ayçiçek yağı",
+        "de": "Sonnenblumenöl"
+      },
+      "note": {
+        "en": "for frying",
+        "tr": "kızartmak için",
+        "de": "zum Braten"
+      }
+    },
+    {
+      "qty": 200,
+      "unit": "g",
+      "name": {
+        "en": "apple sauce",
+        "tr": "elma püresi",
+        "de": "Apfelmus"
+      },
+      "note": {
+        "en": "to serve",
+        "tr": "servis için",
+        "de": "zum Servieren"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Grate the potatoes and onion finely into a bowl. Tip into a clean tea towel and squeeze out as much liquid as you can, catching the liquid in a bowl.",
+        "tr": "Patatesleri ve soğanı ince rendeleyip bir kaseye alın. Temiz bir mutfak bezine boşaltıp suyunu mümkün olduğunca sıkın; suyu bir kapta toplayın.",
+        "de": "Kartoffeln und Zwiebel fein in eine Schüssel reiben. In ein sauberes Küchentuch geben und möglichst viel Flüssigkeit auspressen, dabei die Flüssigkeit in einer Schüssel auffangen."
+      }
+    },
+    {
+      "text": {
+        "en": "Let the liquid stand for a minute, pour off the water and keep the white starch at the bottom. Add it to the potato with the egg, flour, salt and nutmeg and mix well.",
+        "tr": "Sıvıyı bir dakika bekletin, suyu dökün ve dipte kalan beyaz nişastayı patatesin üzerine ekleyin. Yumurta, un, tuz ve muskatla iyice karıştırın.",
+        "de": "Die Flüssigkeit eine Minute stehen lassen, das Wasser abgießen und die weiße Stärke am Boden aufbewahren. Mit Ei, Mehl, Salz und Muskat zu den Kartoffeln geben und gut vermengen."
+      }
+    },
+    {
+      "text": {
+        "en": "Heat the oven to 100°C. Heat the oil in a large frying pan over medium-high heat until a shred of potato sizzles at once.",
+        "tr": "Fırını 100°C'ye ısıtın. Yağı geniş bir tavada orta-yüksek ateşte, içine atılan bir patates parçası hemen cızırdayana kadar ısıtın.",
+        "de": "Den Backofen auf 100 °C vorheizen. Das Öl in einer großen Pfanne bei mittlerer bis hoher Hitze erhitzen, bis ein Kartoffelfaden sofort zischt."
+      }
+    },
+    {
+      "text": {
+        "en": "Fry the pancakes in batches: put in heaped tablespoons of the mixture, flatten to about 1 cm thick, and fry for 3 to 4 minutes on each side, until deep golden and crisp.",
+        "tr": "Mücverleri partiler halinde kızartın: yığma yemek kaşığı kadar karışımı tavaya koyun, yaklaşık 1 cm kalınlığında bastırın ve her yüzünü 3-4 dakika, koyu altın rengi ve çıtır olana kadar kızartın.",
+        "de": "Die Puffer portionsweise braten: gehäufte Esslöffel der Masse in die Pfanne geben, auf etwa 1 cm Dicke flach drücken und auf jeder Seite 3 bis 4 Minuten goldbraun und knusprig ausbacken."
+      }
+    },
+    {
+      "text": {
+        "en": "Drain on kitchen paper and keep warm in the oven while you fry the rest. Serve hot with the apple sauce.",
+        "tr": "Kâğıt havluda süzdürün ve kalanları kızartırken fırında sıcak tutun. Elma püresiyle sıcak servis edin.",
+        "de": "Auf Küchenpapier abtropfen lassen und im Ofen warm halten, bis alle gebraten sind. Heiß mit dem Apfelmus servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Work quickly after grating or the potato turns grey. Add a little more flour if the mixture is too wet to hold together. Also good with smoked salmon or sour cream.",
+    "tr": "Rendeledikten sonra çabuk davranın, yoksa patates kararır. Karışım birbirine tutunmayacak kadar sulu olursa biraz daha un ekleyin. Füme somon ya da ekşi kremayla da çok iyi gider.",
+    "de": "Nach dem Reiben zügig arbeiten, sonst verfärben sich die Kartoffeln grau. Ist die Masse zu nass, etwas mehr Mehl zugeben. Schmecken auch mit Räucherlachs oder Sauerrahm."
+  },
+  "tags": [
+    "vegetarian",
+    "german"
+  ],
+  "starter": true
+}

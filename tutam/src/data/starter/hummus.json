@@ -1,0 +1,149 @@
+{
+  "id": "starter-hummus",
+  "kind": "food",
+  "category": "side",
+  "title": {
+    "en": "Hummus",
+    "tr": "Humus",
+    "de": "Hummus"
+  },
+  "summary": {
+    "en": "Smooth, creamy chickpea dip with tahini, lemon, garlic and cumin. Whipping the tahini first makes it fluffy and pale.",
+    "tr": "Tahin, limon, sarımsak ve kimyonla yapılan pürüzsüz, kremamsı nohut mezesi. Tahini önce çırpmak humusu hafif ve açık renkli yapar.",
+    "de": "Glatter, cremiger Kichererbsen-Dip mit Tahin, Zitrone, Knoblauch und Kreuzkümmel. Wird das Tahin zuerst aufgeschlagen, wird er locker und hell."
+  },
+  "servings": 4,
+  "prepMinutes": 10,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 60,
+      "unit": "g",
+      "name": {
+        "en": "tahini",
+        "tr": "tahin",
+        "de": "Tahin"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "tbsp",
+      "name": {
+        "en": "lemon juice",
+        "tr": "limon suyu",
+        "de": "Zitronensaft"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "clove",
+      "name": {
+        "en": "garlic",
+        "tr": "sarımsak",
+        "de": "Knoblauch"
+      },
+      "note": {
+        "en": "peeled",
+        "tr": "soyulmuş",
+        "de": "geschält"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "can",
+      "name": {
+        "en": "chickpeas",
+        "tr": "haşlanmış nohut",
+        "de": "Kichererbsen"
+      },
+      "note": {
+        "en": "400 g, drained and rinsed",
+        "tr": "400 g, süzülmüş ve durulanmış",
+        "de": "400 g, abgetropft und abgespült"
+      }
+    },
+    {
+      "qty": 0.5,
+      "unit": "tsp",
+      "name": {
+        "en": "ground cumin",
+        "tr": "kimyon",
+        "de": "gemahlener Kreuzkümmel"
+      }
+    },
+    {
+      "qty": 0.5,
+      "unit": "tsp",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    },
+    {
+      "qty": 4,
+      "unit": "tbsp",
+      "name": {
+        "en": "ice-cold water",
+        "tr": "buz gibi su",
+        "de": "eiskaltes Wasser"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tbsp",
+      "name": {
+        "en": "olive oil",
+        "tr": "zeytinyağı",
+        "de": "Olivenöl"
+      },
+      "note": {
+        "en": "for serving",
+        "tr": "servis için",
+        "de": "zum Servieren"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Blend the tahini, lemon juice, garlic and salt in a food processor for 1 minute, until pale and thick.",
+        "tr": "Tahini, limon suyunu, sarımsağı ve tuzu mutfak robotunda 1 dakika, açık renkli ve koyu kıvamlı olana kadar çekin.",
+        "de": "Tahin, Zitronensaft, Knoblauch und Salz in der Küchenmaschine 1 Minute zu einer hellen, dicken Masse mixen."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the chickpeas and cumin and blend for 2 minutes, scraping down the sides once.",
+        "tr": "Nohutları ve kimyonu ekleyip kenarları bir kez sıyırarak 2 dakika çekin.",
+        "de": "Kichererbsen und Kreuzkümmel zugeben und 2 Minuten mixen, dabei einmal den Rand abschaben."
+      }
+    },
+    {
+      "text": {
+        "en": "With the machine running, add the ice-cold water a spoonful at a time until very smooth and creamy. Taste and add salt or lemon if needed.",
+        "tr": "Makine çalışırken buz gibi suyu kaşık kaşık ekleyip çok pürüzsüz ve kremamsı olana kadar çekin. Tadına bakın, gerekirse tuz ya da limon ekleyin.",
+        "de": "Bei laufender Maschine das eiskalte Wasser löffelweise zugeben, bis der Hummus sehr glatt und cremig ist. Abschmecken und bei Bedarf mit Salz oder Zitrone nachwürzen."
+      }
+    },
+    {
+      "text": {
+        "en": "Spoon into a shallow bowl, swirl the top and drizzle with the olive oil.",
+        "tr": "Sığ bir kaseye alın, üzerine kaşıkla girdaplar yapın ve zeytinyağını gezdirin.",
+        "de": "In eine flache Schale geben, die Oberfläche mit dem Löffel wellenförmig verstreichen und mit dem Olivenöl beträufeln."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Serve with warm pita, raw vegetables or as a base for roasted meat or vegetables. Keeps for 4 days in the fridge; loosen with a little water before serving.",
+    "tr": "Sıcak pide, çiğ sebzeler ya da közlenmiş et ve sebzelerin altlığı olarak servis edin. Buzdolabında 4 gün saklanır; servis öncesi biraz suyla açın.",
+    "de": "Mit warmem Fladenbrot, Rohkost oder als Unterlage für Geröstetes servieren. Im Kühlschrank 4 Tage haltbar; vor dem Servieren mit etwas Wasser lockern."
+  },
+  "tags": [
+    "vegan",
+    "gluten-free",
+    "quick"
+  ],
+  "starter": true
+}

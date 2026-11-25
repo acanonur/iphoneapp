@@ -1,0 +1,133 @@
+{
+  "id": "starter-gluehwein",
+  "kind": "drink",
+  "category": "hot",
+  "title": {
+    "en": "Mulled Wine (Glühwein)",
+    "tr": "Sıcak Şarap (Glühwein)",
+    "de": "Glühwein"
+  },
+  "summary": {
+    "en": "The German Christmas-market classic: red wine warmed with orange, cinnamon, cloves and star anise. Heat it gently and never let it boil.",
+    "tr": "Alman Noel pazarlarının klasiği: portakal, tarçın, karanfil ve yıldız anasonla ısıtılmış kırmızı şarap. Yavaş ısıtın, asla kaynatmayın.",
+    "de": "Der Klassiker vom deutschen Weihnachtsmarkt: Rotwein, erwärmt mit Orange, Zimt, Nelken und Sternanis. Nur sanft erhitzen, niemals kochen lassen."
+  },
+  "servings": 4,
+  "prepMinutes": 5,
+  "cookMinutes": 15,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 750,
+      "unit": "ml",
+      "name": {
+        "en": "dry red wine",
+        "tr": "kuru kırmızı şarap",
+        "de": "trockener Rotwein"
+      },
+      "note": {
+        "en": "fruity, not too tannic",
+        "tr": "meyvemsi, tanini fazla olmayan",
+        "de": "fruchtig, nicht zu gerbstoffreich"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "orange",
+        "tr": "portakal",
+        "de": "Orange"
+      },
+      "note": {
+        "en": "washed, sliced",
+        "tr": "yıkanmış, halka halka dilimlenmiş",
+        "de": "gewaschen, in Scheiben geschnitten"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "stick",
+      "name": {
+        "en": "cinnamon stick",
+        "tr": "tarçın çubuğu",
+        "de": "Zimtstange"
+      }
+    },
+    {
+      "qty": 4,
+      "unit": "piece",
+      "name": {
+        "en": "cloves",
+        "tr": "karanfil",
+        "de": "Nelken"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "star anise",
+        "tr": "yıldız anason",
+        "de": "Sternanis"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "tbsp",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      },
+      "note": {
+        "en": "to taste",
+        "tr": "tadına göre",
+        "de": "nach Geschmack"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Pour the wine into a saucepan. Add the orange slices, cinnamon, cloves, star anise and sugar.",
+        "tr": "Şarabı bir tencereye dökün. Portakal dilimlerini, tarçını, karanfilleri, yıldız anasonu ve şekeri ekleyin.",
+        "de": "Den Wein in einen Topf gießen. Orangenscheiben, Zimt, Nelken, Sternanis und Zucker zugeben."
+      }
+    },
+    {
+      "text": {
+        "en": "Warm over low heat for about 10 minutes, stirring now and then until the sugar dissolves. The wine should steam but never bubble: above about 80°C the alcohol evaporates and the taste turns harsh.",
+        "tr": "Kısık ateşte arada karıştırarak yaklaşık 10 dakika, şeker eriyene kadar ısıtın. Şarap buharlanmalı ama asla kabarcık çıkarmamalı: yaklaşık 80°C'nin üzerinde alkol uçar ve tadı sertleşir.",
+        "de": "Bei niedriger Hitze etwa 10 Minuten erwärmen und gelegentlich umrühren, bis sich der Zucker aufgelöst hat. Der Wein soll dampfen, aber niemals kochen: Ab etwa 80 °C verfliegt der Alkohol und der Geschmack wird herb."
+      },
+      "timerMinutes": 10
+    },
+    {
+      "text": {
+        "en": "Take the pan off the heat, cover and let it infuse for 5 minutes. Taste and add a little more sugar if you like.",
+        "tr": "Tenceryi ocaktan alın, kapağını kapatıp 5 dakika demlenmeye bırakın. Tadına bakın, isterseniz biraz daha şeker ekleyin.",
+        "de": "Den Topf vom Herd nehmen, zudecken und 5 Minuten ziehen lassen. Abschmecken und nach Belieben etwas nachsüßen."
+      }
+    },
+    {
+      "text": {
+        "en": "Strain into mugs and serve hot, each with a slice of the orange.",
+        "tr": "Süzerek kupalara paylaştırın ve her birine bir dilim portakal koyup sıcak servis edin.",
+        "de": "In Becher abseihen und heiß servieren, jeweils mit einer Orangenscheibe."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Do not leave the orange slices in for long; the white pith turns the wine bitter. Keep leftovers in the fridge and reheat gently. For an alcohol-free version use dark grape juice.",
+    "tr": "Portakal dilimlerini uzun süre bekletmeyin; beyaz kısmı şarabı acılaştırır. Artanı buzdolabında saklayıp yavaşça ısıtın. Alkolsüz sürüm için koyu renkli üzüm suyu kullanın.",
+    "de": "Die Orangenscheiben nicht zu lange im Wein lassen, die weiße Haut macht ihn bitter. Reste im Kühlschrank aufbewahren und vorsichtig erwärmen. Für eine alkoholfreie Variante dunklen Traubensaft verwenden."
+  },
+  "tags": [
+    "gluten-free",
+    "german"
+  ],
+  "glass": "mug",
+  "alcoholic": true,
+  "starter": true
+}

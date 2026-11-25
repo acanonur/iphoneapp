@@ -1,0 +1,119 @@
+{
+  "id": "starter-virgin-mojito",
+  "kind": "drink",
+  "category": "mocktail",
+  "title": {
+    "en": "Virgin Mojito",
+    "tr": "Alkolsüz Mojito",
+    "de": "Alkoholfreier Mojito (Virgin Mojito)"
+  },
+  "summary": {
+    "en": "All the freshness of a Mojito without the rum: lime, mint and sugar topped up with soda over crushed ice.",
+    "tr": "Romsuz bir Mojito'nun tüm ferahlığı: misket limonu, nane ve şeker, kırılmış buz üzerinde sodayla tamamlanır.",
+    "de": "Die ganze Frische eines Mojitos ohne Rum: Limette, Minze und Zucker, mit Soda über Crushed Ice aufgegossen."
+  },
+  "servings": 1,
+  "prepMinutes": 5,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 8,
+      "unit": "leaf",
+      "name": {
+        "en": "fresh mint",
+        "tr": "taze nane",
+        "de": "frische Minze"
+      },
+      "note": {
+        "en": "plus a sprig to garnish",
+        "tr": "bir de süslemek için bir dal",
+        "de": "plus ein Zweig zum Garnieren"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "caster sugar",
+        "tr": "pudra şekeri ya da ince toz şeker",
+        "de": "feiner Zucker"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "lime",
+        "tr": "misket limonu (lime)",
+        "de": "Limette"
+      },
+      "note": {
+        "en": "cut into 4 wedges",
+        "tr": "4 dilime kesilmiş",
+        "de": "in 4 Spalten geschnitten"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "crushed ice",
+        "tr": "kırılmış buz",
+        "de": "Crushed Ice"
+      }
+    },
+    {
+      "qty": 15,
+      "unit": "cl",
+      "name": {
+        "en": "soda water",
+        "tr": "soda",
+        "de": "Sodawasser"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Put the mint leaves, sugar and lime wedges in a tall glass. Muddle gently until the juice is out and the sugar mostly dissolved; do not shred the mint.",
+        "tr": "Nane yapraklarını, şekeri ve misket limonu dilimlerini uzun bir bardağa koyun. Suyu çıkıp şeker büyük oranda eriyene kadar, naneyi param parça etmeden hafifçe ezin.",
+        "de": "Minzblätter, Zucker und Limettenspalten in ein hohes Glas geben. Vorsichtig andrücken, bis der Saft austritt und sich der Zucker größtenteils löst; die Minze nicht zerfetzen."
+      }
+    },
+    {
+      "text": {
+        "en": "Fill the glass with crushed ice.",
+        "tr": "Bardağı kırılmış buzla doldurun.",
+        "de": "Das Glas mit Crushed Ice füllen."
+      }
+    },
+    {
+      "text": {
+        "en": "Top up with the soda water and stir once from the bottom up.",
+        "tr": "Sodayla tamamlayın ve dipten yukarı doğru bir kez karıştırın.",
+        "de": "Mit dem Sodawasser auffüllen und einmal von unten nach oben umrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Garnish with a sprig of mint and serve with a straw.",
+        "tr": "Bir dal nane ile süsleyip pipetle servis edin.",
+        "de": "Mit einem Minzzweig garnieren und mit Strohhalm servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "For a sweeter version add another teaspoon of sugar; for more sparkle, finish with a splash of ginger ale instead of some of the soda.",
+    "tr": "Daha tatlı isterseniz bir çay kaşığı daha şeker ekleyin; daha çok köpürsün isterseniz sodanın bir kısmı yerine biraz ginger ale kullanın.",
+    "de": "Für eine süßere Variante einen weiteren Teelöffel Zucker zugeben; für mehr Spritzigkeit einen Teil des Sodas durch einen Schuss Ginger Ale ersetzen."
+  },
+  "tags": [
+    "vegan",
+    "gluten-free",
+    "quick"
+  ],
+  "glass": "highball",
+  "alcoholic": false,
+  "starter": true
+}

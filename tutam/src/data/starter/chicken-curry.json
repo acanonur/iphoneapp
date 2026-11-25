@@ -1,0 +1,216 @@
+{
+  "id": "starter-chicken-curry",
+  "kind": "food",
+  "category": "main",
+  "title": {
+    "en": "Simple Chicken Curry",
+    "tr": "Kolay Tavuk Körisi",
+    "de": "Einfaches Hähnchencurry"
+  },
+  "summary": {
+    "en": "A mild, creamy curry of chicken thighs simmered in tomato and coconut milk with curry powder and turmeric, served over rice.",
+    "tr": "Tavuk but parçalarının domates ve hindistan cevizi sütüyle köri ve zerdeçalla pişirildiği, hafif ve kremamsı bir yemek; pilavla servis edilir.",
+    "de": "Ein mildes, cremiges Curry aus Hähnchenschenkeln, in Tomaten und Kokosmilch mit Currypulver und Kurkuma geschmort, serviert mit Reis."
+  },
+  "servings": 4,
+  "prepMinutes": 15,
+  "cookMinutes": 35,
+  "difficulty": 2,
+  "ingredients": [
+    {
+      "qty": 250,
+      "unit": "g",
+      "name": {
+        "en": "basmati rice",
+        "tr": "basmati pirinç",
+        "de": "Basmatireis"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tbsp",
+      "name": {
+        "en": "vegetable oil",
+        "tr": "ayçiçek yağı",
+        "de": "Pflanzenöl"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "onion",
+        "tr": "kuru soğan",
+        "de": "Zwiebel"
+      },
+      "note": {
+        "en": "finely chopped",
+        "tr": "ince doğranmış",
+        "de": "fein gewürfelt"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "clove",
+      "name": {
+        "en": "garlic",
+        "tr": "sarımsak",
+        "de": "Knoblauch"
+      },
+      "note": {
+        "en": "crushed",
+        "tr": "ezilmiş",
+        "de": "zerdrückt"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "fresh ginger",
+        "tr": "taze zencefil",
+        "de": "frischer Ingwer"
+      },
+      "note": {
+        "en": "grated",
+        "tr": "rendelenmiş",
+        "de": "gerieben"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "curry powder",
+        "tr": "köri baharatı",
+        "de": "Currypulver"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "ground turmeric",
+        "tr": "zerdeçal",
+        "de": "gemahlene Kurkuma"
+      }
+    },
+    {
+      "qty": 600,
+      "unit": "g",
+      "name": {
+        "en": "boneless chicken thighs",
+        "tr": "kemiksiz tavuk but",
+        "de": "Hähnchenschenkelfilets"
+      },
+      "note": {
+        "en": "skinless, cut into 3 cm pieces",
+        "tr": "derisiz, 3 cm'lik parçalara kesilmiş",
+        "de": "ohne Haut, in 3-cm-Stücke geschnitten"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "can",
+      "name": {
+        "en": "chopped tomatoes",
+        "tr": "doğranmış konserve domates",
+        "de": "gehackte Tomaten"
+      },
+      "note": {
+        "en": "400 g",
+        "tr": "400 g",
+        "de": "400 g"
+      }
+    },
+    {
+      "qty": 400,
+      "unit": "ml",
+      "name": {
+        "en": "coconut milk",
+        "tr": "hindistan cevizi sütü",
+        "de": "Kokosmilch"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tsp",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "black pepper",
+        "tr": "karabiber",
+        "de": "schwarzer Pfeffer"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Rinse the rice, cook it in plenty of boiling salted water for about 12 minutes, then drain and keep covered.",
+        "tr": "Pirinci yıkayın, bol tuzlu kaynar suda yaklaşık 12 dakika haşlayın, süzün ve kapağı kapalı tutun.",
+        "de": "Den Reis waschen, in reichlich kochendem Salzwasser etwa 12 Minuten garen, abgießen und zugedeckt warm halten."
+      },
+      "timerMinutes": 12
+    },
+    {
+      "text": {
+        "en": "Heat the oil in a large, deep pan over medium heat. Cook the onion for about 5 minutes, until soft and lightly golden.",
+        "tr": "Yağı geniş ve derin bir tavada orta ateşte ısıtın. Soğanı yaklaşık 5 dakika, yumuşayıp hafif altın rengi olana kadar kavurun.",
+        "de": "Das Öl in einer großen, tiefen Pfanne bei mittlerer Hitze erhitzen. Die Zwiebel etwa 5 Minuten weich und leicht goldgelb braten."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the garlic and ginger and cook for 1 minute, then stir in the curry powder and turmeric for 30 seconds.",
+        "tr": "Sarımsağı ve zencefili ekleyip 1 dakika kavurun, ardından köri ve zerdeçalı ekleyip 30 saniye karıştırın.",
+        "de": "Knoblauch und Ingwer zugeben und 1 Minute braten, dann Currypulver und Kurkuma 30 Sekunden unterrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the chicken and turn it in the spices for about 3 minutes, until the outside turns opaque.",
+        "tr": "Tavuğu ekleyip baharatların içinde yaklaşık 3 dakika, dışı beyazlaşana kadar çevirin.",
+        "de": "Das Hähnchen zugeben und etwa 3 Minuten in den Gewürzen wenden, bis es außen nicht mehr rosa ist."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour in the tomatoes and coconut milk, add the salt and bring to a gentle boil.",
+        "tr": "Domatesi ve hindistan cevizi sütünü ekleyin, tuzu ilave edin ve hafifçe kaynatın.",
+        "de": "Tomaten und Kokosmilch zugießen, das Salz zugeben und sanft aufkochen."
+      }
+    },
+    {
+      "text": {
+        "en": "Lower the heat and simmer, partly covered, for 20 minutes, stirring now and then, until the chicken is cooked through and the sauce has thickened. Season with pepper and more salt if needed.",
+        "tr": "Ateşi kısın ve kapağı aralık bırakarak, arada karıştırıp 20 dakika, tavuk iyice pişip sos koyulaşana kadar pişirin. Karabiberi ve gerekirse biraz daha tuzu ekleyin.",
+        "de": "Die Hitze reduzieren und halb zugedeckt 20 Minuten köcheln lassen, dabei gelegentlich umrühren, bis das Fleisch durchgegart und die Sauce eingedickt ist. Mit Pfeffer und nach Bedarf mehr Salz abschmecken."
+      },
+      "timerMinutes": 20
+    },
+    {
+      "text": {
+        "en": "Serve the curry over the rice.",
+        "tr": "Köriyi pilavın üzerinde servis edin.",
+        "de": "Das Curry auf dem Reis servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Better the next day. The coconut milk can separate when chilled; stir while reheating. Keeps for 3 days in the fridge and freezes well. Add a chopped chilli for more heat.",
+    "tr": "Ertesi gün daha lezzetlidir. Hindistan cevizi sütü soğukta ayrışabilir, ısıtırken karıştırın. Buzdolabında 3 gün saklanır, dondurulabilir. Daha acı isterseniz doğranmış bir biber ekleyin.",
+    "de": "Am nächsten Tag schmeckt es noch besser. Die Kokosmilch kann sich im Kühlschrank absetzen, beim Aufwärmen einfach umrühren. Hält sich 3 Tage im Kühlschrank und lässt sich gut einfrieren. Für mehr Schärfe eine gehackte Chili zugeben."
+  },
+  "tags": [
+    "gluten-free"
+  ],
+  "starter": true
+}

@@ -1,0 +1,162 @@
+{
+  "id": "starter-menemen",
+  "kind": "food",
+  "category": "breakfast",
+  "title": {
+    "en": "Menemen",
+    "tr": "Menemen",
+    "de": "Menemen"
+  },
+  "summary": {
+    "en": "Turkey's famous breakfast of soft eggs scrambled into stewed tomatoes and green peppers. Serve it straight from the pan with plenty of bread.",
+    "tr": "Türkiye'nin meşhur kahvaltılığı: domates ve yeşil biberle birlikte tavada yumuşak pişirilen yumurta. Tavadan doğrudan, bolca ekmekle servis edin.",
+    "de": "Das berühmte türkische Frühstück: weiche Eier, in geschmorte Tomaten und grüne Paprika gerührt. Direkt aus der Pfanne mit reichlich Brot servieren."
+  },
+  "servings": 2,
+  "prepMinutes": 10,
+  "cookMinutes": 15,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "butter",
+        "tr": "tereyağı",
+        "de": "Butter"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "olive oil",
+        "tr": "zeytinyağı",
+        "de": "Olivenöl"
+      }
+    },
+    {
+      "qty": 0.5,
+      "unit": "piece",
+      "name": {
+        "en": "onion",
+        "tr": "kuru soğan",
+        "de": "Zwiebel"
+      },
+      "note": {
+        "en": "finely chopped, optional",
+        "tr": "ince doğranmış, isteğe bağlı",
+        "de": "fein gehackt, optional"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "piece",
+      "name": {
+        "en": "green peppers",
+        "tr": "sivri biber",
+        "de": "grüne Spitzpaprika"
+      },
+      "note": {
+        "en": "seeded, thinly sliced",
+        "tr": "çekirdekleri çıkarılmış, ince dilimlenmiş",
+        "de": "entkernt, in dünne Scheiben geschnitten"
+      }
+    },
+    {
+      "qty": 3,
+      "unit": "piece",
+      "name": {
+        "en": "ripe tomatoes",
+        "tr": "olgun domates",
+        "de": "reife Tomaten"
+      },
+      "note": {
+        "en": "grated or finely chopped",
+        "tr": "rendelenmiş ya da ince doğranmış",
+        "de": "gerieben oder fein gewürfelt"
+      }
+    },
+    {
+      "qty": 4,
+      "unit": "piece",
+      "name": {
+        "en": "eggs",
+        "tr": "yumurta",
+        "de": "Eier"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "Turkish red pepper flakes",
+        "tr": "pul biber",
+        "de": "Pul Biber (türkische Chiliflocken)"
+      },
+      "note": {
+        "en": "to serve",
+        "tr": "servis için",
+        "de": "zum Servieren"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Heat the butter and olive oil in a wide pan over medium heat. If using onion, cook it for 4 minutes, until soft.",
+        "tr": "Tereyağını ve zeytinyağını geniş bir tavada orta ateşte ısıtın. Soğan kullanıyorsanız 4 dakika, yumuşayana kadar kavurun.",
+        "de": "Butter und Olivenöl in einer breiten Pfanne bei mittlerer Hitze erhitzen. Falls Zwiebel verwendet wird, 4 Minuten weich dünsten."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the peppers and cook for 3 to 4 minutes, until soft.",
+        "tr": "Biberleri ekleyip 3-4 dakika, yumuşayana kadar kavurun.",
+        "de": "Die Paprika zugeben und 3 bis 4 Minuten weich braten."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the tomatoes and a pinch of salt. Cook for 6 to 8 minutes, until the juices have reduced and the mixture is thick and jammy.",
+        "tr": "Domatesleri ve bir tutam tuzu ekleyin. Suyunu çekip koyulaşana kadar 6-8 dakika pişirin.",
+        "de": "Die Tomaten und eine Prise Salz zugeben. 6 bis 8 Minuten garen, bis die Flüssigkeit verkocht ist und die Masse dick und marmeladig wird."
+      }
+    },
+    {
+      "text": {
+        "en": "Lower the heat. Crack the eggs straight into the pan, break the yolks lightly and stir gently for about 2 minutes.",
+        "tr": "Ateşi kısın. Yumurtaları doğrudan tavaya kırın, sarılarını hafifçe bozun ve yaklaşık 2 dakika yavaşça karıştırın.",
+        "de": "Die Hitze reduzieren. Die Eier direkt in die Pfanne schlagen, die Eigelbe leicht aufstechen und etwa 2 Minuten sanft rühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Take the pan off the heat while the eggs are still soft and creamy, as they will keep cooking. Sprinkle with pepper flakes and serve at once with bread.",
+        "tr": "Yumurtalar hâlâ yumuşak ve kremamsıyken tavayı ocaktan alın; pişmeye devam edecekler. Pul biber serpip ekmekle hemen servis edin.",
+        "de": "Die Pfanne vom Herd nehmen, solange die Eier noch weich und cremig sind, denn sie garen nach. Mit Chiliflocken bestreuen und sofort mit Brot servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Whether menemen should contain onion is a famous Turkish argument. Cook it with onion or without; just do not overcook the eggs.",
+    "tr": "Menemenin soğanlı mı soğansız mı olacağı, Türkiye'nin meşhur tartışmalarından biridir. İster soğanlı ister soğansız pişirin; yeter ki yumurtayı fazla pişirmeyin.",
+    "de": "Ob Menemen Zwiebeln enthalten darf, ist ein berühmter türkischer Streitpunkt. Mit oder ohne Zwiebel zubereiten, nur die Eier nicht zu lange garen."
+  },
+  "tags": [
+    "vegetarian",
+    "gluten-free",
+    "turkish",
+    "quick"
+  ],
+  "starter": true
+}

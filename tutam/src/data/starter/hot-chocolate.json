@@ -1,0 +1,119 @@
+{
+  "id": "starter-hot-chocolate",
+  "kind": "drink",
+  "category": "hot",
+  "title": {
+    "en": "Hot Chocolate",
+    "tr": "Sıcak Çikolata",
+    "de": "Heiße Schokolade"
+  },
+  "summary": {
+    "en": "Thick, silky hot chocolate made with real dark chocolate and milk. A pinch of salt makes the chocolate taste deeper.",
+    "tr": "Gerçek bitter çikolata ve sütle yapılan, koyu ve ipeksi sıcak çikolata. Bir tutam tuz çikolatanın tadını derinleştirir.",
+    "de": "Dicke, samtige heiße Schokolade aus echter dunkler Schokolade und Milch. Eine Prise Salz macht den Schokoladengeschmack tiefer."
+  },
+  "servings": 2,
+  "prepMinutes": 5,
+  "cookMinutes": 5,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 400,
+      "unit": "ml",
+      "name": {
+        "en": "milk",
+        "tr": "süt",
+        "de": "Milch"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "unsweetened cocoa powder",
+        "tr": "şekersiz kakao",
+        "de": "ungesüßtes Kakaopulver"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      },
+      "note": {
+        "en": "to taste",
+        "tr": "tadına göre",
+        "de": "nach Geschmack"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "pinch",
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    },
+    {
+      "qty": 60,
+      "unit": "g",
+      "name": {
+        "en": "dark chocolate",
+        "tr": "bitter çikolata",
+        "de": "dunkle Schokolade"
+      },
+      "note": {
+        "en": "about 70% cocoa, finely chopped",
+        "tr": "yaklaşık %70 kakaolu, ince doğranmış",
+        "de": "etwa 70 % Kakao, fein gehackt"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "In a small saucepan, whisk the cocoa, sugar and salt with a splash of the milk into a smooth paste.",
+        "tr": "Küçük bir tencerede kakaoyu, şekeri ve tuzu birkaç kaşık sütle topaksız bir macun haline gelene kadar çırpın.",
+        "de": "In einem kleinen Topf Kakao, Zucker und Salz mit einem Schuss Milch zu einer glatten Paste verrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Whisk in the rest of the milk and warm over medium-low heat until it steams. Do not let it boil.",
+        "tr": "Kalan sütü ekleyip çırparak orta-kısık ateşte buhar çıkana kadar ısıtın. Kaynamasına izin vermeyin.",
+        "de": "Die restliche Milch einrühren und bei mittlerer bis niedriger Hitze erwärmen, bis sie dampft. Nicht aufkochen lassen."
+      }
+    },
+    {
+      "text": {
+        "en": "Take the pan off the heat, add the chocolate and whisk until completely melted and smooth.",
+        "tr": "Tenceryi ocaktan alın, çikolatayı ekleyin ve tamamen eriyip pürüzsüz olana kadar çırpın.",
+        "de": "Den Topf vom Herd nehmen, die Schokolade zugeben und glatt rühren, bis sie vollständig geschmolzen ist."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour into mugs and serve hot.",
+        "tr": "Kupalara paylaştırın ve sıcak servis edin.",
+        "de": "In Becher füllen und heiß servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Top with whipped cream or marshmallows, or stir in a pinch of cinnamon or chilli. It thickens as it cools; reheat gently and whisk.",
+    "tr": "Üzerine krema ya da marshmallow koyabilir, bir tutam tarçın veya pul biber ekleyebilirsiniz. Soğudukça koyulaşır; yavaşça ısıtıp çırpın.",
+    "de": "Mit Schlagsahne oder Marshmallows toppen oder eine Prise Zimt oder Chili einrühren. Beim Abkühlen dickt sie nach; vorsichtig erwärmen und aufschlagen."
+  },
+  "tags": [
+    "vegetarian",
+    "gluten-free",
+    "quick"
+  ],
+  "glass": "mug",
+  "alcoholic": false,
+  "starter": true
+}

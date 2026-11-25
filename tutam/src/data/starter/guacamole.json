@@ -1,0 +1,136 @@
+{
+  "id": "starter-guacamole",
+  "kind": "food",
+  "category": "side",
+  "title": {
+    "en": "Guacamole",
+    "tr": "Guacamole",
+    "de": "Guacamole"
+  },
+  "summary": {
+    "en": "A chunky Mexican dip of ripe avocado, lime, red onion, coriander and chilli. Eat it with tortilla chips or as a topping for tacos.",
+    "tr": "Olgun avokado, misket limonu, kırmızı soğan, kişniş ve acı biberle yapılan, hafif parçalı Meksika sosu. Tortilla cipsiyle ya da tacoların üstünde yenir.",
+    "de": "Ein grober mexikanischer Dip aus reifer Avocado, Limette, roter Zwiebel, Koriander und Chili. Passt zu Tortilla-Chips oder als Topping für Tacos."
+  },
+  "servings": 4,
+  "prepMinutes": 10,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 2,
+      "unit": "piece",
+      "name": {
+        "en": "ripe avocados",
+        "tr": "olgun avokado",
+        "de": "reife Avocados"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "lime",
+        "tr": "misket limonu (lime)",
+        "de": "Limette"
+      },
+      "note": {
+        "en": "juiced",
+        "tr": "suyu sıkılmış",
+        "de": "ausgepresst"
+      }
+    },
+    {
+      "qty": 0.5,
+      "unit": "piece",
+      "name": {
+        "en": "red onion",
+        "tr": "kırmızı soğan",
+        "de": "rote Zwiebel"
+      },
+      "note": {
+        "en": "very finely chopped",
+        "tr": "çok ince doğranmış",
+        "de": "sehr fein gehackt"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "piece",
+      "name": {
+        "en": "green chilli",
+        "tr": "yeşil acı biber",
+        "de": "grüne Chilischote"
+      },
+      "note": {
+        "en": "seeded, finely chopped",
+        "tr": "çekirdekleri çıkarılmış, ince doğranmış",
+        "de": "entkernt, fein gehackt"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tbsp",
+      "name": {
+        "en": "fresh coriander",
+        "tr": "taze kişniş",
+        "de": "frischer Koriander"
+      },
+      "note": {
+        "en": "chopped",
+        "tr": "ince kıyılmış",
+        "de": "gehackt"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Halve the avocados, remove the stones and scoop the flesh into a bowl.",
+        "tr": "Avokadoları ikiye bölün, çekirdeklerini çıkarın ve etlerini bir kaseye kaşıkla alın.",
+        "de": "Die Avocados halbieren, die Kerne entfernen und das Fruchtfleisch mit einem Löffel in eine Schüssel geben."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the lime juice and a good pinch of salt, then mash with a fork, leaving some chunks.",
+        "tr": "Misket limonu suyunu ve bir tutam tuzu ekleyin, çatalla bazı parçalar kalacak şekilde ezin.",
+        "de": "Limettensaft und eine ordentliche Prise Salz zugeben und mit einer Gabel zerdrücken, sodass noch Stücke bleiben."
+      }
+    },
+    {
+      "text": {
+        "en": "Stir in the onion, chilli and coriander.",
+        "tr": "Soğanı, acı biberi ve kişnişi ekleyip karıştırın.",
+        "de": "Zwiebel, Chili und Koriander unterrühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Taste and add more salt or lime if needed. Serve within the hour.",
+        "tr": "Tadına bakın, gerekirse biraz daha tuz ya da misket limonu ekleyin. Bir saat içinde servis edin.",
+        "de": "Abschmecken und bei Bedarf mit mehr Salz oder Limette nachwürzen. Innerhalb einer Stunde servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Avocado browns quickly. To keep it overnight, press cling film directly onto the surface and refrigerate; scrape off any browned top layer before serving. Add a diced tomato if you like.",
+    "tr": "Avokado çabuk kararır. Bir geceden fazla saklayacaksanız streç filmi doğrudan yüzeye bastırıp buzdolabına koyun; servis etmeden önce kararan üst tabakayı sıyırın. İsterseniz küp doğranmış bir domates ekleyin.",
+    "de": "Avocado wird schnell braun. Zum Aufbewahren über Nacht Frischhaltefolie direkt auf die Oberfläche drücken und kühlen; vor dem Servieren eine braune Schicht abschaben. Nach Belieben eine gewürfelte Tomate zugeben."
+  },
+  "tags": [
+    "vegan",
+    "gluten-free",
+    "quick"
+  ],
+  "starter": true
+}

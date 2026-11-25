@@ -1,0 +1,126 @@
+{
+  "id": "starter-mojito",
+  "kind": "drink",
+  "category": "cocktail",
+  "title": {
+    "en": "Mojito",
+    "tr": "Mojito",
+    "de": "Mojito"
+  },
+  "summary": {
+    "en": "The Cuban highball: white rum, lime, sugar and fresh mint, lengthened with soda over crushed ice.",
+    "tr": "Küba'nın uzun kokteyli: beyaz rom, misket limonu, şeker ve taze nane; kırılmış buz üzerinde sodayla uzatılır.",
+    "de": "Der kubanische Longdrink: weißer Rum, Limette, Zucker und frische Minze, mit Soda über Crushed Ice aufgegossen."
+  },
+  "servings": 1,
+  "prepMinutes": 5,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 8,
+      "unit": "leaf",
+      "name": {
+        "en": "fresh mint",
+        "tr": "taze nane",
+        "de": "frische Minze"
+      },
+      "note": {
+        "en": "plus a sprig to garnish",
+        "tr": "bir de süslemek için bir dal",
+        "de": "plus ein Zweig zum Garnieren"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "tsp",
+      "name": {
+        "en": "caster sugar",
+        "tr": "pudra şekeri ya da ince toz şeker",
+        "de": "feiner Zucker"
+      }
+    },
+    {
+      "qty": 0.5,
+      "unit": "piece",
+      "name": {
+        "en": "lime",
+        "tr": "misket limonu (lime)",
+        "de": "Limette"
+      },
+      "note": {
+        "en": "cut into 4 wedges",
+        "tr": "4 dilime kesilmiş",
+        "de": "in 4 Spalten geschnitten"
+      }
+    },
+    {
+      "qty": 5,
+      "unit": "cl",
+      "name": {
+        "en": "white rum",
+        "tr": "beyaz rom",
+        "de": "weißer Rum"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "crushed ice",
+        "tr": "kırılmış buz",
+        "de": "Crushed Ice"
+      }
+    },
+    {
+      "qty": 10,
+      "unit": "cl",
+      "name": {
+        "en": "soda water",
+        "tr": "soda",
+        "de": "Sodawasser"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Put the mint leaves, sugar and lime wedges in a tall glass. Muddle gently, just enough to release the juice and the mint oils; do not shred the mint.",
+        "tr": "Nane yapraklarını, şekeri ve misket limonu dilimlerini uzun bir bardağa koyun. Suyu ve nane yağlarını çıkaracak kadar, naneyi param parça etmeden hafifçe ezin.",
+        "de": "Minzblätter, Zucker und Limettenspalten in ein hohes Glas geben. Vorsichtig andrücken, nur so viel, dass Saft und Minzöle austreten; die Minze nicht zerfetzen."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour in the rum and stir to dissolve the sugar.",
+        "tr": "Romu ekleyin ve şeker eriyene kadar karıştırın.",
+        "de": "Den Rum zugießen und umrühren, bis sich der Zucker löst."
+      }
+    },
+    {
+      "text": {
+        "en": "Fill the glass with crushed ice and top up with the soda water.",
+        "tr": "Bardağı kırılmış buzla doldurun ve sodayla tamamlayın.",
+        "de": "Das Glas mit Crushed Ice füllen und mit Sodawasser auffüllen."
+      }
+    },
+    {
+      "text": {
+        "en": "Stir once from the bottom up, then garnish with a sprig of mint and serve with a straw.",
+        "tr": "Dipten yukarı doğru bir kez karıştırın, bir dal nane ile süsleyin ve pipetle servis edin.",
+        "de": "Einmal von unten nach oben umrühren, mit einem Minzzweig garnieren und mit Strohhalm servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Slap the mint sprig against your palm before garnishing to wake up its aroma. No crushed ice? Wrap ice cubes in a clean tea towel and bash them with a rolling pin.",
+    "tr": "Süslemeden önce nane dalına avucunuzda hafifçe vurun, aroması açılır. Kırılmış buz yoksa buz küplerini temiz bir mutfak bezine sarıp oklavayla vurun.",
+    "de": "Den Minzzweig vor dem Garnieren kurz auf die Handfläche klatschen, dann entfaltet er sein Aroma. Kein Crushed Ice? Eiswürfel in ein sauberes Küchentuch wickeln und mit dem Nudelholz zerschlagen."
+  },
+  "tags": [
+    "quick"
+  ],
+  "glass": "highball",
+  "alcoholic": true,
+  "starter": true
+}

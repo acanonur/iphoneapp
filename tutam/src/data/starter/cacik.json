@@ -1,0 +1,143 @@
+{
+  "id": "starter-cacik",
+  "kind": "food",
+  "category": "side",
+  "title": {
+    "en": "Cacık (Yoghurt with Cucumber)",
+    "tr": "Cacık",
+    "de": "Cacık (Joghurt mit Gurke)"
+  },
+  "summary": {
+    "en": "Cool, thin Turkish yoghurt with cucumber, garlic and mint. Served with grilled meat and rice, or eaten like a soup in summer.",
+    "tr": "Salatalık, sarımsak ve naneyle hazırlanan, ince kıvamlı serin Türk yoğurt mezesi. Izgara ve pilavın yanında ya da yazın çorba gibi yenir.",
+    "de": "Kühler, dünner türkischer Joghurt mit Gurke, Knoblauch und Minze. Passt zu Gegrilltem und Reis oder wird im Sommer wie eine Suppe gelöffelt."
+  },
+  "servings": 4,
+  "prepMinutes": 10,
+  "cookMinutes": 30,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 500,
+      "unit": "g",
+      "name": {
+        "en": "plain yoghurt",
+        "tr": "sade yoğurt",
+        "de": "Naturjoghurt"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "ml",
+      "name": {
+        "en": "cold water",
+        "tr": "soğuk su",
+        "de": "kaltes Wasser"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "piece",
+      "name": {
+        "en": "cucumbers",
+        "tr": "salatalık",
+        "de": "Gurken"
+      },
+      "note": {
+        "en": "small, about 300 g",
+        "tr": "küçük boy, toplam yaklaşık 300 g",
+        "de": "klein, zusammen etwa 300 g"
+      }
+    },
+    {
+      "qty": 2,
+      "unit": "clove",
+      "name": {
+        "en": "garlic",
+        "tr": "sarımsak",
+        "de": "Knoblauch"
+      },
+      "note": {
+        "en": "crushed with a little salt",
+        "tr": "azıcık tuzla ezilmiş",
+        "de": "mit etwas Salz zerdrückt"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "dried mint",
+        "tr": "kuru nane",
+        "de": "getrocknete Minze"
+      }
+    },
+    {
+      "qty": 1,
+      "unit": "tbsp",
+      "name": {
+        "en": "olive oil",
+        "tr": "zeytinyağı",
+        "de": "Olivenöl"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "salt",
+        "tr": "tuz",
+        "de": "Salz"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Peel the cucumbers if the skin is tough, then dice them very finely or grate them coarsely.",
+        "tr": "Kabuğu sertse salatalıkları soyun, sonra çok ince küp doğrayın ya da iri rendeleyin.",
+        "de": "Die Gurken schälen, falls die Schale fest ist, dann sehr fein würfeln oder grob raspeln."
+      }
+    },
+    {
+      "text": {
+        "en": "Whisk the yoghurt with the cold water until smooth and pourable.",
+        "tr": "Yoğurdu soğuk suyla, akışkan ve pürüzsüz olana kadar çırpın.",
+        "de": "Den Joghurt mit dem kalten Wasser glatt und gießfähig rühren."
+      }
+    },
+    {
+      "text": {
+        "en": "Stir in the cucumber and garlic, then season with salt.",
+        "tr": "Salatalığı ve sarımsağı ekleyip karıştırın, tuzunu ayarlayın.",
+        "de": "Gurke und Knoblauch unterrühren und mit Salz abschmecken."
+      }
+    },
+    {
+      "text": {
+        "en": "Chill for at least 30 minutes so the flavours come together.",
+        "tr": "Lezzetler birbirine geçsin diye en az 30 dakika buzdolabında dinlendirin.",
+        "de": "Mindestens 30 Minuten kalt stellen, damit sich die Aromen verbinden."
+      },
+      "timerMinutes": 30
+    },
+    {
+      "text": {
+        "en": "Serve in bowls, rubbing the dried mint between your fingers over the top, and drizzle with the olive oil.",
+        "tr": "Kaselere paylaştırın, kuru naneyi parmaklarınızın arasında ovarak üzerine serpin ve zeytinyağını gezdirin.",
+        "de": "In Schalen anrichten, die getrocknete Minze zwischen den Fingern zerreiben und darüberstreuen, mit dem Olivenöl beträufeln."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Best the day it is made; it keeps for 24 hours in the fridge but releases water, so stir before serving. For a thicker, tzatziki-style dip use less water.",
+    "tr": "En iyisi yapıldığı gün yenmesidir; buzdolabında 24 saat dayanır ama su salar, servis öncesi karıştırın. Tzatziki gibi daha koyu isterseniz suyu azaltın.",
+    "de": "Am besten am selben Tag; im Kühlschrank hält er sich 24 Stunden, zieht aber Wasser, daher vor dem Servieren umrühren. Für einen dickeren, tzatziki-artigen Dip weniger Wasser nehmen."
+  },
+  "tags": [
+    "vegetarian",
+    "gluten-free",
+    "turkish"
+  ],
+  "starter": true
+}

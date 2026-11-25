@@ -1,0 +1,140 @@
+{
+  "id": "starter-naneli-limonata",
+  "kind": "drink",
+  "category": "cold",
+  "title": {
+    "en": "Mint Lemonade",
+    "tr": "Naneli Limonata",
+    "de": "Minzlimonade"
+  },
+  "summary": {
+    "en": "Sharp, sweet and cooling homemade lemonade with fresh mint. Chilled in a jug and served over ice.",
+    "tr": "Taze naneli, ekşi ve tatlı dengesiyle serinleten ev yapımı limonata. Sürahide soğutulur, buz üzerinde servis edilir.",
+    "de": "Spritzige, süße und kühlende hausgemachte Limonade mit frischer Minze. Im Krug gekühlt und auf Eis serviert."
+  },
+  "servings": 4,
+  "prepMinutes": 10,
+  "cookMinutes": 30,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 80,
+      "unit": "g",
+      "name": {
+        "en": "sugar",
+        "tr": "toz şeker",
+        "de": "Zucker"
+      }
+    },
+    {
+      "qty": 100,
+      "unit": "ml",
+      "name": {
+        "en": "hot water",
+        "tr": "sıcak su",
+        "de": "heißes Wasser"
+      }
+    },
+    {
+      "qty": 4,
+      "unit": "piece",
+      "name": {
+        "en": "lemons",
+        "tr": "limon",
+        "de": "Zitronen"
+      },
+      "note": {
+        "en": "unwaxed; the zest of 1 grated, all juiced (about 150 ml)",
+        "tr": "mumsuz; 1 tanesinin kabuğu rendelenmiş, hepsinin suyu sıkılmış (yaklaşık 150 ml)",
+        "de": "unbehandelt; von einer die Schale abgerieben, alle ausgepresst (etwa 150 ml)"
+      }
+    },
+    {
+      "qty": 15,
+      "unit": "g",
+      "name": {
+        "en": "fresh mint",
+        "tr": "taze nane",
+        "de": "frische Minze"
+      },
+      "note": {
+        "en": "about 1 small bunch",
+        "tr": "yaklaşık 1 küçük demet",
+        "de": "etwa 1 kleiner Bund"
+      }
+    },
+    {
+      "qty": 700,
+      "unit": "ml",
+      "name": {
+        "en": "cold water",
+        "tr": "soğuk su",
+        "de": "kaltes Wasser"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "ice cubes",
+        "tr": "buz küpü",
+        "de": "Eiswürfel"
+      },
+      "note": {
+        "en": "to serve",
+        "tr": "servis için",
+        "de": "zum Servieren"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Stir the sugar into the hot water until completely dissolved, then let it cool a little.",
+        "tr": "Şekeri sıcak suda tamamen eriyene kadar karıştırın ve biraz soğumaya bırakın.",
+        "de": "Den Zucker im heißen Wasser vollständig auflösen und etwas abkühlen lassen."
+      }
+    },
+    {
+      "text": {
+        "en": "Grate the zest of one lemon, then juice all four lemons. Pour the juice, zest and sugar syrup into a large jug.",
+        "tr": "Bir limonun kabuğunu rendeleyin, ardından dört limonun suyunu sıkın. Limon suyunu, kabuğunu ve şeker şerbetini büyük bir sürahiye koyun.",
+        "de": "Von einer Zitrone die Schale abreiben, dann alle vier Zitronen auspressen. Saft, Schale und Zuckersirup in einen großen Krug geben."
+      }
+    },
+    {
+      "text": {
+        "en": "Add the cold water. Slap the mint leaves between your palms to release the aroma and add them to the jug.",
+        "tr": "Soğuk suyu ekleyin. Nane yapraklarını avuçlarınızın arasında hafifçe vurarak aromasını açın ve sürahiye atın.",
+        "de": "Das kalte Wasser zugießen. Die Minzblätter zwischen den Handflächen kurz anklatschen, damit sie ihr Aroma abgeben, und in den Krug geben."
+      }
+    },
+    {
+      "text": {
+        "en": "Chill in the fridge for at least 30 minutes. Taste and add a little more sugar or water if you like.",
+        "tr": "Buzdolabında en az 30 dakika soğutun. Tadına bakın, isterseniz biraz daha şeker ya da su ekleyin.",
+        "de": "Mindestens 30 Minuten im Kühlschrank kalt stellen. Abschmecken und nach Belieben etwas mehr Zucker oder Wasser zugeben."
+      },
+      "timerMinutes": 30
+    },
+    {
+      "text": {
+        "en": "Serve in tall glasses over ice.",
+        "tr": "Buz dolu uzun bardaklarda servis edin.",
+        "de": "In hohen Gläsern auf Eis servieren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "Do not leave the mint in for more than a couple of hours or it turns bitter. Keeps for 2 days in the fridge.",
+    "tr": "Naneyi birkaç saatten fazla içinde bırakmayın, acılaşır. Buzdolabında 2 gün saklanır.",
+    "de": "Die Minze nicht länger als ein paar Stunden darin lassen, sonst wird sie bitter. Im Kühlschrank 2 Tage haltbar."
+  },
+  "tags": [
+    "vegan",
+    "gluten-free"
+  ],
+  "glass": "highball",
+  "alcoholic": false,
+  "starter": true
+}

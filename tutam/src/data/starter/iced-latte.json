@@ -1,0 +1,103 @@
+{
+  "id": "starter-iced-latte",
+  "kind": "drink",
+  "category": "coffee",
+  "title": {
+    "en": "Iced Latte",
+    "tr": "Buzlu Latte",
+    "de": "Iced Latte"
+  },
+  "summary": {
+    "en": "Cold milk over ice with a double shot of espresso poured on top. Add syrup if you like it sweet.",
+    "tr": "Buzun üzerinde soğuk süt ve üstüne dökülen çift shot espresso. Tatlı sevenler için şurup eklenebilir.",
+    "de": "Kalte Milch über Eis, darüber ein doppelter Espresso. Wer es süß mag, gibt Sirup dazu."
+  },
+  "servings": 1,
+  "prepMinutes": 3,
+  "cookMinutes": 0,
+  "difficulty": 1,
+  "ingredients": [
+    {
+      "qty": 60,
+      "unit": "ml",
+      "name": {
+        "en": "espresso",
+        "tr": "espresso",
+        "de": "Espresso"
+      },
+      "note": {
+        "en": "a double shot, freshly brewed",
+        "tr": "çift shot, taze demlenmiş",
+        "de": "ein doppelter Shot, frisch gebrüht"
+      }
+    },
+    {
+      "qty": 15,
+      "unit": "ml",
+      "name": {
+        "en": "flavoured syrup or sugar syrup",
+        "tr": "aromalı şurup ya da şeker şurubu",
+        "de": "Sirup nach Wahl oder Zuckersirup"
+      },
+      "note": {
+        "en": "optional",
+        "tr": "isteğe bağlı",
+        "de": "optional"
+      }
+    },
+    {
+      "qty": null,
+      "unit": null,
+      "name": {
+        "en": "ice cubes",
+        "tr": "buz küpü",
+        "de": "Eiswürfel"
+      }
+    },
+    {
+      "qty": 150,
+      "unit": "ml",
+      "name": {
+        "en": "cold milk",
+        "tr": "soğuk süt",
+        "de": "kalte Milch"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "text": {
+        "en": "Brew a double espresso. If you are using syrup, stir it into the hot espresso so it dissolves.",
+        "tr": "Çift shot espresso hazırlayın. Şurup kullanacaksanız sıcak espressoya karıştırarak eritin.",
+        "de": "Einen doppelten Espresso zubereiten. Falls Sirup verwendet wird, ihn in den heißen Espresso rühren, damit er sich auflöst."
+      }
+    },
+    {
+      "text": {
+        "en": "Fill a tall glass with ice and pour in the cold milk.",
+        "tr": "Uzun bir bardağı buzla doldurun ve soğuk sütü dökün.",
+        "de": "Ein hohes Glas mit Eiswürfeln füllen und die kalte Milch eingießen."
+      }
+    },
+    {
+      "text": {
+        "en": "Pour the espresso slowly over the milk and serve at once, with a straw. Stir before drinking.",
+        "tr": "Espressoyu sütün üzerine yavaşça dökün ve pipetle hemen servis edin. İçmeden önce karıştırın.",
+        "de": "Den Espresso langsam über die Milch gießen und sofort mit einem Strohhalm servieren. Vor dem Trinken umrühren."
+      }
+    }
+  ],
+  "notes": {
+    "en": "No espresso machine? Use 60 ml of very strong coffee from a moka pot or AeroPress. Oat milk works well for a dairy-free version.",
+    "tr": "Espresso makineniz yoksa moka pot ya da AeroPress ile hazırlanmış 60 ml çok sert kahve kullanın. Sütsüz sürüm için yulaf sütü iyi sonuç verir.",
+    "de": "Keine Espressomaschine? 60 ml sehr starker Kaffee aus der Mokkakanne oder AeroPress geht auch. Mit Hafermilch gelingt eine milchfreie Variante."
+  },
+  "tags": [
+    "vegetarian",
+    "gluten-free",
+    "quick"
+  ],
+  "glass": "highball",
+  "alcoholic": false,
+  "starter": true
+}
